@@ -31,7 +31,17 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+The following gates derive from the KLECTR Constitution:
+- Modular Monolith: Module boundaries (controllers/services/models) are
+  defined; no microservices introduced without governance approval.
+- Queue-First: All heavy/long-running tasks are designed as BullMQ jobs;
+  HTTP handlers do NOT invoke AI/image processing synchronously.
+- Test-First: Unit, contract (HTTP + queue payloads), and integration
+  tests are written FIRST and initially fail.
+- Schema Fidelity: API inputs/outputs and persisted data match MongoDB
+  schemas; no extra fields.
+- Observability & Events: Structured logging with IDs and Socket.io
+  event emissions included in the design.
 
 ## Project Structure
 

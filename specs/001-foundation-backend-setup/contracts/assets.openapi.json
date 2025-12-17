@@ -1,0 +1,173 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "KLECTR Asset API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/assets": {
+      "get": {
+        "summary": "List assets for current user",
+        "operationId": "listAssets",
+        "parameters": [
+          { "name": "cursor", "in": "query", "required": false, "schema": { "type": "string" } },
+          { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } },
+          { "name": "category", "in": "query", "required": false, "schema": { "type": "string", "enum": ["sneaker", "lego", "camera", "other"] } },
+          { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["draft", "processing", "active", "archived"] } }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of assets",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Asset" }
+                    },
+                    "nextCursor": { "type": "string", "nullable": true }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "post": {
+        "summary": "Create a new asset",
+        "operationId": "createAsset",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["category"],
+                "properties": {
+                  "category": { "type": "string", "enum": ["sneaker", "lego", "camera", "other"] },
+                  "status": { "type": "string", "enum": ["draft", "processing", "active", "archived"], "default": "draft" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Asset created",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Asset" }
+              }
+            }
+          },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/assets/{id}": {
+      "get": {
+        "summary": "Get asset details",
+        "operationId": "getAsset",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Asset found",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Asset" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "patch": {
+        "summary": "Update an asset",
+        "operationId": "updateAsset",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "category": { "type": "string", "enum": ["sneaker", "lego", "camera", "other"] },
+                  "status": { "type": "string", "enum": ["draft", "processing", "active", "archived"] }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Asset updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Asset" }
+              }
+            }
+          },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not found" }
+        }
+      },
+      "delete": {
+        "summary": "Delete an asset",
+        "operationId": "deleteAsset",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "204": { "description": "Asset deleted" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Not found" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Asset": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "userId": { "type": "string" },
+          "category": { "type": "string", "enum": ["sneaker", "lego", "camera", "other"] },
+          "status": { "type": "string", "enum": ["draft", "processing", "active", "archived"] },
+          "condition": {
+            "type": "object",
+            "properties": {
+              "health": { "type": "number" },
+              "decayRate": { "type": "number" },
+              "lastMaintenanceDate": { "type": "string", "format": "date-time", "nullable": true }
+            }
+          },
+          "visualLayers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": { "type": "string", "enum": ["dust_light", "dust_medium", "dust_heavy"] },
+                "intensity": { "type": "number" }
+              }
+            }
+          }
+        },
+        "required": ["id", "userId", "category", "status"]
+      }
+    }
+  }
+}
