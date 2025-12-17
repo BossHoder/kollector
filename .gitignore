@@ -92,6 +92,5 @@ uploads/
 media/
 
 # Ignore .github, .specify, and .vscode folders
-.github/
-.specify/
 .vscode/
+
