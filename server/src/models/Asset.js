@@ -1,4 +1,4 @@
-[cite_start]// [cite: 4579-4932]
+// Asset Model
 const mongoose = require('mongoose');
 
 // --- Sub-schemas ---
