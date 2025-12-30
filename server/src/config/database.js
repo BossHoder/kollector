@@ -23,6 +23,22 @@ const logger = winston.createLogger({
  */
 async function connectDatabase() {
   try {
+    // Check if already connected (readyState: 0=disconnected, 1=connected, 2=connecting, 3=disconnecting)
+    if (mongoose.connection.readyState === 1) {
+      logger.info('MongoDB already connected');
+      return;
+    }
+    
+    // If connecting or disconnecting, wait for it to finish
+    if (mongoose.connection.readyState === 2 || mongoose.connection.readyState === 3) {
+      await new Promise((resolve) => {
+        mongoose.connection.once('connected', resolve);
+        mongoose.connection.once('disconnected', resolve);
+      });
+      // Recursively try again
+      return connectDatabase();
+    }
+    
     const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/klectr';
     
     await mongoose.connect(mongoUri, {

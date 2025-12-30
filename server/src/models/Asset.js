@@ -21,7 +21,7 @@ const maintenanceLogSchema = new mongoose.Schema({
 const assetSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   category: { type: String, enum: ['sneaker', 'lego', 'camera', 'other'], required: true, index: true },
-  status: { type: String, enum: ['draft', 'processing', 'partial', 'active', 'archived'], default: 'draft', index: true },
+  status: { type: String, enum: ['draft', 'processing', 'partial', 'active', 'archived', 'failed'], default: 'draft', index: true },
 
   // --- IMAGES ---
   images: {
