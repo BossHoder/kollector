@@ -1,0 +1,252 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "KLECTR Assets - Analyze Queue API",
+    "version": "1.0.0",
+    "description": "API endpoint for submitting assets for AI processing"
+  },
+  "servers": [
+    {
+      "url": "/api",
+      "description": "API base path"
+    }
+  ],
+  "paths": {
+    "/assets/analyze-queue": {
+      "post": {
+        "summary": "Submit asset for AI processing",
+        "description": "Creates a new draft asset from uploaded image and enqueues it for AI analysis. Returns immediately with job reference.",
+        "operationId": "analyzeQueue",
+        "tags": ["Assets"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["image", "category"],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Image file (max 10MB, image/* MIME types)"
+                  },
+                  "category": {
+                    "type": "string",
+                    "enum": ["sneaker", "lego", "camera", "other"],
+                    "description": "Asset category for AI context"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Asset created and queued for processing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeQueueResponse"
+                },
+                "example": {
+                  "success": true,
+                  "data": {
+                    "assetId": "507f1f77bcf86cd799439011",
+                    "jobId": "ai-processing:123",
+                    "status": "processing",
+                    "message": "Asset queued for AI analysis"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "missingImage": {
+                    "summary": "Missing image file",
+                    "value": {
+                      "success": false,
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Image file is required",
+                        "details": [
+                          {
+                            "field": "image",
+                            "message": "Image file is required"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "invalidCategory": {
+                    "summary": "Invalid category",
+                    "value": {
+                      "success": false,
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "Invalid category",
+                        "details": [
+                          {
+                            "field": "category",
+                            "message": "Must be one of: sneaker, lego, camera, other"
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "fileTooLarge": {
+                    "summary": "File exceeds size limit",
+                    "value": {
+                      "success": false,
+                      "error": {
+                        "code": "VALIDATION_ERROR",
+                        "message": "File too large",
+                        "details": [
+                          {
+                            "field": "image",
+                            "message": "Maximum file size is 10MB"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - missing or invalid token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Authentication required"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "success": false,
+                  "error": {
+                    "code": "INTERNAL_ERROR",
+                    "message": "Failed to queue asset for processing"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "AnalyzeQueueResponse": {
+        "type": "object",
+        "required": ["success", "data"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": true
+          },
+          "data": {
+            "type": "object",
+            "required": ["assetId", "jobId", "status", "message"],
+            "properties": {
+              "assetId": {
+                "type": "string",
+                "description": "Created asset's MongoDB ObjectId",
+                "example": "507f1f77bcf86cd799439011"
+              },
+              "jobId": {
+                "type": "string",
+                "description": "BullMQ job reference ID",
+                "example": "ai-processing:123"
+              },
+              "status": {
+                "type": "string",
+                "enum": ["processing"],
+                "description": "Asset status after queuing"
+              },
+              "message": {
+                "type": "string",
+                "example": "Asset queued for AI analysis"
+              }
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["success", "error"],
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "example": false
+          },
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": ["VALIDATION_ERROR", "UNAUTHORIZED", "INTERNAL_ERROR"],
+                "example": "VALIDATION_ERROR"
+              },
+              "message": {
+                "type": "string",
+                "example": "Invalid request"
+              },
+              "details": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

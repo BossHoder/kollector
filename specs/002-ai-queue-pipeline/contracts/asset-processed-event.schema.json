@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "asset-processed-event.schema.json",
+  "title": "Asset Processed Event",
+  "description": "Socket.io event payload emitted when AI processing completes",
+  "oneOf": [
+    {
+      "$ref": "#/definitions/SuccessEvent"
+    },
+    {
+      "$ref": "#/definitions/FailureEvent"
+    }
+  ],
+  "definitions": {
+    "SuccessEvent": {
+      "type": "object",
+      "required": ["event", "assetId", "status", "aiMetadata", "timestamp"],
+      "properties": {
+        "event": {
+          "type": "string",
+          "const": "asset_processed"
+        },
+        "assetId": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{24}$",
+          "description": "MongoDB ObjectId of the processed asset"
+        },
+        "status": {
+          "type": "string",
+          "const": "active",
+          "description": "Asset status after successful processing"
+        },
+        "aiMetadata": {
+          "type": "object",
+          "required": ["brand", "model"],
+          "properties": {
+            "brand": {
+              "$ref": "#/definitions/ConfidenceValue"
+            },
+            "model": {
+              "$ref": "#/definitions/ConfidenceValue"
+            },
+            "colorway": {
+              "$ref": "#/definitions/ConfidenceValue"
+            }
+          },
+          "additionalProperties": false
+        },
+        "processedImageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of background-removed image"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of event emission"
+        }
+      },
+      "additionalProperties": false
+    },
+    "FailureEvent": {
+      "type": "object",
+      "required": ["event", "assetId", "status", "error", "timestamp"],
+      "properties": {
+        "event": {
+          "type": "string",
+          "const": "asset_processed"
+        },
+        "assetId": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{24}$",
+          "description": "MongoDB ObjectId of the failed asset"
+        },
+        "status": {
+          "type": "string",
+          "const": "failed",
+          "description": "Asset status after failed processing"
+        },
+        "error": {
+          "type": "string",
+          "description": "User-friendly error message"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 timestamp of event emission"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ConfidenceValue": {
+      "type": "object",
+      "required": ["value", "confidence"],
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "Detected value"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Confidence score between 0 and 1"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "event": "asset_processed",
+      "assetId": "507f1f77bcf86cd799439011",
+      "status": "active",
+      "aiMetadata": {
+        "brand": { "value": "Nike", "confidence": 0.95 },
+        "model": { "value": "Air Jordan 1", "confidence": 0.88 },
+        "colorway": { "value": "Chicago", "confidence": 0.82 }
+      },
+      "processedImageUrl": "https://res.cloudinary.com/klectr/image/upload/v1234567890/assets/processed.png",
+      "timestamp": "2025-12-28T10:30:00.000Z"
+    },
+    {
+      "event": "asset_processed",
+      "assetId": "507f1f77bcf86cd799439011",
+      "status": "failed",
+      "error": "AI service unavailable after 3 attempts",
+      "timestamp": "2025-12-28T10:30:00.000Z"
+    }
+  ]
+}

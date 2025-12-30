@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "ai-job.schema.json",
+  "title": "AI Processing Job",
+  "description": "BullMQ job data schema for ai-processing queue",
+  "type": "object",
+  "required": ["assetId", "userId", "imageUrl", "category", "createdAt"],
+  "properties": {
+    "assetId": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{24}$",
+      "description": "MongoDB ObjectId of the asset being processed"
+    },
+    "userId": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{24}$",
+      "description": "MongoDB ObjectId of the asset owner (for event routing)"
+    },
+    "imageUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://",
+      "description": "Cloudinary URL of the original image"
+    },
+    "category": {
+      "type": "string",
+      "enum": ["sneaker", "lego", "camera", "other"],
+      "description": "Asset category for AI context"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when job was created"
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "assetId": "507f1f77bcf86cd799439011",
+      "userId": "507f1f77bcf86cd799439012",
+      "imageUrl": "https://res.cloudinary.com/klectr/image/upload/v1234567890/assets/original.jpg",
+      "category": "sneaker",
+      "createdAt": "2025-12-28T10:30:00.000Z"
+    }
+  ]
+}
