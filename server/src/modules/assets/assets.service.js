@@ -1,11 +1,95 @@
 const Asset = require('../../models/Asset');
 const logger = require('../../config/logger');
+const { uploadImage } = require('../../config/cloudinary');
+const { addToProcessingQueue } = require('./assets.queue');
 
 /**
  * Asset Service
  * Handles asset business logic
  */
 class AssetService {
+  /**
+   * Upload image to Cloudinary
+   * @param {Buffer} buffer - Image buffer
+   * @param {Object} options - Upload options
+   * @returns {Promise<{url: string, publicId: string}>}
+   */
+  async uploadToCloudinary(buffer, options = {}) {
+    const result = await uploadImage(buffer, {
+      folder: options.folder || 'assets/originals',
+      ...options
+    });
+    return result;
+  }
+
+  /**
+   * Create asset and enqueue for AI processing
+   * @param {string} userId - User ID
+   * @param {Object} data - Asset data
+   * @param {string} data.category - Asset category
+   * @param {Buffer} data.imageBuffer - Image buffer
+   * @param {string} data.imageMimetype - Image MIME type
+   * @param {string} data.originalFilename - Original filename
+   * @returns {Promise<{assetId: string, jobId: string}>}
+   */
+  async createAssetAndEnqueue(userId, data) {
+    const { category, imageBuffer, originalFilename } = data;
+
+    // Upload image to Cloudinary first
+    const uploadResult = await this.uploadToCloudinary(imageBuffer, {
+      folder: 'assets/originals'
+    });
+
+    // Create asset with status = 'processing'
+    const asset = await Asset.create({
+      userId,
+      category,
+      status: 'processing',
+      condition: {
+        health: 100,
+        decayRate: 2
+      },
+      visualLayers: [],
+      images: {
+        original: {
+          url: uploadResult.url,
+          publicId: uploadResult.publicId,
+          uploadedAt: new Date()
+        }
+      },
+      aiMetadata: {},
+      nfc: {},
+      marketData: {}
+    });
+
+    // Enqueue AI processing job
+    const createdAt = new Date().toISOString();
+    const jobId = await addToProcessingQueue({
+      assetId: asset._id.toString(),
+      userId: userId.toString(),
+      imageUrl: uploadResult.url,
+      category,
+      createdAt
+    });
+
+    // Update asset with processing job ID
+    asset.processingJobId = jobId;
+    await asset.save();
+
+    logger.info('Asset created and enqueued for processing', {
+      assetId: asset._id,
+      jobId,
+      userId,
+      category,
+      imageUrl: uploadResult.url
+    });
+
+    return {
+      assetId: asset._id.toString(),
+      jobId
+    };
+  }
+
   /**
    * Create a new asset
    * @param {string} userId

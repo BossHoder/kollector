@@ -3,6 +3,7 @@ const { body, param, query } = require('express-validator');
 const assetController = require('./assets.controller');
 const authenticate = require('../../middleware/auth.middleware');
 const validate = require('../../middleware/validate.middleware');
+const { singleImage } = require('../../middleware/upload.middleware');
 
 const router = express.Router();
 
@@ -71,6 +72,22 @@ const listAssetsValidation = [
  * List assets for current user with pagination
  */
 router.get('/', listAssetsValidation, validate, assetController.listAssets.bind(assetController));
+
+/**
+ * POST /api/assets/analyze-queue
+ * Submit asset for AI processing (multipart/form-data)
+ * Creates draft asset, uploads to Cloudinary, enqueues AI job
+ */
+router.post('/analyze-queue', 
+  ...singleImage('image'),
+  assetController.analyzeQueue.bind(assetController)
+);
+
+/**
+ * GET /api/assets/queue-status
+ * Get queue metrics for monitoring
+ */
+router.get('/queue-status', assetController.getQueueStatus.bind(assetController));
 
 /**
  * POST /api/assets
