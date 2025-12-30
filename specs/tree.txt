@@ -1,0 +1,33 @@
+C:\USERS\THETR\DOCUMENTS\CODINGWORKSPACE\KOLLECTOR\SPECS
+│   tree.txt
+│
+├───001-foundation-backend-setup
+│   │   data-model.md
+│   │   plan.md
+│   │   quickstart.md
+│   │   research.md
+│   │   spec.md
+│   │   tasks.md
+│   │
+│   ├───checklists
+│   │       requirements.md
+│   │
+│   └───contracts
+│           assets.openapi.json
+│           auth.openapi.json
+│
+└───002-ai-queue-pipeline
+    │   data-model.md
+    │   plan.md
+    │   quickstart.md
+    │   research.md
+    │   spec.md
+    │   tasks.md
+    │
+    ├───checklists
+    │       requirements.md
+    │
+    └───contracts
+            ai-job.schema.json
+            analyze-queue.openapi.json
+            asset-processed-event.schema.json
