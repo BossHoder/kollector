@@ -43,6 +43,17 @@ The following gates derive from the KLECTR Constitution:
 - Observability & Events: Structured logging with IDs and Socket.io
   event emissions included in the design.
 
+### FE-Specific Gates (if applicable)
+
+- UI Fidelity: Screens match Stitch prototypes in `web/UX-UI-Designed/`;
+  only responsive/accessibility adjustments permitted.
+- Contract-First: All API calls reference OpenAPI specs from
+  `specs/001-*/contracts/` and `specs/002-*/contracts/`.
+- FE Test-First: API clients, auth refresh, status mapping, and Socket
+  handlers MUST have tests written before implementation.
+- MVP Scope: Only Login, Register, Assets Library, Upload, Asset Detail,
+  and Settings are in scope; other features are deferred.
+
 ## Project Structure
 
 ### Documentation (this feature)
