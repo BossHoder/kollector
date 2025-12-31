@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kollector Upload &amp; Analyze</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25f4d1",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#111817", // Matches the provided component color
+                        "card-dark": "#1c2624",
+                        "border-dark": "#283936",
+                        "text-secondary": "#9cbab5",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "2xl": "1rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        'neon': '0 0 10px rgba(37, 244, 209, 0.3), 0 0 20px rgba(37, 244, 209, 0.1)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for dark theme consistency */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111817;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #283936;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #3b5450;
+        }
+        
+        .glow-effect {
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 0 0 rgba(37, 244, 209, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(37, 244, 209, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 244, 209, 0); }
+        }
+
+        .progress-bar-shine {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            width: 50%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: -50%;
+            animation: shine 1.5s infinite;
+        }
+
+        @keyframes shine {
+            to { left: 100%; }
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-white overflow-x-hidden min-h-screen flex flex-col">
+<!-- Navbar -->
+<header class="sticky top-0 z-50 flex items-center justify-between whitespace-nowrap border-b border-solid border-b-border-dark bg-background-dark/80 backdrop-blur-md px-6 md:px-10 py-3">
+<div class="flex items-center gap-4 text-white">
+<div class="size-6 text-primary">
+<span class="material-symbols-outlined !text-[28px]">token</span>
+</div>
+<h2 class="text-white text-lg font-bold leading-tight tracking-[-0.015em]">Kollector</h2>
+</div>
+<div class="hidden md:flex flex-1 justify-end gap-8">
+<div class="flex items-center gap-9">
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Dashboard</a>
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Collection</a>
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Marketplace</a>
+<a class="text-white hover:text-primary transition-colors text-sm font-medium leading-normal" href="#">Settings</a>
+</div>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 border-2 border-border-dark cursor-pointer hover:border-primary transition-colors" data-alt="User profile avatar placeholder" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDBbF0WyvidFXXNavmk2T2ga8Bif_mVRkMbgZsNQ7m19j14nZpkIJN5Xgk2mmBKj1HNIEHIEvk27nIbQuQAXvRaE0l59Y93nOwIVpvzikGsN6I-RECUjte09TT4qf-sovkeCxVc86HyHwSDmu_5Y-jEbKKQbUpQdEwLfZHGGJS5tndq_2tFjhAhAxYYPKRqdNHWTmLyQFrQwi823rnuwSc63WxUcOmhc8SsxU0F3IGQfSHGO_mvX_pBsRzzyBXLiXzcsbQXpcudxlFj");'></div>
+</div>
+<!-- Mobile Menu Icon -->
+<div class="md:hidden text-white cursor-pointer">
+<span class="material-symbols-outlined">menu</span>
+</div>
+</header>
+<main class="flex-grow flex flex-col items-center justify-center p-4 sm:p-6 lg:p-10 relative">
+<!-- Toast Notification (Simulated Success) -->
+<div class="fixed top-24 right-6 z-50 hidden" id="success-toast">
+<div class="flex items-center w-full max-w-xs p-4 space-x-4 text-white bg-card-dark border border-primary/30 rounded-lg shadow-neon" role="alert">
+<div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-primary bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+</div>
+<div class="ms-3 text-sm font-normal">
+<span class="block font-semibold text-primary">Thành công!</span>
+<span class="text-text-secondary">Đã đưa vào hàng đợi xử lý.</span>
+</div>
+<button aria-label="Close" class="ms-auto -mx-1.5 -my-1.5 bg-transparent text-gray-400 hover:text-white rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-gray-700 inline-flex items-center justify-center h-8 w-8" data-dismiss-target="#toast-success" type="button">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+<div class="w-full max-w-[1024px] flex flex-col gap-6">
+<!-- Page Header -->
+<div class="flex flex-col gap-2">
+<h1 class="text-white text-3xl md:text-4xl font-black leading-tight tracking-[-0.033em]">Upload &amp; Analyze</h1>
+<p class="text-text-secondary text-base font-normal leading-normal">Tải ảnh lên và AI sẽ nhận diện giúp bạn.</p>
+</div>
+<!-- Main Card -->
+<div class="bg-card-dark border border-border-dark rounded-xl overflow-hidden shadow-2xl flex flex-col lg:flex-row min-h-[500px]">
+<!-- Left: Drag & Drop Zone -->
+<div class="flex-1 p-6 lg:p-10 border-b lg:border-b-0 lg:border-r border-border-dark flex flex-col">
+<div class="flex-1 relative group cursor-pointer">
+<!-- Empty State Input -->
+<input class="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" id="file-upload" type="file"/>
+<div class="h-full w-full rounded-xl border-2 border-dashed border-border-dark group-hover:border-primary/50 group-hover:bg-background-dark/50 transition-all duration-300 flex flex-col items-center justify-center gap-4 bg-background-dark/20 relative overflow-hidden">
+<!-- Static Content for Empty State -->
+<div class="flex flex-col items-center gap-4 z-0 pointer-events-none p-4 text-center">
+<div class="size-16 rounded-full bg-border-dark/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+<span class="material-symbols-outlined text-4xl text-text-secondary group-hover:text-primary transition-colors">cloud_upload</span>
+</div>
+<div class="space-y-1">
+<p class="text-white text-lg font-bold">Kéo thả ảnh vào đây</p>
+<p class="text-text-secondary text-sm">Hỗ trợ JPG, PNG tối đa 10MB</p>
+</div>
+<div class="px-5 py-2.5 rounded-lg bg-border-dark text-white text-sm font-bold group-hover:bg-primary group-hover:text-background-dark transition-colors mt-2">
+                                    Chọn tệp
+                                </div>
+</div>
+<!-- Preview State (Hidden by default, shown for demo purpose in design) -->
+<!-- To simulate preview, remove 'hidden' class below -->
+<div class="absolute inset-0 z-20 hidden bg-black/50 backdrop-blur-sm flex flex-col items-center justify-center gap-3">
+<img alt="Uploaded sneaker preview" class="absolute inset-0 w-full h-full object-cover opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjv5rN0iqUcEpCbDE7FzVyn0l7NpCF-xW9T-Rrjg51hhTkcPBhu9mNeFeHBw5LwC8K0SzTvUzmQv_hVxKAoPXaqUafRnTwewZdidMBx0KTAFL1a4WODEyG-ySMJfsFLdq_fytMWG7GIDCcR4otVydlGEQAPPSGdmKQnQTplCvi0vpqxYhybnnA7TReClpsc3pJqA4TTAc_zZC3kuDBcaIasBe-NDC9zlvuUMd4kCqCtx5kwlDHyDvQdOQE8aHH9fqV2isOB7wW_WTE"/>
+<div class="z-30 flex gap-3">
+<button class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-lg text-sm font-medium border border-white/10 flex items-center gap-2 transition-all">
+<span class="material-symbols-outlined text-lg">sync_alt</span> Đổi ảnh
+                                    </button>
+<button class="bg-red-500/80 hover:bg-red-500 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-all shadow-lg">
+<span class="material-symbols-outlined text-lg">delete</span> Xoá
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Error Message Placeholder -->
+<div class="mt-3 hidden text-red-400 text-sm flex items-center gap-2 animate-pulse">
+<span class="material-symbols-outlined text-base">error</span>
+                         Kích thước tệp quá lớn. Vui lòng chọn ảnh dưới 10MB.
+                    </div>
+</div>
+<!-- Right: Analysis Form -->
+<div class="w-full lg:w-[420px] bg-card-dark p-6 lg:p-10 flex flex-col justify-between relative">
+<!-- Decorative Element -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full pointer-events-none"></div>
+<div class="flex flex-col gap-8 z-10">
+<div>
+<h3 class="text-xl font-bold text-white mb-1">Chi tiết phân tích</h3>
+<p class="text-sm text-text-secondary">Cung cấp thêm thông tin để AI xử lý chính xác hơn.</p>
+</div>
+<form class="flex flex-col gap-6">
+<!-- Category Select -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-white flex gap-1" for="category">
+                                    Danh mục <span class="text-primary">*</span>
+</label>
+<div class="relative">
+<select class="w-full bg-background-dark border border-border-dark text-white text-base rounded-lg focus:ring-primary focus:border-primary block p-3.5 appearance-none hover:border-primary/50 transition-colors cursor-pointer" id="category" name="category">
+<option disabled="" selected="" value="">Chọn loại sản phẩm...</option>
+<option value="sneaker">Sneaker (Giày thể thao)</option>
+<option value="lego">Lego</option>
+<option value="camera">Camera &amp; Ống kính</option>
+<option value="other">Khác</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-text-secondary">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+<p class="text-xs text-text-secondary mt-1">Chọn đúng danh mục giúp tăng độ chính xác lên 30%.</p>
+</div>
+<!-- Additional Notes (Optional) -->
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-white" for="notes">Ghi chú thêm (Tùy chọn)</label>
+<textarea class="block p-3.5 w-full text-sm text-white bg-background-dark rounded-lg border border-border-dark focus:ring-primary focus:border-primary placeholder-text-secondary/50 resize-none hover:border-primary/50 transition-colors" id="notes" placeholder="Ví dụ: Tình trạng mới 99%, mất hộp..." rows="3"></textarea>
+</div>
+</form>
+</div>
+<!-- Actions -->
+<div class="flex flex-col gap-4 mt-8 lg:mt-0 z-10">
+<!-- Progress Bar (Visible on Loading) -->
+<div class="w-full hidden mb-2" id="progress-container">
+<div class="flex justify-between text-xs font-medium text-primary mb-1">
+<span>Đang xử lý ảnh...</span>
+<span>68%</span>
+</div>
+<div class="w-full bg-background-dark rounded-full h-2.5 relative overflow-hidden border border-border-dark">
+<div class="bg-primary h-2.5 rounded-full relative overflow-hidden" style="width: 68%; box-shadow: 0 0 10px #25f4d1;">
+<div class="progress-bar-shine"></div>
+</div>
+</div>
+</div>
+<div class="flex gap-3 pt-4 border-t border-border-dark">
+<button class="flex-1 py-3 px-5 text-sm font-medium text-text-secondary focus:outline-none bg-transparent rounded-lg border border-transparent hover:bg-border-dark hover:text-white transition-colors" type="button">
+                                Huỷ
+                            </button>
+<button class="flex-[2] text-background-dark bg-primary hover:bg-[#1deebd] focus:ring-4 focus:ring-primary/30 font-bold rounded-lg text-sm px-5 py-3 focus:outline-none transition-all shadow-neon flex items-center justify-center gap-2 group" type="button">
+<span class="material-symbols-outlined text-lg group-hover:rotate-180 transition-transform duration-500">auto_awesome</span>
+<span>Bắt đầu phân tích</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Guidelines / Info Section -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+<div class="bg-card-dark p-4 rounded-lg border border-border-dark flex items-start gap-3">
+<div class="text-primary mt-1">
+<span class="material-symbols-outlined">center_focus_strong</span>
+</div>
+<div>
+<h4 class="text-white font-medium text-sm">Ảnh rõ nét</h4>
+<p class="text-text-secondary text-xs mt-1">Chụp sản phẩm ở nơi có ánh sáng tốt, tránh bị rung tay.</p>
+</div>
+</div>
+<div class="bg-card-dark p-4 rounded-lg border border-border-dark flex items-start gap-3">
+<div class="text-primary mt-1">
+<span class="material-symbols-outlined">crop</span>
+</div>
+<div>
+<h4 class="text-white font-medium text-sm">Cắt gọn gàng</h4>
+<p class="text-text-secondary text-xs mt-1">Loại bỏ các chi tiết thừa xung quanh để tập trung vào vật thể.</p>
+</div>
+</div>
+<div class="bg-card-dark p-4 rounded-lg border border-border-dark flex items-start gap-3">
+<div class="text-primary mt-1">
+<span class="material-symbols-outlined">security</span>
+</div>
+<div>
+<h4 class="text-white font-medium text-sm">Bảo mật</h4>
+<p class="text-text-secondary text-xs mt-1">Dữ liệu của bạn được mã hóa và không chia sẻ ra ngoài.</p>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

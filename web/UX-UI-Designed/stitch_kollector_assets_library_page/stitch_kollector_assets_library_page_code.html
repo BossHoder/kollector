@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kollector Assets Library</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25f4d1",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#10221f", // Dark green-black base
+                        "surface-dark": "#162825", // Slightly lighter for cards/sidebar
+                        "surface-highlight": "#203632", // Highlight/Hover states
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #10221f; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #203632; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #25f4d1; 
+        }
+        
+        .pulse-ring {
+            box-shadow: 0 0 0 0 rgba(37, 244, 209, 0.7);
+            animation: pulse-ring 2s infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(37, 244, 209, 0.7);
+            }
+            70% {
+                transform: scale(1);
+                box-shadow: 0 0 0 10px rgba(37, 244, 209, 0);
+            }
+            100% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 0 rgba(37, 244, 209, 0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display antialiased overflow-hidden">
+<div class="flex h-screen w-full">
+<!-- Sidebar (Desktop) -->
+<aside class="hidden md:flex w-64 flex-col border-r border-[#203632] bg-[#111817]">
+<div class="p-6 flex items-center gap-3">
+<div class="size-8 rounded-lg bg-gradient-to-br from-primary to-teal-700 flex items-center justify-center text-background-dark font-black text-xl">
+                    K
+                </div>
+<div>
+<h1 class="text-white text-lg font-bold tracking-tight">Kollector</h1>
+<p class="text-[#9cbab5] text-xs font-medium">Premium Assets</p>
+</div>
+</div>
+<nav class="flex-1 flex flex-col gap-2 px-4 mt-4">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-primary/10 text-primary group transition-all" href="#">
+<span class="material-symbols-outlined fill-1">folder</span>
+<span class="text-sm font-semibold">Assets</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#9cbab5] hover:bg-[#203632] hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">cloud_upload</span>
+<span class="text-sm font-medium">Upload</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-[#9cbab5] hover:bg-[#203632] hover:text-white transition-all" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-sm font-medium">Cài đặt</span>
+</a>
+</nav>
+<div class="p-4 border-t border-[#203632]">
+<div class="flex items-center gap-3 p-2 rounded-lg hover:bg-[#203632] cursor-pointer transition-colors">
+<div class="size-9 rounded-full bg-cover bg-center" data-alt="User Avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCZvKhJhRqf6Msuuk96DevyrGnvpm08sBIe0j6X9qD_ST0-5sO_nlK2OtdOSCUEudtNZzeVM0Drln9y8AAfkwR0QhP3xyk6H5jQ2Smj38lsy-hiBRd2ofPPS0XFW3KGwQNScv4M-Ta-hm4A_7m8E3qljQ3Y4S3i3y-hhjmE3D82E7yRo76VZNa97j3VhVaP7Vl1X1fFqOQS-aox9BG4v51XbNaZD5WI6EYUk2y0m3yi-b6Ho0V0cqaFRUGcVhfTO5eCH3SPrZszz4v4')"></div>
+<div class="flex flex-col overflow-hidden">
+<p class="text-sm font-medium text-white truncate">Alex Designer</p>
+<p class="text-xs text-[#9cbab5] truncate">Pro Plan</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="flex-1 flex flex-col h-full overflow-hidden bg-background-dark relative">
+<!-- Top Bar -->
+<header class="h-16 border-b border-[#203632] bg-[#111817]/90 backdrop-blur-sm flex items-center justify-between px-6 sticky top-0 z-20">
+<!-- Mobile Menu Button (Visible only on small screens) -->
+<button class="md:hidden text-white mr-4">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<!-- Page Title / Breadcrumb (Desktop) -->
+<div class="hidden md:flex items-center gap-2 text-white/50 text-sm">
+<span class="hover:text-white cursor-pointer transition-colors">Workspace</span>
+<span class="material-symbols-outlined text-base">chevron_right</span>
+<span class="text-white font-medium">Assets Library</span>
+</div>
+<!-- Search & Actions -->
+<div class="flex items-center justify-end gap-4 flex-1 md:flex-initial">
+<!-- Search Input -->
+<div class="relative group w-full max-w-[240px] md:max-w-[320px]">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[#9cbab5] group-focus-within:text-primary transition-colors text-[20px]">search</span>
+</div>
+<input class="block w-full rounded-lg border-none bg-[#203632] py-2 pl-10 pr-3 text-sm text-white placeholder-[#9cbab5] focus:ring-1 focus:ring-primary focus:bg-[#162825] transition-all" placeholder="Search assets..." type="text"/>
+</div>
+<!-- Socket Status -->
+<div class="relative flex items-center justify-center size-8 group/status">
+<span class="absolute inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500 opacity-75 animate-ping"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+<!-- Tooltip -->
+<div class="absolute top-full right-0 mt-2 hidden group-hover/status:block w-32 bg-[#203632] text-xs text-white p-2 rounded shadow-xl border border-[#2e4d47] text-center z-50">
+                            Socket Connected
+                        </div>
+</div>
+<!-- Mobile Avatar (Visible only on small screens) -->
+<div class="md:hidden size-8 rounded-full bg-cover bg-center" data-alt="User Avatar Mobile" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBV2OBZv3L9A_X6pVUBhOWLmQNP-dyXO6bvDGJKeWo_IDU8nqh3ZrKJhL305tWUBPG34lvmPCtoEVjgL7C463MiZ-pzYw-646yj8Bt_0jIbZVOMphj1KZbG5dGcKVX1BAK5pU-vpZw0yZzFqdfdJUhhnu0XwSjlyeLw7gf5Bv6QFL5tvAbAVRPmfhu74x1EZ5ns18Ivyp-27Tg6xMUKDEJ13_n8vaSCG5xfsOrihUMd9l3s6MKUMIttxZAFVGr1TLt5CdhDuIs0B-zt')"></div>
+</div>
+</header>
+<!-- Scrollable Content -->
+<main class="flex-1 overflow-y-auto p-4 md:p-8 relative">
+<div class="max-w-7xl mx-auto space-y-6">
+<!-- Page Heading & Primary Action -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="text-3xl md:text-4xl font-bold text-white tracking-tight">Assets</h2>
+<p class="text-[#9cbab5] mt-1">Manage and organize your digital collectibles</p>
+</div>
+<button class="flex items-center justify-center gap-2 bg-primary hover:bg-[#1edbb9] text-[#10221f] font-bold px-5 py-2.5 rounded-lg transition-all shadow-[0_0_15px_rgba(37,244,209,0.2)] hover:shadow-[0_0_20px_rgba(37,244,209,0.4)]">
+<span class="material-symbols-outlined text-[20px]">upload_file</span>
+                            Upload &amp; Analyze
+                        </button>
+</div>
+<!-- Filters Section -->
+<div class="flex flex-col gap-4 border-b border-[#203632] pb-6">
+<!-- Category Tabs -->
+<div class="flex items-center gap-6 overflow-x-auto no-scrollbar">
+<button class="pb-2 border-b-2 border-primary text-white font-medium text-sm whitespace-nowrap">
+                                Tất cả <span class="ml-1 text-xs bg-[#203632] px-1.5 py-0.5 rounded-full text-[#9cbab5]">128</span>
+</button>
+<button class="pb-2 border-b-2 border-transparent hover:border-[#203632] text-[#9cbab5] hover:text-white transition-colors font-medium text-sm whitespace-nowrap">
+                                Sneaker
+                            </button>
+<button class="pb-2 border-b-2 border-transparent hover:border-[#203632] text-[#9cbab5] hover:text-white transition-colors font-medium text-sm whitespace-nowrap">
+                                Lego
+                            </button>
+<button class="pb-2 border-b-2 border-transparent hover:border-[#203632] text-[#9cbab5] hover:text-white transition-colors font-medium text-sm whitespace-nowrap">
+                                Camera
+                            </button>
+<button class="pb-2 border-b-2 border-transparent hover:border-[#203632] text-[#9cbab5] hover:text-white transition-colors font-medium text-sm whitespace-nowrap">
+                                Khác
+                            </button>
+</div>
+<!-- Status Chips -->
+<div class="flex flex-wrap gap-2">
+<button class="px-3 py-1.5 rounded-full bg-primary/20 text-primary border border-primary/20 text-xs font-semibold hover:bg-primary/30 transition-colors">
+                                Tất cả status
+                            </button>
+<button class="px-3 py-1.5 rounded-full bg-[#203632] text-[#9cbab5] border border-transparent hover:border-[#2e4d47] hover:text-white text-xs font-medium transition-colors">
+                                Draft
+                            </button>
+<button class="px-3 py-1.5 rounded-full bg-[#203632] text-[#9cbab5] border border-transparent hover:border-[#2e4d47] hover:text-white text-xs font-medium transition-colors">
+                                Processing
+                            </button>
+<button class="px-3 py-1.5 rounded-full bg-[#203632] text-[#9cbab5] border border-transparent hover:border-[#2e4d47] hover:text-white text-xs font-medium transition-colors">
+                                Ready
+                            </button>
+<button class="px-3 py-1.5 rounded-full bg-[#203632] text-[#9cbab5] border border-transparent hover:border-[#2e4d47] hover:text-white text-xs font-medium transition-colors">
+                                Failed
+                            </button>
+</div>
+</div>
+<!-- Grid Layout -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Card 1: Ready -->
+<div class="group relative bg-[#162825] rounded-xl overflow-hidden border border-[#203632] hover:border-primary/50 transition-all hover:shadow-[0_4px_20px_-10px_rgba(37,244,209,0.3)]">
+<!-- Image Container -->
+<div class="aspect-square w-full bg-[#111817] relative overflow-hidden">
+<img alt="Nike Sneakers" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" data-alt="Red and white Nike Air Jordan 1 sneaker" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAmGSIqgjgrG0fHaKvOZzFc3uYIGq96szcNcvUPQBU0xRm2pZvvJG1JILHhYQT6tSALWDYMiEwJkgP899V9fbMsmjN_UEoW5l3c6C8fdZKIB9KAWLJf11LGdTc2u0KPWw8OfiWvjkwaX6RbFV3OU6PXg9Juaa8fNttGbwqG5-ak51d8ghI0DLrm7OYJz090PKT8verzN32hqtxYCL66y7N95-2fbJTa4Dl8EyBLHp-KCYOoZniVBYgECL0DMrqZAn7gVAazQdWqTBhe"/>
+<!-- Hover Actions Overlay -->
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-start justify-end p-3">
+<button class="bg-[#162825] text-white p-1.5 rounded-lg hover:bg-primary hover:text-[#10221f] transition-colors shadow-lg">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<!-- Status Pill -->
+<div class="absolute bottom-3 left-3">
+<div class="flex items-center gap-1.5 bg-[#162825]/90 backdrop-blur px-2.5 py-1 rounded-full border border-emerald-500/30">
+<div class="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+<span class="text-[10px] font-bold text-white uppercase tracking-wider">Ready</span>
+</div>
+</div>
+</div>
+<!-- Content -->
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-white font-bold text-sm truncate pr-2">Nike • Air Jordan 1</h3>
+<!-- Health Ring (Tiny visual indicator of data completeness) -->
+<div class="size-4 rounded-full border-2 border-[#203632] border-t-emerald-500 rotate-45" title="Data Completeness: High"></div>
+</div>
+<p class="text-[#9cbab5] text-xs">Chicago Colorway</p>
+<div class="mt-3 flex items-center justify-between text-[#5e7e78] text-[10px] font-mono">
+<span>ID: #8392A</span>
+<span>2h ago</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Processing -->
+<div class="group relative bg-[#162825] rounded-xl overflow-hidden border border-[#203632] hover:border-primary/50 transition-all">
+<div class="aspect-square w-full bg-[#111817] relative overflow-hidden">
+<!-- Image with blur for processing -->
+<img alt="Lego Set" class="w-full h-full object-cover opacity-60 blur-sm scale-110" data-alt="Lego car set on a table" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAnTkXCDPI66_BFsi93--UUKwxv7Z3mLTXzfxk9Y6Vrjcl7dvoYVTVWiQs1JL1hlGLZYtJwpSPtjb46DwjY42vh8Kda1SIvhs4yLOT55NxI3ezhAjGnD0qld7Ulzyd0NTkW5RTOYuesVRnOiL2wz7WcwoPGJq-nIMKkn8Ci1j73tTQaFAahbKkb3q_396XrPt4KTDTfr_jhy6nkHkoA1wP0Hrr4GoyrbYsKFkPrt3btB-G_AMu76wNYF0pRZ4vs-Xy8MCRf-GjQQC01"/>
+<!-- Processing Overlay Center -->
+<div class="absolute inset-0 flex flex-col items-center justify-center z-10">
+<div class="relative mb-3">
+<div class="size-10 rounded-full border-2 border-[#203632] border-t-primary animate-spin"></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-sm">auto_awesome</span>
+</div>
+</div>
+<span class="text-primary font-bold text-xs uppercase tracking-wider animate-pulse">Analyzing...</span>
+</div>
+<div class="absolute bottom-3 left-3">
+<div class="flex items-center gap-1.5 bg-primary/10 backdrop-blur px-2.5 py-1 rounded-full border border-primary/30 shadow-[0_0_10px_rgba(37,244,209,0.2)]">
+<div class="size-2 rounded-full bg-primary animate-pulse"></div>
+<span class="text-[10px] font-bold text-primary uppercase tracking-wider">Processing</span>
+</div>
+</div>
+</div>
+<div class="p-4 opacity-75">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-white font-bold text-sm truncate pr-2">Technic • Porsche 911</h3>
+<div class="size-4 rounded-full border-2 border-[#203632]"></div>
+</div>
+<p class="text-[#9cbab5] text-xs italic">AI is generating metadata...</p>
+<div class="mt-3 flex items-center justify-between text-[#5e7e78] text-[10px] font-mono">
+<span>ID: ---</span>
+<span>Just now</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Failed -->
+<div class="group relative bg-[#162825] rounded-xl overflow-hidden border border-red-900/30 hover:border-red-500/50 transition-all">
+<div class="aspect-square w-full bg-[#111817] relative group">
+<div class="w-full h-full bg-[#1c1c1c] flex items-center justify-center text-[#333]">
+<span class="material-symbols-outlined text-4xl opacity-20">broken_image</span>
+</div>
+<div class="absolute inset-0 bg-red-950/20 group-hover:bg-red-950/30 transition-colors"></div>
+<div class="absolute bottom-3 left-3">
+<div class="flex items-center gap-1.5 bg-red-950/80 backdrop-blur px-2.5 py-1 rounded-full border border-red-500/30">
+<span class="material-symbols-outlined text-red-500 text-[12px]">error</span>
+<span class="text-[10px] font-bold text-red-400 uppercase tracking-wider">Failed</span>
+</div>
+</div>
+<!-- Retry Action Center -->
+<button class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+<div class="bg-white/10 hover:bg-white/20 backdrop-blur rounded-full p-3 transition-colors">
+<span class="material-symbols-outlined text-white">refresh</span>
+</div>
+</button>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-red-300 font-bold text-sm truncate pr-2">Upload Error</h3>
+</div>
+<p class="text-red-400/70 text-xs">File format not supported. Tap to retry.</p>
+<div class="mt-3 flex items-center justify-between text-[#5e7e78] text-[10px] font-mono">
+<span>ID: #ERR01</span>
+<span>5m ago</span>
+</div>
+</div>
+</div>
+<!-- Card 4: Ready -->
+<div class="group relative bg-[#162825] rounded-xl overflow-hidden border border-[#203632] hover:border-primary/50 transition-all hover:shadow-[0_4px_20px_-10px_rgba(37,244,209,0.3)]">
+<div class="aspect-square w-full bg-[#111817] relative overflow-hidden">
+<img alt="Camera Lens" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" data-alt="Classic film camera on wooden surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCVx-hKZa3K0P_qb-bdn0emMGCLNQx3cKBWSRPgotq0csh8jCcGNsVyuuQhF2rQl7EvM8gkqNP9P4Z4wBN_xU4oMC1ViWw8WEE2QoSQERZtsGTtZA6ydysbxy6PBiMAlx5pdU8b_nsnO-rhjLmXb3GjYS1ETHf2RixgMsgh-lyRVN0zO1FgoAZN0KB3Na10Bn3eJDatm5PBGKuPtx09hXQGpm2RhI6BrpO0PvXMEMC6XFXzz7zvIqPFcVWygFlytp6sOsn5HtK1oY1u"/>
+<div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-start justify-end p-3">
+<button class="bg-[#162825] text-white p-1.5 rounded-lg hover:bg-primary hover:text-[#10221f] transition-colors shadow-lg">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<div class="absolute bottom-3 left-3">
+<div class="flex items-center gap-1.5 bg-[#162825]/90 backdrop-blur px-2.5 py-1 rounded-full border border-emerald-500/30">
+<div class="size-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+<span class="text-[10px] font-bold text-white uppercase tracking-wider">Ready</span>
+</div>
+</div>
+</div>
+<div class="p-4">
+<div class="flex justify-between items-start mb-1">
+<h3 class="text-white font-bold text-sm truncate pr-2">Leica • M6 TTL</h3>
+<div class="size-4 rounded-full border-2 border-[#203632] border-t-emerald-500 border-r-emerald-500 rotate-12" title="Data Completeness: Medium"></div>
+</div>
+<p class="text-[#9cbab5] text-xs">Black Paint Edition</p>
+<div class="mt-3 flex items-center justify-between text-[#5e7e78] text-[10px] font-mono">
+<span>ID: #9921B</span>
+<span>1d ago</span>
+</div>
+</div>
+</div>
+<!-- Card 5: Skeleton Loading State -->
+<div class="bg-[#162825] rounded-xl overflow-hidden border border-[#203632]">
+<div class="aspect-square w-full bg-[#203632] animate-pulse"></div>
+<div class="p-4 space-y-3">
+<div class="flex justify-between items-start">
+<div class="h-4 bg-[#203632] rounded w-2/3 animate-pulse"></div>
+<div class="size-4 bg-[#203632] rounded-full animate-pulse"></div>
+</div>
+<div class="h-3 bg-[#203632] rounded w-1/2 animate-pulse"></div>
+<div class="flex justify-between mt-3 pt-2">
+<div class="h-2 bg-[#203632] rounded w-1/4 animate-pulse"></div>
+<div class="h-2 bg-[#203632] rounded w-1/4 animate-pulse"></div>
+</div>
+</div>
+</div>
+<!-- Card 6: Skeleton Loading State -->
+<div class="bg-[#162825] rounded-xl overflow-hidden border border-[#203632]">
+<div class="aspect-square w-full bg-[#203632] animate-pulse"></div>
+<div class="p-4 space-y-3">
+<div class="flex justify-between items-start">
+<div class="h-4 bg-[#203632] rounded w-2/3 animate-pulse"></div>
+<div class="size-4 bg-[#203632] rounded-full animate-pulse"></div>
+</div>
+<div class="h-3 bg-[#203632] rounded w-1/2 animate-pulse"></div>
+<div class="flex justify-between mt-3 pt-2">
+<div class="h-2 bg-[#203632] rounded w-1/4 animate-pulse"></div>
+<div class="h-2 bg-[#203632] rounded w-1/4 animate-pulse"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Pagination / Footer -->
+<div class="flex justify-center py-8">
+<button class="text-[#9cbab5] text-sm font-medium hover:text-white flex items-center gap-2 px-6 py-2 rounded-lg hover:bg-[#203632] transition-colors">
+<span class="material-symbols-outlined text-[18px]">expand_more</span>
+                            Tải thêm assets
+                        </button>
+</div>
+<!-- Empty State Example (Hidden by default, shown for completeness) -->
+<!-- 
+                    <div class="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-[#203632] rounded-xl bg-[#162825]/30">
+                        <div class="bg-[#203632] p-4 rounded-full mb-4">
+                            <span class="material-symbols-outlined text-[#9cbab5] text-4xl">search_off</span>
+                        </div>
+                        <h3 class="text-white font-bold text-lg">No assets found</h3>
+                        <p class="text-[#9cbab5] text-sm mt-1 max-w-xs">Try adjusting your filters or search terms, or upload a new asset.</p>
+                        <button class="mt-6 text-primary text-sm font-bold hover:underline">Clear all filters</button>
+                    </div> 
+                    -->
+</div>
+</main>
+</div>
+<!-- Mobile Navigation (Bottom) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#111817] border-t border-[#203632] flex justify-around items-center z-50">
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-1">folder</span>
+<span class="text-[10px] font-medium">Assets</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-[#9cbab5]" href="#">
+<span class="material-symbols-outlined">cloud_upload</span>
+<span class="text-[10px] font-medium">Upload</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-[#9cbab5]" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-medium">Cài đặt</span>
+</a>
+</nav>
+</div>
+</body></html>

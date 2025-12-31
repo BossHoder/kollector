@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kollector - Asset Detail</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=Noto+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#25f4d1",
+              "background-light": "#f5f8f8",
+              "background-dark": "#10221f",
+              "surface-dark": "#1b2725",
+              "surface-border": "#3b5450",
+              "text-secondary": "#9cbab5",
+            },
+            fontFamily: {
+              "display": ["Inter", "sans-serif"],
+              "mono": ["Noto Sans Mono", "monospace"], // Fallback for ID
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            animation: {
+                'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        /* Custom scrollbar for dark premium feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #10221f; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b5450; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4a6660; 
+        }
+        
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-white font-display min-h-screen flex flex-col selection:bg-primary/30 selection:text-primary overflow-x-hidden">
+<!-- Top System Banner (Hidden by default or subtle for connection status) -->
+<div class="w-full bg-surface-dark border-b border-surface-border py-1.5 flex justify-center items-center gap-2">
+<div class="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
+<span class="text-xs font-medium text-primary tracking-wide uppercase">System Operational</span>
+</div>
+<div class="flex-1 flex flex-col max-w-[1440px] mx-auto w-full px-4 md:px-8 py-6">
+<!-- Breadcrumbs -->
+<nav class="flex items-center gap-2 text-sm mb-6 animate-fade-in">
+<a class="text-text-secondary hover:text-primary transition-colors" href="#">Assets</a>
+<span class="material-symbols-outlined text-text-secondary text-[16px]">chevron_right</span>
+<span class="text-white font-medium">Nike Air Jordan 1 High</span>
+</nav>
+<!-- Page Header -->
+<header class="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-4 flex-wrap">
+<h1 class="text-3xl md:text-4xl font-bold tracking-tight text-white">Nike Air Jordan 1 High</h1>
+<!-- Status Pill: Ready -->
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider shadow-[0_0_10px_rgba(37,244,209,0.1)]">
+<span class="material-symbols-outlined text-[16px]">check_circle</span>
+                        Ready
+                    </div>
+</div>
+<div class="flex items-center gap-3 text-text-secondary">
+<span class="material-symbols-outlined text-[18px]">fingerprint</span>
+<span class="font-mono text-sm">Asset ID: 4920-ABCD-1234-XY99</span>
+</div>
+</div>
+<!-- Actions -->
+<div class="flex items-center gap-3">
+<button class="flex items-center justify-center h-10 px-4 rounded-lg border border-surface-border bg-surface-dark hover:bg-[#253532] text-white text-sm font-medium transition-colors gap-2">
+<span class="material-symbols-outlined text-[20px]">archive</span>
+<span class="hidden sm:inline">Archive</span>
+</button>
+<button class="flex items-center justify-center h-10 w-10 rounded-lg border border-surface-border bg-surface-dark hover:bg-red-900/20 hover:border-red-800/50 hover:text-red-400 text-white transition-colors group">
+<span class="material-symbols-outlined text-[20px] group-hover:text-red-400">delete</span>
+</button>
+<button class="flex items-center justify-center h-10 px-6 rounded-lg bg-primary hover:bg-primary/90 text-background-dark text-sm font-bold shadow-lg shadow-primary/20 transition-all transform active:scale-95">
+                    Edit
+                </button>
+</div>
+</header>
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 h-full">
+<!-- Left Column: Image Viewer (Visual Validation) -->
+<div class="lg:col-span-7 flex flex-col gap-4">
+<div class="relative w-full aspect-[4/3] rounded-xl overflow-hidden border border-surface-border bg-black group shadow-2xl">
+<!-- Main Image -->
+<div class="absolute inset-0 bg-cover bg-center transition-all duration-700 ease-in-out" data-alt="Close up of a red and white high top sneaker validation photo" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC0GW8iJ_jQoMi0PNTZXsE186xXD3SgqYacc0E2Q-jgw8jQ_QhtpkBnoqzGMPZl4PJbtJV7TRMNxAOnSo957RkythvvkvSuKcgkstPBwoffuRxRtwfk1ZcFT2_hSSPcH1sqMcQjMafuSGIFPoeO7XH8G87EIkFpWjoxXrzFhoke1KW7z5Kqv_A72eZ-O5Yw9VRYQGu2X6Tt8Jnuukfka7PRRcyeFELyapNs8DE129VPt6tRbWu6I836zcgy6jkMc2vzVxVuw-8iR-Ey');">
+</div>
+<!-- Overlay Controls (Bottom) -->
+<div class="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/90 via-black/50 to-transparent flex items-end justify-between">
+<div class="flex flex-col gap-1">
+<p class="text-xs text-text-secondary font-medium uppercase tracking-widest">View Mode</p>
+<!-- Toggle Switch -->
+<div class="inline-flex bg-surface-dark/80 backdrop-blur-md rounded-lg p-1 border border-white/10">
+<button class="px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-primary text-background-dark shadow-sm">
+                                    Processed
+                                </button>
+<button class="px-4 py-1.5 rounded-md text-xs font-medium text-text-secondary hover:text-white transition-all">
+                                    Original
+                                </button>
+</div>
+</div>
+<!-- Zoom Action -->
+<button class="h-10 w-10 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-colors" title="Zoom In">
+<span class="material-symbols-outlined">zoom_in_map</span>
+</button>
+</div>
+<!-- AI Bounding Box Overlay (Simulated) -->
+<div class="absolute top-[30%] left-[25%] w-[50%] h-[40%] border-2 border-primary/50 rounded-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+<div class="absolute -top-3 left-2 bg-primary text-background-dark text-[10px] font-bold px-1.5 py-0.5 rounded">
+                            98% Match
+                        </div>
+</div>
+</div>
+<!-- Processing Timeline / History (Mini) -->
+<div class="flex items-center gap-4 px-1 py-2 overflow-x-auto no-scrollbar">
+<div class="flex-shrink-0 relative w-20 h-20 rounded-lg overflow-hidden border-2 border-primary cursor-pointer">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Thumbnail of sneaker front view" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD1i6yzqlsc6bTDCk0ybxXoEBTLgfZNvqDKvP02IDNgqNNpqGU6jjxUm-wxZBGOEJy9nRL1SmKDa0Sl4LHIJze1_vHXFlEmfV_UK2Ncc9mJwVdlZRIRplcCwnh2gUynu-dfnF0IIGTtFJHcnCvTFFOzrZTDVE0QI3HSrmCbzv937ssCe8I5mFG6Hxc6dWROxABSQNUNiGawvrURJJoG4HGqL2v_A3Tnd41rYOk4MKSx51JTqoMaqThIpPMji80E985WWLjWwJw2zwcN');"></div>
+</div>
+<div class="flex-shrink-0 relative w-20 h-20 rounded-lg overflow-hidden border border-surface-border opacity-60 hover:opacity-100 transition-opacity cursor-pointer">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Thumbnail of sneaker side view" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD7--ceEsfKkyf3eJ2P_C7SS3BM0KC15lShQSK0NB_LIECWZ04Ur-jKyDGA4xOOCL9shflEyIPEDDfrAsxJcHWI955vOHzS4T2WhRjW1ejFoFECukyH0YfkxYPIdiQ_JjJ3zC9aGN1InxHBjckhDEqCKN6ThcEWYv0i4ENVv0SudnhdrAd0MRXhSZ9yMIupG44IZzNIobSuhLhCFT0Cjau_bLHJV_UzA-2AB0BGDoD_SO4pYbLsCnHEL_5hS4h_gdpM1ZlD0zFE2cxj');"></div>
+</div>
+<div class="flex-shrink-0 relative w-20 h-20 rounded-lg overflow-hidden border border-surface-border opacity-60 hover:opacity-100 transition-opacity cursor-pointer">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Thumbnail of sneaker sole view" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD90W5XsrV9RqBdxzA0v6O6Bkgt5K3ioJneeAxCisBH3QMJqfcw3cL3drkMnw2eALkcVcj7xivrZKs7xmSotolDSFuxxhJoujpGWMYRXkHXX2WHI4WTmq3y3f0ezFPG6BwwEsE2CqfxfwBmiKCjQLvcl_Zax8ltSLgkIRQlJEG2HKnkvWj43pj7M3pgbaEiRIWExqim1093UCMHagR_7JDMHtra7SjLSQiAI20N4ws5uCji-g8sPUimGIels8wyfZ7XO5VAcx_iz4T_');"></div>
+</div>
+<button class="flex-shrink-0 w-20 h-20 rounded-lg border border-dashed border-surface-border flex flex-col items-center justify-center text-text-secondary hover:text-white hover:border-primary/50 transition-colors gap-1">
+<span class="material-symbols-outlined text-[20px]">add_photo_alternate</span>
+<span class="text-[10px] font-medium">Add View</span>
+</button>
+</div>
+</div>
+<!-- Right Column: Data Panels -->
+<div class="lg:col-span-5 flex flex-col gap-6">
+<!-- AI Results Panel -->
+<div class="bg-surface-dark border border-surface-border rounded-xl p-5 shadow-lg relative overflow-hidden">
+<div class="absolute top-0 right-0 p-5 opacity-10 pointer-events-none">
+<span class="material-symbols-outlined text-[64px]">smart_toy</span>
+</div>
+<div class="flex justify-between items-center mb-6">
+<h2 class="text-lg font-bold text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">auto_awesome</span>
+                            AI Analysis Results
+                        </h2>
+<span class="text-xs font-mono text-text-secondary">v2.4.1</span>
+</div>
+<div class="flex flex-col gap-5">
+<!-- Result Item: Brand -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<span class="text-sm font-medium text-text-secondary">Brand Identity</span>
+<span class="text-sm font-bold text-white">Nike</span>
+</div>
+<div class="h-2 w-full bg-black/40 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[98%] rounded-full shadow-[0_0_10px_rgba(37,244,209,0.5)]"></div>
+</div>
+<p class="text-right text-[10px] text-primary font-mono font-bold">98% CONFIDENCE</p>
+</div>
+<!-- Result Item: Model -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<span class="text-sm font-medium text-text-secondary">Model Detection</span>
+<span class="text-sm font-bold text-white">Air Jordan 1</span>
+</div>
+<div class="h-2 w-full bg-black/40 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[92%] rounded-full shadow-[0_0_8px_rgba(37,244,209,0.3)]"></div>
+</div>
+<p class="text-right text-[10px] text-primary font-mono font-bold">92% CONFIDENCE</p>
+</div>
+<!-- Result Item: Colorway -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<span class="text-sm font-medium text-text-secondary">Colorway</span>
+<span class="text-sm font-bold text-white">Chicago Lost &amp; Found</span>
+</div>
+<div class="h-2 w-full bg-black/40 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-emerald-600 w-[85%] rounded-full"></div>
+</div>
+<p class="text-right text-[10px] text-text-secondary font-mono font-bold">85% CONFIDENCE</p>
+</div>
+</div>
+</div>
+<!-- Condition & Health Panel -->
+<div class="bg-surface-dark border border-surface-border rounded-xl p-5 shadow-lg">
+<h2 class="text-lg font-bold text-white mb-5 flex items-center gap-2">
+<span class="material-symbols-outlined text-text-secondary text-[20px]">ecg_heart</span>
+                        Condition Report
+                    </h2>
+<div class="flex flex-col sm:flex-row gap-6 items-center sm:items-start mb-6 border-b border-surface-border pb-6">
+<!-- Donut Chart (CSS/SVG) -->
+<div class="relative h-24 w-24 flex-shrink-0">
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 36 36">
+<path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#283936" stroke-width="3"></path>
+<path class="drop-shadow-[0_0_3px_rgba(37,244,209,0.5)]" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#25f4d1" stroke-dasharray="88, 100" stroke-width="3"></path>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-xl font-bold text-white leading-none">88</span>
+<span class="text-[8px] text-text-secondary uppercase">Score</span>
+</div>
+</div>
+<div class="flex flex-col gap-3 w-full">
+<div class="flex justify-between border-b border-surface-border/50 pb-2">
+<span class="text-xs text-text-secondary">Est. Decay Rate</span>
+<span class="text-xs font-mono text-white">0.5% / year</span>
+</div>
+<div class="flex justify-between border-b border-surface-border/50 pb-2">
+<span class="text-xs text-text-secondary">Last Maintenance</span>
+<span class="text-xs font-mono text-white">Oct 24, 2023</span>
+</div>
+</div>
+</div>
+<!-- Visual Layers Chips -->
+<div class="flex flex-wrap gap-2">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-medium">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                            Box Damaged
+                        </div>
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-border/30 border border-surface-border text-text-secondary text-xs font-medium">
+                            Minor Creases
+                        </div>
+<div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-border/30 border border-surface-border text-text-secondary text-xs font-medium">
+                            No Discoloration
+                        </div>
+</div>
+</div>
+<!-- Asset Info Panel -->
+<div class="bg-surface-dark border border-surface-border rounded-xl p-5 shadow-lg flex-1">
+<h2 class="text-lg font-bold text-white mb-5 flex items-center gap-2">
+<span class="material-symbols-outlined text-text-secondary text-[20px]">dataset</span>
+                        Asset Metadata
+                    </h2>
+<form class="flex flex-col gap-4">
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-medium text-text-secondary uppercase">Category</label>
+<div class="relative">
+<select class="w-full bg-[#111817] border border-surface-border text-white text-sm rounded-lg focus:ring-1 focus:ring-primary focus:border-primary block p-2.5 appearance-none">
+<option>Sneakers</option>
+<option>Trading Cards</option>
+<option>Watches</option>
+<option>Art</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-secondary">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-medium text-text-secondary uppercase">Added On</label>
+<input class="bg-[#111817] border border-surface-border text-text-secondary text-sm rounded-lg block w-full p-2.5 cursor-not-allowed" readonly="" type="text" value="Jan 12, 2024"/>
+</div>
+<div class="flex flex-col gap-1.5">
+<label class="text-xs font-medium text-text-secondary uppercase">Source</label>
+<input class="bg-[#111817] border border-surface-border text-text-secondary text-sm rounded-lg block w-full p-2.5 cursor-not-allowed" readonly="" type="text" value="Manual Upload"/>
+</div>
+</div>
+<div class="flex flex-col gap-1.5 pt-2">
+<label class="text-xs font-medium text-text-secondary uppercase">Notes</label>
+<textarea class="bg-[#111817] border border-surface-border text-white text-sm rounded-lg block w-full p-2.5 focus:ring-1 focus:ring-primary focus:border-primary min-h-[80px]" placeholder="Add internal notes about this asset..."></textarea>
+</div>
+</form>
+</div>
+</div>
+</div>
+</div>
+<!-- Toast Notification (Simulated State Completion) -->
+<div class="fixed bottom-6 right-6 z-50 animate-[slide-in_0.5s_ease-out]">
+<div class="flex items-center w-full max-w-xs p-4 rounded-lg shadow-2xl bg-surface-dark border border-primary/30 text-white">
+<div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 text-primary bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined text-[20px]">check</span>
+</div>
+<div class="ms-3 text-sm font-normal">Analysis completed successfully.</div>
+<button class="ms-auto -mx-1.5 -my-1.5 bg-transparent text-text-secondary hover:text-white rounded-lg focus:ring-2 focus:ring-gray-300 p-1.5 hover:bg-white/10 inline-flex items-center justify-center h-8 w-8" type="button">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+</div>
+</body></html>

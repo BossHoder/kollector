@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="vi"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Kollector - Quản lý bộ sưu tập</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&amp;display=swap" rel="stylesheet"/>
+<!-- Material Icons -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#25f4d1",
+                        "primary-hover": "#1de0bf",
+                        "background-light": "#f5f8f8",
+                        "background-dark": "#10221f",
+                        "surface-dark": "#1b2725",
+                        "border-dark": "#283936"
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"],
+                        "sans": ["Inter", "sans-serif"]
+                    },
+                    boxShadow: {
+                        'neon': '0 0 15px rgba(37, 244, 209, 0.4)',
+                        'neon-hover': '0 0 25px rgba(37, 244, 209, 0.6)',
+                    }
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-dark text-white font-display antialiased overflow-x-hidden selection:bg-primary selection:text-black">
+<div class="relative flex min-h-screen w-full flex-col">
+<!-- Navigation -->
+<header class="sticky top-0 z-50 w-full border-b border-border-dark bg-background-dark/80 backdrop-blur-md">
+<div class="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+<div class="flex items-center gap-3">
+<div class="flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-3xl">token</span>
+</div>
+<h2 class="text-white text-xl font-black tracking-tight">Kollector</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="hidden sm:flex h-9 items-center justify-center rounded-lg px-4 text-sm font-bold text-gray-300 transition-colors hover:text-white">
+                        Đăng nhập
+                    </button>
+<button class="flex h-9 items-center justify-center rounded-lg bg-primary px-4 text-sm font-bold text-background-dark transition-all hover:bg-primary-hover hover:shadow-neon">
+                        Tạo tài khoản
+                    </button>
+</div>
+</div>
+</header>
+<main class="flex-1">
+<!-- Hero Section -->
+<section class="relative isolate overflow-hidden pt-14 lg:pt-20">
+<!-- Background Gradient/Glow -->
+<div aria-hidden="true" class="absolute inset-x-0 -top-40 -z-10 transform-gpu overflow-hidden blur-3xl sm:-top-80">
+<div class="relative left-[calc(50%-11rem)] aspect-[1155/678] w-[36.125rem] -translate-x-1/2 rotate-[30deg] bg-gradient-to-tr from-[#25f4d1] to-[#111817] opacity-20 sm:left-[calc(50%-30rem)] sm:w-[72.1875rem]"></div>
+</div>
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-24 sm:pb-32">
+<div class="mx-auto max-w-3xl text-center">
+<div class="mb-8 flex justify-center">
+<div class="relative rounded-full px-3 py-1 text-sm leading-6 text-gray-400 ring-1 ring-white/10 hover:ring-white/20">
+                                Công nghệ AI mới nhất cho Collector. <a class="font-semibold text-primary" href="#"><span aria-hidden="true" class="absolute inset-0"></span>Tìm hiểu thêm <span aria-hidden="true">→</span></a>
+</div>
+</div>
+<h1 class="text-4xl font-black tracking-tight text-white sm:text-6xl lg:text-7xl leading-[1.1]">
+                            Quản lý bộ sưu tập của bạn với <span class="text-primary">sức mạnh AI</span>.
+                        </h1>
+<p class="mt-6 text-lg leading-8 text-gray-400 max-w-2xl mx-auto">
+                            Theo dõi giá trị, nhận diện thẻ bài tự động và bảo mật tài sản số hóa của bạn trong một nền tảng duy nhất.
+                        </p>
+<div class="mt-10 flex items-center justify-center gap-x-6">
+<button class="rounded-lg bg-primary px-6 py-3 text-base font-bold text-background-dark shadow-sm hover:bg-primary-hover hover:shadow-neon focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all duration-300">
+                                Bắt đầu sưu tầm
+                            </button>
+<button class="text-base font-bold leading-6 text-white hover:text-primary transition-colors flex items-center gap-2">
+                                Đăng nhập <span aria-hidden="true">→</span>
+</button>
+</div>
+</div>
+<!-- Hero Visual -->
+<div class="mt-16 flow-root sm:mt-24">
+<div class="-m-2 rounded-xl bg-white/5 p-2 ring-1 ring-inset ring-white/10 lg:-m-4 lg:rounded-2xl lg:p-4">
+<div class="relative h-[300px] w-full sm:h-[400px] lg:h-[500px] overflow-hidden rounded-md shadow-2xl bg-surface-dark bg-cover bg-center flex items-center justify-center group" data-alt="Abstract dark grid of floating futuristic trading cards with cyan neon glow" style='background-image: linear-gradient(to bottom, rgba(16, 34, 31, 0.3), rgba(16, 34, 31, 0.9)), url("https://lh3.googleusercontent.com/aida-public/AB6AXuBsZKuKqDV4s0kvj9vTHm6HVPxOidX6AxAT8hkOjSa7L3UYghWaPN3lyLxjC_edCd1DLYDibW_eD-6RLf1WDLW64qWtKwcfmEWieu2U2QG855U84DwO5wKqKjILZas3tM_hgPI11jo5mu98RQR4C6gNjGLzuH2Zz0NsFEXAd2wYA9yP7jq6sUmBvLsnD4V-VpznIJ7k0fVKy_bm4964PjcW8t0iZeKKkjDQoonSkCTYxieX8Ab8tLd6243mVWyuWYwXRYCLTGZj1lM5");'>
+<!-- Grid overlay effect -->
+<div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark via-transparent to-transparent"></div>
+<!-- Abstract Card UI Element in Center -->
+<div class="relative z-10 flex flex-col items-center gap-4 transition-transform duration-700 group-hover:scale-105">
+<div class="h-64 w-48 rounded-xl border border-primary/30 bg-black/60 backdrop-blur-md shadow-neon flex flex-col p-3 relative overflow-hidden">
+<div class="absolute top-0 left-0 w-full h-1 bg-primary shadow-[0_0_10px_#25f4d1]"></div>
+<div class="flex-1 bg-surface-dark/50 rounded-lg mb-3 flex items-center justify-center text-gray-600">
+<span class="material-symbols-outlined text-4xl text-primary/50">image</span>
+</div>
+<div class="space-y-2">
+<div class="h-2 w-3/4 bg-white/20 rounded"></div>
+<div class="h-2 w-1/2 bg-white/10 rounded"></div>
+</div>
+<div class="absolute bottom-3 right-3">
+<span class="material-symbols-outlined text-primary text-xl animate-pulse">check_circle</span>
+</div>
+</div>
+<div class="flex items-center gap-2 px-4 py-2 rounded-full bg-surface-dark border border-white/10 text-xs text-primary font-mono uppercase tracking-wider">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+                                         AI Analysis Complete
+                                     </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Features Section -->
+<section class="py-24 bg-surface-dark/30 border-y border-white/5 relative">
+<!-- Glow spot -->
+<div class="absolute right-0 top-0 -translate-y-1/2 translate-x-1/3 w-96 h-96 bg-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
+<div class="mx-auto max-w-7xl px-6 lg:px-8">
+<div class="mx-auto max-w-2xl lg:text-center mb-16">
+<h2 class="text-base font-semibold leading-7 text-primary">Công nghệ tiên tiến</h2>
+<p class="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">Tính năng nổi bật</p>
+<p class="mt-6 text-lg leading-8 text-gray-400">
+                            Kollector cung cấp bộ công cụ toàn diện giúp bạn quản lý tài sản sưu tầm một cách chuyên nghiệp và dễ dàng.
+                        </p>
+</div>
+<div class="mx-auto mt-16 max-w-2xl sm:mt-20 lg:mt-24 lg:max-w-none">
+<dl class="grid max-w-xl grid-cols-1 gap-x-8 gap-y-16 lg:max-w-none lg:grid-cols-3">
+<!-- Feature 1 -->
+<div class="flex flex-col group rounded-2xl bg-surface-dark border border-white/5 p-8 transition-all duration-300 hover:-translate-y-2 hover:border-primary/30 hover:shadow-[0_10px_40px_-10px_rgba(37,244,209,0.1)]">
+<dt class="flex items-center gap-x-3 text-base font-bold leading-7 text-white">
+<div class="flex h-12 w-12 flex-none items-center justify-center rounded-lg bg-background-dark border border-primary/20 group-hover:border-primary transition-colors text-primary">
+<span class="material-symbols-outlined">add_a_photo</span>
+</div>
+                                    Upload ảnh nhanh chóng
+                                </dt>
+<dd class="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-400">
+<p class="flex-auto">Tải lên hình ảnh bộ sưu tập của bạn ngay lập tức từ điện thoại hoặc máy tính với chất lượng cao nhất.</p>
+</dd>
+</div>
+<!-- Feature 2 -->
+<div class="flex flex-col group rounded-2xl bg-surface-dark border border-white/5 p-8 transition-all duration-300 hover:-translate-y-2 hover:border-primary/30 hover:shadow-[0_10px_40px_-10px_rgba(37,244,209,0.1)]">
+<dt class="flex items-center gap-x-3 text-base font-bold leading-7 text-white">
+<div class="flex h-12 w-12 flex-none items-center justify-center rounded-lg bg-background-dark border border-primary/20 group-hover:border-primary transition-colors text-primary">
+<span class="material-symbols-outlined">smart_toy</span>
+</div>
+                                    AI nhận diện thông minh
+                                </dt>
+<dd class="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-400">
+<p class="flex-auto">Hệ thống AI tự động phân tích, nhận diện tên, phiên bản và tình trạng thẻ bài chỉ trong vài giây.</p>
+</dd>
+</div>
+<!-- Feature 3 -->
+<div class="flex flex-col group rounded-2xl bg-surface-dark border border-white/5 p-8 transition-all duration-300 hover:-translate-y-2 hover:border-primary/30 hover:shadow-[0_10px_40px_-10px_rgba(37,244,209,0.1)]">
+<dt class="flex items-center gap-x-3 text-base font-bold leading-7 text-white">
+<div class="flex h-12 w-12 flex-none items-center justify-center rounded-lg bg-background-dark border border-primary/20 group-hover:border-primary transition-colors text-primary">
+<span class="material-symbols-outlined">trending_up</span>
+</div>
+                                    Theo dõi trạng thái Realtime
+                                </dt>
+<dd class="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-400">
+<p class="flex-auto">Cập nhật giá trị thị trường và biến động giá của bộ sưu tập theo thời gian thực mỗi ngày.</p>
+</dd>
+</div>
+</dl>
+</div>
+</div>
+</section>
+<!-- Stats / Social Proof Strip -->
+<section class="border-b border-white/5 bg-background-dark">
+<div class="mx-auto max-w-7xl px-6 py-12 lg:px-8">
+<div class="grid grid-cols-2 gap-8 md:grid-cols-4 text-center">
+<div class="flex flex-col gap-y-2 border-r border-white/5 last:border-0">
+<span class="text-4xl font-black tracking-tight text-white sm:text-5xl">10k+</span>
+<span class="text-sm font-medium leading-6 text-gray-400 uppercase tracking-widest">Sưu tầm</span>
+</div>
+<div class="flex flex-col gap-y-2 border-r border-white/5 last:border-0 md:border-r">
+<span class="text-4xl font-black tracking-tight text-white sm:text-5xl">50k+</span>
+<span class="text-sm font-medium leading-6 text-gray-400 uppercase tracking-widest">Thẻ bài</span>
+</div>
+<div class="flex flex-col gap-y-2 border-r border-white/5 last:border-0">
+<span class="text-4xl font-black tracking-tight text-white sm:text-5xl">99%</span>
+<span class="text-sm font-medium leading-6 text-gray-400 uppercase tracking-widest">Độ chính xác AI</span>
+</div>
+<div class="flex flex-col gap-y-2">
+<span class="text-4xl font-black tracking-tight text-white sm:text-5xl">2M+</span>
+<span class="text-sm font-medium leading-6 text-gray-400 uppercase tracking-widest">Giao dịch</span>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Section -->
+<section class="relative isolate mt-0 px-6 py-24 sm:py-32 lg:px-8">
+<!-- Background abstract -->
+<div class="absolute inset-0 -z-10 bg-[radial-gradient(45rem_50rem_at_top,theme(colors.surface-dark),theme(colors.background-dark))] opacity-20"></div>
+<div class="mx-auto max-w-2xl text-center">
+<h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">Sẵn sàng nâng tầm bộ sưu tập?</h2>
+<p class="mx-auto mt-6 max-w-xl text-lg leading-8 text-gray-400">
+                        Tham gia cộng đồng sưu tập chuyên nghiệp ngay hôm nay và trải nghiệm công nghệ quản lý tài sản số hàng đầu.
+                    </p>
+<div class="mt-10 flex items-center justify-center gap-x-6">
+<button class="rounded-lg bg-primary px-8 py-3.5 text-base font-bold text-background-dark shadow-sm hover:bg-primary-hover hover:shadow-neon focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary transition-all duration-300">
+                            Tạo tài khoản ngay
+                        </button>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer aria-labelledby="footer-heading" class="bg-background-dark border-t border-white/10">
+<h2 class="sr-only" id="footer-heading">Footer</h2>
+<div class="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-16">
+<div class="xl:grid xl:grid-cols-3 xl:gap-8">
+<div class="space-y-4">
+<div class="flex items-center gap-2 text-white">
+<span class="material-symbols-outlined text-2xl text-primary">token</span>
+<span class="text-lg font-bold">Kollector</span>
+</div>
+<p class="text-sm leading-6 text-gray-400 max-w-xs">
+                            Nền tảng quản lý bộ sưu tập thẻ bài TCG hàng đầu Việt Nam với sự hỗ trợ của trí tuệ nhân tạo.
+                        </p>
+</div>
+<div class="mt-16 grid grid-cols-2 gap-8 xl:col-span-2 xl:mt-0">
+<div class="md:grid md:grid-cols-2 md:gap-8">
+<div>
+<h3 class="text-sm font-semibold leading-6 text-white">Sản phẩm</h3>
+<ul class="mt-6 space-y-4" role="list">
+<li><a class="text-sm leading-6 text-gray-400 hover:text-primary" href="#">Tính năng</a></li>
+<li><a class="text-sm leading-6 text-gray-400 hover:text-primary" href="#">Bảng giá</a></li>
+<li><a class="text-sm leading-6 text-gray-400 hover:text-primary" href="#">API</a></li>
+</ul>
+</div>
+<div class="mt-10 md:mt-0">
+<h3 class="text-sm font-semibold leading-6 text-white">Hỗ trợ</h3>
+<ul class="mt-6 space-y-4" role="list">
+<li><a class="text-sm leading-6 text-gray-400 hover:text-primary" href="#">Tài liệu</a></li>
+<li><a class="text-sm leading-6 text-gray-400 hover:text-primary" href="#">Hướng dẫn</a></li>
+<li><a class="text-sm leading-6 text-gray-400 hover:text-primary" href="#">Liên hệ</a></li>
+</ul>
+</div>
+</div>
+<div class="md:grid md:grid-cols-2 md:gap-8">
+<div>
+<h3 class="text-sm font-semibold leading-6 text-white">Công ty</h3>
+<ul class="mt-6 space-y-4" role="list">
+<li><a class="text-sm leading-6 text-gray-400 hover:text-primary" href="#">Về chúng tôi</a></li>
+<li><a class="text-sm leading-6 text-gray-400 hover:text-primary" href="#">Blog</a></li>
+<li><a class="text-sm leading-6 text-gray-400 hover:text-primary" href="#">Tuyển dụng</a></li>
+</ul>
+</div>
+<div class="mt-10 md:mt-0">
+<h3 class="text-sm font-semibold leading-6 text-white">Pháp lý</h3>
+<ul class="mt-6 space-y-4" role="list">
+<li><a class="text-sm leading-6 text-gray-400 hover:text-primary" href="#">Quyền riêng tư</a></li>
+<li><a class="text-sm leading-6 text-gray-400 hover:text-primary" href="#">Điều khoản</a></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-16 border-t border-white/10 pt-8 sm:mt-20 lg:mt-24">
+<p class="text-xs leading-5 text-gray-500">© 2023 Kollector Inc. All rights reserved.</p>
+</div>
+</div>
+</footer>
+</div>
+</body></html>
