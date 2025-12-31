@@ -1,0 +1,78 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "fe-api-mapping.schema.json",
+  "title": "FE API Mapping Contract",
+  "description": "Maps FE operations to BE API endpoints",
+  "definitions": {
+    "AuthOperations": {
+      "type": "object",
+      "properties": {
+        "login": {
+          "method": "POST",
+          "endpoint": "/api/auth/login",
+          "contract": "specs/001-foundation-backend-setup/contracts/auth.openapi.json#/paths/~1api~1auth~1login",
+          "successCode": 200,
+          "errorCodes": [400, 401]
+        },
+        "register": {
+          "method": "POST",
+          "endpoint": "/api/auth/register",
+          "contract": "specs/001-foundation-backend-setup/contracts/auth.openapi.json#/paths/~1api~1auth~1register",
+          "successCode": 201,
+          "errorCodes": [400, 409]
+        },
+        "refresh": {
+          "method": "POST",
+          "endpoint": "/api/auth/refresh",
+          "contract": "specs/001-foundation-backend-setup/contracts/auth.openapi.json#/paths/~1api~1auth~1refresh",
+          "headers": {
+            "X-Client-Platform": "web"
+          },
+          "successCode": 200,
+          "errorCodes": [401]
+        }
+      }
+    },
+    "AssetOperations": {
+      "type": "object",
+      "properties": {
+        "listAssets": {
+          "method": "GET",
+          "endpoint": "/api/assets",
+          "contract": "specs/001-foundation-backend-setup/contracts/assets.openapi.json#/paths/~1api~1assets/get",
+          "queryParams": ["cursor", "limit", "category", "status"],
+          "successCode": 200,
+          "errorCodes": [401]
+        },
+        "getAsset": {
+          "method": "GET",
+          "endpoint": "/api/assets/:id",
+          "contract": "specs/001-foundation-backend-setup/contracts/assets.openapi.json#/paths/~1api~1assets~1{id}/get",
+          "pathParams": ["id"],
+          "successCode": 200,
+          "errorCodes": [401, 404]
+        },
+        "analyzeQueue": {
+          "method": "POST",
+          "endpoint": "/api/assets/analyze-queue",
+          "contract": "specs/002-ai-queue-pipeline/contracts/analyze-queue.openapi.json#/paths/~1assets~1analyze-queue",
+          "contentType": "multipart/form-data",
+          "formFields": ["image", "category"],
+          "successCode": 202,
+          "errorCodes": [400, 401, 413, 500]
+        }
+      }
+    },
+    "SocketEvents": {
+      "type": "object",
+      "properties": {
+        "assetProcessed": {
+          "event": "asset_processed",
+          "direction": "server-to-client",
+          "contract": "specs/002-ai-queue-pipeline/contracts/asset-processed-event.schema.json",
+          "payloadVariants": ["SuccessEvent", "FailureEvent"]
+        }
+      }
+    }
+  }
+}

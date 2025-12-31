@@ -1,0 +1,88 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "fe-routes.schema.json",
+  "title": "FE Routes Contract",
+  "description": "Frontend route definitions and their requirements",
+  "definitions": {
+    "PublicRoutes": {
+      "type": "object",
+      "description": "Routes accessible without authentication",
+      "properties": {
+        "/": {
+          "type": "object",
+          "properties": {
+            "component": { "const": "HomePage" },
+            "prototype": { "const": "stitch_kollector_home_page" },
+            "auth": { "const": false }
+          }
+        },
+        "/login": {
+          "type": "object",
+          "properties": {
+            "component": { "const": "LoginPage" },
+            "prototype": { "const": "stitch_kollector_login_page" },
+            "auth": { "const": false },
+            "redirectIfAuth": { "const": "/app/assets" }
+          }
+        },
+        "/register": {
+          "type": "object",
+          "properties": {
+            "component": { "const": "RegisterPage" },
+            "prototype": { "const": "stitch_kollector_register_page" },
+            "auth": { "const": false },
+            "redirectIfAuth": { "const": "/app/assets" }
+          }
+        }
+      }
+    },
+    "ProtectedRoutes": {
+      "type": "object",
+      "description": "Routes requiring authentication (redirect to /login if not auth)",
+      "properties": {
+        "/app/assets": {
+          "type": "object",
+          "properties": {
+            "component": { "const": "AssetsLibraryPage" },
+            "prototype": { "const": "stitch_kollector_assets_library_page" },
+            "auth": { "const": true },
+            "layout": { "const": "AppLayout" }
+          }
+        },
+        "/app/assets/new": {
+          "type": "object",
+          "properties": {
+            "component": { "const": "UploadPage" },
+            "prototype": { "const": "stitch_kollector_upload_page" },
+            "auth": { "const": true },
+            "layout": { "const": "AppLayout" }
+          }
+        },
+        "/app/assets/:id": {
+          "type": "object",
+          "properties": {
+            "component": { "const": "AssetDetailPage" },
+            "prototype": { "const": "stitch_kollector_assets_detail_page" },
+            "auth": { "const": true },
+            "layout": { "const": "AppLayout" },
+            "params": {
+              "type": "object",
+              "properties": {
+                "id": { "type": "string", "pattern": "^[a-fA-F0-9]{24}$" }
+              }
+            }
+          }
+        },
+        "/app/settings": {
+          "type": "object",
+          "properties": {
+            "component": { "const": "SettingsPage" },
+            "prototype": { "const": null },
+            "auth": { "const": true },
+            "layout": { "const": "AppLayout" }
+          }
+        }
+      }
+    }
+  }
+}
