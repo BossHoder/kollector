@@ -1,20 +1,36 @@
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NavigationContainer } from '@react-navigation/native';
+
+// Providers
+import { ToastProvider } from './src/contexts/ToastContext';
+import { AuthProvider } from './src/contexts/AuthContext';
+import { SocketProvider } from './src/contexts/SocketContext';
+
+// Navigation
+import RootNavigator from './src/navigation/RootNavigator';
+
+// UI Components
+import ToastHost from './src/components/ui/ToastHost';
+import OfflineBanner from './src/components/ui/OfflineBanner';
+import ReconnectingBanner from './src/components/ui/ReconnectingBanner';
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <NavigationContainer>
+              <OfflineBanner />
+              <ReconnectingBanner />
+              <RootNavigator />
+              <ToastHost />
+              <StatusBar style="light" />
+            </NavigationContainer>
+          </SocketProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
