@@ -3,7 +3,7 @@
 **Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
 **Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
 
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
+**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
 
 ## Summary
 
@@ -31,28 +31,7 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-The following gates derive from the KLECTR Constitution:
-- Modular Monolith: Module boundaries (controllers/services/models) are
-  defined; no microservices introduced without governance approval.
-- Queue-First: All heavy/long-running tasks are designed as BullMQ jobs;
-  HTTP handlers do NOT invoke AI/image processing synchronously.
-- Test-First: Unit, contract (HTTP + queue payloads), and integration
-  tests are written FIRST and initially fail.
-- Schema Fidelity: API inputs/outputs and persisted data match MongoDB
-  schemas; no extra fields.
-- Observability & Events: Structured logging with IDs and Socket.io
-  event emissions included in the design.
-
-### FE-Specific Gates (if applicable)
-
-- UI Fidelity: Screens match Stitch prototypes in `web/UX-UI-Designed/`;
-  only responsive/accessibility adjustments permitted.
-- Contract-First: All API calls reference OpenAPI specs from
-  `specs/001-*/contracts/` and `specs/002-*/contracts/`.
-- FE Test-First: API clients, auth refresh, status mapping, and Socket
-  handlers MUST have tests written before implementation.
-- MVP Scope: Only Login, Register, Assets Library, Upload, Asset Detail,
-  and Settings are in scope; other features are deferred.
+[Gates determined based on constitution file]
 
 ## Project Structure
 
