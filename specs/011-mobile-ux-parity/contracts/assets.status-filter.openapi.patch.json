@@ -1,0 +1,32 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Kollector Assets API - Status Filter Alignment (Proposed Amendment)",
+    "version": "0.1.0",
+    "description": "Proposed contract amendment for Mobile UX Parity: allow filtering by all statuses supported by the Asset model." 
+  },
+  "paths": {
+    "/api/assets": {
+      "get": {
+        "summary": "List assets",
+        "description": "Status filter should accept all Asset model statuses: draft, processing, partial, active, archived, failed.",
+        "tags": ["assets"],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["draft", "processing", "partial", "active", "archived", "failed"]
+            }
+          }
+        ],
+        "responses": {
+          "200": { "description": "OK" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    }
+  }
+}

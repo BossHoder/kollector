@@ -13,7 +13,7 @@
           { "name": "cursor", "in": "query", "required": false, "schema": { "type": "string" } },
           { "name": "limit", "in": "query", "required": false, "schema": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 } },
           { "name": "category", "in": "query", "required": false, "schema": { "type": "string", "enum": ["sneaker", "lego", "camera", "other"] } },
-          { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["draft", "processing", "active", "archived"] } }
+          { "name": "status", "in": "query", "required": false, "schema": { "type": "string", "enum": ["draft", "processing", "partial", "active", "archived", "failed"] } }
         ],
         "responses": {
           "200": {
@@ -102,7 +102,7 @@
                 "type": "object",
                 "properties": {
                   "category": { "type": "string", "enum": ["sneaker", "lego", "camera", "other"] },
-                  "status": { "type": "string", "enum": ["draft", "processing", "active", "archived"] }
+                  "status": { "type": "string", "enum": ["draft", "processing", "partial", "active", "archived", "failed"] }
                 }
               }
             }
@@ -146,7 +146,7 @@
           "id": { "type": "string" },
           "userId": { "type": "string" },
           "category": { "type": "string", "enum": ["sneaker", "lego", "camera", "other"] },
-          "status": { "type": "string", "enum": ["draft", "processing", "active", "archived"] },
+          "status": { "type": "string", "enum": ["draft", "processing", "partial", "active", "archived", "failed"] },
           "condition": {
             "type": "object",
             "properties": {
