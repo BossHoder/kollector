@@ -39,7 +39,9 @@ const assetSchema = new mongoose.Schema({
     estimatedYear: { value: Number, confidence: Number },
     conditionNotes: String,
     rawResponse: String,
-    processedAt: Date
+    processedAt: Date,
+    error: String,
+    failedAt: Date
   },
 
   // --- MANUAL DETAILS ---

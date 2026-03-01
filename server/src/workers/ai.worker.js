@@ -155,11 +155,11 @@ async function handleFailure(job, error) {
     
     if (asset) {
       asset.status = 'failed';
-      asset.aiMetadata = {
-        ...asset.aiMetadata,
-        error: error.message,
-        failedAt: new Date()
-      };
+      // Only set error/failedAt — do NOT spread existing aiMetadata because
+      // newly-created assets have undefined sub-doc fields (brand, model, …)
+      // and Mongoose will fail casting undefined → Object.
+      asset.set('aiMetadata.error', error.message);
+      asset.set('aiMetadata.failedAt', new Date());
       await asset.save();
 
       // Emit failure event

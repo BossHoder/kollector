@@ -310,6 +310,76 @@ class AssetService {
   }
 
   /**
+   * Retry failed/partial asset analysis
+   * 
+   * @param {string} assetId - Asset ID to retry
+   * @param {string} userId - User ID (for ownership verification)
+   * @returns {Promise<{asset: object, jobId: string}>}
+   * @throws {Error} NOT_FOUND if asset doesn't exist or not owned by user
+   * @throws {Error} NOT_RETRYABLE if asset is not in failed/partial state
+   */
+  async retryAsset(assetId, userId) {
+    // Find asset and verify ownership
+    const asset = await Asset.findOne({ _id: assetId, userId });
+    
+    if (!asset) {
+      const error = new Error('Asset not found');
+      error.statusCode = 404;
+      error.code = 'NOT_FOUND';
+      throw error;
+    }
+
+    // Only allow retry for failed or partial status
+    const retryableStatuses = ['failed', 'partial'];
+    if (!retryableStatuses.includes(asset.status)) {
+      const error = new Error(`Asset cannot be retried. Current status: ${asset.status}. Only failed or partial assets can be retried.`);
+      error.statusCode = 409;
+      error.code = 'NOT_RETRYABLE';
+      throw error;
+    }
+
+    // Get the original image URL (required for re-processing)
+    const imageUrl = asset.images?.original?.url;
+    
+    if (!imageUrl) {
+      const error = new Error('Asset has no original image to process');
+      error.statusCode = 409;
+      error.code = 'NOT_RETRYABLE';
+      throw error;
+    }
+
+    // Enqueue new AI processing job
+    const createdAt = new Date().toISOString();
+    const jobId = await addToProcessingQueue({
+      assetId: asset._id.toString(),
+      userId: userId.toString(),
+      imageUrl,
+      category: asset.category,
+      createdAt,
+      isRetry: true
+    });
+
+    // Update asset status to processing and clear previous error
+    asset.status = 'processing';
+    asset.error = null;
+    asset.processingJobId = jobId;
+    await asset.save();
+
+    logger.info('Asset retry enqueued', {
+      assetId: asset._id,
+      jobId,
+      userId,
+      previousStatus: asset.status,
+      category: asset.category
+    });
+
+    return {
+      asset: asset.toObject(),
+      jobId
+    };
+  }
+
+  /**
    * Encode cursor for pagination
    * @param {object} data
    * @returns {string}

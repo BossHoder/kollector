@@ -63,8 +63,8 @@ const listAssetsValidation = [
     .withMessage('Category must be one of: sneaker, lego, camera, other'),
   query('status')
     .optional()
-    .isIn(['draft', 'processing', 'active', 'archived'])
-    .withMessage('Status must be one of: draft, processing, active, archived')
+    .isIn(['draft', 'processing', 'partial', 'active', 'archived', 'failed'])
+    .withMessage('Status must be one of: draft, processing, partial, active, archived, failed')
 ];
 
 /**
@@ -112,5 +112,12 @@ router.patch('/:id', updateAssetValidation, validate, assetController.updateAsse
  * Delete an asset
  */
 router.delete('/:id', assetIdValidation, validate, assetController.deleteAsset.bind(assetController));
+
+/**
+ * POST /api/assets/:id/retry
+ * Retry failed/partial asset analysis
+ * Only valid for status: failed, partial
+ */
+router.post('/:id/retry', assetIdValidation, validate, assetController.retryAsset.bind(assetController));
 
 module.exports = router;

@@ -246,6 +246,50 @@ class AssetController {
       next(error);
     }
   }
+
+  /**
+   * Retry failed/partial asset analysis
+   * POST /api/assets/:id/retry
+   * 
+   * Returns 202 on success, 409 if asset is not in retryable state
+   */
+  async retryAsset(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const assetId = req.params.id;
+
+      const result = await assetService.retryAsset(assetId, userId);
+
+      logger.info('Asset retry requested', {
+        requestId: req.id,
+        assetId,
+        jobId: result.jobId,
+        userId
+      });
+
+      // Return 202 Accepted per contract spec
+      res.status(202).json({
+        success: true,
+        message: 'Asset analysis retry queued',
+        asset: result.asset
+      });
+    } catch (error) {
+      // Handle specific error types
+      if (error.code === 'NOT_RETRYABLE') {
+        return res.status(409).json({
+          success: false,
+          error: error.message || 'Asset cannot be retried in its current state'
+        });
+      }
+      if (error.code === 'NOT_FOUND') {
+        return res.status(404).json({
+          success: false,
+          error: error.message || 'Asset not found'
+        });
+      }
+      next(error);
+    }
+  }
 }
 
 module.exports = new AssetController();
