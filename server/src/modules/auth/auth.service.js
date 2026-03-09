@@ -217,7 +217,7 @@ class AuthService {
    */
   toPublicUser(user) {
     return {
-      id: user._id,
+      id: user._id.toString(),
       email: user.email,
       gamification: user.gamification,
       settings: user.settings,

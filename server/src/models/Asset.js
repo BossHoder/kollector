@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 // --- Sub-schemas ---
 const visualLayerSchema = new mongoose.Schema({
   type: { type: String, enum: ['dust_light', 'dust_medium', 'dust_heavy', 'yellowing', 'scratches'], required: true },
-  intensity: { type: Number, min: 0, max: 1, default: 0.5 },
+  intensity: { type: Number, min: 0, max: 100, default: 0.5 },
   appliedAt: { type: Date, default: Date.now }
 }, { _id: false });
 
@@ -25,7 +25,7 @@ const assetSchema = new mongoose.Schema({
 
   // --- IMAGES ---
   images: {
-    original: { url: { type: String, required: true }, publicId: String, uploadedAt: { type: Date, default: Date.now } },
+    original: { url: { type: String }, publicId: String, uploadedAt: { type: Date, default: Date.now } },
     processed: { url: String, publicId: String, processedAt: Date }, // Ảnh xóa phông
     thumbnail: { url: String, publicId: String },
     card: { url: String, generatedAt: Date, expiresAt: Date } // Ảnh thẻ FIFA

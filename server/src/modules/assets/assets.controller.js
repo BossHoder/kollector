@@ -217,7 +217,7 @@ class AssetController {
         userId
       });
 
-      res.status(200).json({
+      res.status(204).json({
         message: 'Asset deleted successfully'
       });
     } catch (error) {
