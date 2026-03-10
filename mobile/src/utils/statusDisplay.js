@@ -4,14 +4,14 @@
  * Maps backend asset status values to UI display properties.
  * Single source of truth for status display, mirroring web/src/lib/status-display.ts
  *
- * | BE Status   | UI Label   | UI Color    | Icon             |
- * |-------------|------------|-------------|------------------|
- * | draft       | Draft      | gray        | edit             |
- * | processing  | Processing | primary     | auto_awesome     |
- * | active      | Ready      | emerald     | check_circle     |
- * | archived    | Archived   | gray        | archive          |
- * | failed      | Failed     | red         | error            |
- * | partial     | Partial    | warning     | warning          |
+ * | BE Status   | UI Label     | UI Color    | Icon             |
+ * |-------------|--------------|-------------|------------------|
+ * | draft       | Bản nháp     | gray        | edit             |
+ * | processing  | Đang xử lý   | primary     | auto_awesome     |
+ * | active      | Sẵn sàng     | emerald     | check_circle     |
+ * | archived    | Đã lưu trữ   | gray        | archive          |
+ * | failed      | Thất bại     | red         | error            |
+ * | partial     | Một phần     | warning     | warning          |
  */
 
 import { colors } from '../styles/tokens';
@@ -35,42 +35,42 @@ import { colors } from '../styles/tokens';
  */
 export const STATUS_DISPLAY = {
   draft: {
-    label: 'Draft',
+    label: 'Bản nháp',
     color: colors.statusDraft,
     backgroundColor: 'rgba(156, 163, 175, 0.15)',
     icon: 'edit',
     animated: false,
   },
   processing: {
-    label: 'Processing',
+    label: 'Đang xử lý',
     color: colors.statusProcessing,
     backgroundColor: colors.primaryMuted,
     icon: 'auto_awesome',
     animated: true,
   },
   active: {
-    label: 'Ready',
+    label: 'Sẵn sàng',
     color: colors.statusReady,
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
     icon: 'check_circle',
     animated: false,
   },
   archived: {
-    label: 'Archived',
+    label: 'Đã lưu trữ',
     color: colors.statusArchived,
     backgroundColor: 'rgba(107, 114, 128, 0.15)',
     icon: 'archive',
     animated: false,
   },
   failed: {
-    label: 'Failed',
+    label: 'Thất bại',
     color: colors.statusFailed,
     backgroundColor: 'rgba(239, 68, 68, 0.15)',
     icon: 'error',
     animated: false,
   },
   partial: {
-    label: 'Partial',
+    label: 'Một phần',
     color: colors.statusPartial,
     backgroundColor: 'rgba(245, 158, 11, 0.15)',
     icon: 'warning',

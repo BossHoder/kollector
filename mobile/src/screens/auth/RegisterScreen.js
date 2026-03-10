@@ -51,23 +51,23 @@ export default function RegisterScreen() {
 
     // Email validation
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'Email là bắt buộc';
     } else if (!EMAIL_REGEX.test(email.trim())) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = 'Email không hợp lệ';
     }
 
     // Password validation
     if (!password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Mật khẩu là bắt buộc';
     } else if (password.length < MIN_PASSWORD_LENGTH) {
-      newErrors.password = `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
+      newErrors.password = `Mật khẩu phải có tối thiểu ${MIN_PASSWORD_LENGTH} ký tự`;
     }
 
     // Confirm password
     if (!confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = 'Xác nhận mật khẩu là bắt buộc';
     } else if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = 'Mật khẩu không khớp';
     }
 
     setErrors(newErrors);
@@ -84,10 +84,10 @@ export default function RegisterScreen() {
     setIsSubmitting(true);
     try {
       await register(email.trim(), password);
-      toast.success('Account created successfully');
+      toast.success('Tài khoản đã được tạo thành công');
       // Navigation handled automatically by RootNavigator
     } catch (error) {
-      const message = error.message || 'Registration failed';
+      const message = error.message || 'Đăng ký không thành công';
       setApiError(message);
       toast.error(message);
     } finally {
@@ -114,13 +114,13 @@ export default function RegisterScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.content}>
-          <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join Kollector today</Text>
+          <Text style={styles.title}>Bắt đầu sưu tầm</Text>
+          <Text style={styles.subtitle}>Tạo tài khoản để quản lý bộ sưu tập của bạn</Text>
 
           <View style={styles.form}>
             <Input
               label="Email"
-              placeholder="Enter your email"
+              placeholder="you@example.com"
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
@@ -134,8 +134,8 @@ export default function RegisterScreen() {
             />
 
             <Input
-              label="Password"
-              placeholder="Create a password"
+              label="Mật khẩu"
+              placeholder="••••••••"
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
@@ -144,13 +144,13 @@ export default function RegisterScreen() {
               secureTextEntry
               autoComplete="new-password"
               error={errors.password}
-              helperText={!errors.password ? `At least ${MIN_PASSWORD_LENGTH} characters` : undefined}
+              helperText={!errors.password ? `Tối thiểu ${MIN_PASSWORD_LENGTH} ký tự` : undefined}
               disabled={isLoading}
             />
 
             <Input
-              label="Confirm Password"
-              placeholder="Confirm your password"
+              label="Xác nhận mật khẩu"
+              placeholder="••••••••"
               value={confirmPassword}
               onChangeText={(text) => {
                 setConfirmPassword(text);
@@ -174,7 +174,7 @@ export default function RegisterScreen() {
               fullWidth
               style={styles.submitButton}
             >
-              Create Account
+              Tạo tài khoản
             </Button>
           </View>
 
@@ -182,11 +182,11 @@ export default function RegisterScreen() {
             style={styles.loginLink}
             onPress={() => navigation.goBack()}
             testID="login-link"
-            accessibilityLabel="Go back to login"
+            accessibilityLabel="Quay lại đăng nhập"
             accessibilityRole="button"
           >
             <Text style={styles.loginText}>
-              Already have an account? <Text style={styles.loginTextBold}>Sign In</Text>
+              Đã có tài khoản? <Text style={styles.loginTextBold}>Đăng nhập</Text>
             </Text>
           </TouchableOpacity>
         </View>

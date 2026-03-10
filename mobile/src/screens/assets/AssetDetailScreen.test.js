@@ -127,7 +127,7 @@ describe('AssetDetailScreen', () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getByText('Ready')).toBeTruthy();
+        expect(screen.getByText('Sẵn sàng')).toBeTruthy();
       });
     });
 
@@ -135,7 +135,7 @@ describe('AssetDetailScreen', () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Excellent/i)).toBeTruthy();
+        expect(screen.getByText(/Xuất sắc/i)).toBeTruthy();
         expect(screen.getByText(/\$450/)).toBeTruthy();
       });
     });
@@ -167,7 +167,7 @@ describe('AssetDetailScreen', () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getByText('Processing')).toBeTruthy();
+        expect(screen.getByText('Đang xử lý')).toBeTruthy();
       });
     });
 
@@ -183,7 +183,7 @@ describe('AssetDetailScreen', () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getAllByText(/processing|analyzing/i).length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText(/đang xử lý|đang phân tích/i).length).toBeGreaterThanOrEqual(1);
       });
     });
 
@@ -191,7 +191,7 @@ describe('AssetDetailScreen', () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getByText('Processing')).toBeTruthy();
+        expect(screen.getByText('Đang xử lý')).toBeTruthy();
       });
 
       expect(screen.queryByTestId('image-toggle')).toBeNull();
@@ -208,7 +208,7 @@ describe('AssetDetailScreen', () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getByText('Failed')).toBeTruthy();
+        expect(screen.getByText('Thất bại')).toBeTruthy();
       });
     });
 
@@ -255,7 +255,7 @@ describe('AssetDetailScreen', () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getByText('Partial')).toBeTruthy();
+        expect(screen.getByText('Một phần')).toBeTruthy();
       });
     });
 
@@ -263,7 +263,7 @@ describe('AssetDetailScreen', () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getAllByText(/partial|incomplete/i).length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText(/một phần|không đầy đủ/i).length).toBeGreaterThanOrEqual(1);
       });
     });
 
@@ -271,7 +271,7 @@ describe('AssetDetailScreen', () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Good/)).toBeTruthy();
+        expect(screen.getByText(/Tốt/)).toBeTruthy();
       });
     });
   });
@@ -286,7 +286,7 @@ describe('AssetDetailScreen', () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getByText('Archived')).toBeTruthy();
+        expect(screen.getByText('Đã lưu trữ')).toBeTruthy();
       });
     });
 
@@ -294,7 +294,7 @@ describe('AssetDetailScreen', () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getAllByText(/archived/i).length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText(/đã lưu trữ/i).length).toBeGreaterThanOrEqual(1);
       });
     });
   });
@@ -355,7 +355,7 @@ describe('AssetDetailScreen', () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getByText(/error|not found/i)).toBeTruthy();
+        expect(screen.getAllByText(/lỗi|không thể tải/i).length).toBeGreaterThanOrEqual(1);
       });
     });
   });

@@ -41,12 +41,12 @@ const CARD_WIDTH = (SCREEN_WIDTH - spacing.md * 3) / 2;
 
 // Filter options
 const FILTER_OPTIONS = [
-  { key: 'all', label: 'All', status: null },
-  { key: 'active', label: 'Ready', status: 'active' },
-  { key: 'processing', label: 'Processing', status: 'processing' },
-  { key: 'draft', label: 'Draft', status: 'draft' },
-  { key: 'failed', label: 'Failed', status: 'failed' },
-  { key: 'archived', label: 'Archived', status: 'archived' },
+  { key: 'all', label: 'Tất cả', status: null },
+  { key: 'active', label: 'Sẵn sàng', status: 'active' },
+  { key: 'processing', label: 'Đang xử lý', status: 'processing' },
+  { key: 'draft', label: 'Bản nháp', status: 'draft' },
+  { key: 'failed', label: 'Thất bại', status: 'failed' },
+  { key: 'archived', label: 'Đã lưu trữ', status: 'archived' },
 ];
 
 /**
@@ -92,7 +92,7 @@ function AssetCard({ asset, onPress }) {
           />
         ) : (
           <View style={[styles.cardImage, styles.cardImagePlaceholder]}>
-            <Text style={styles.cardImagePlaceholderText}>No Image</Text>
+            <Text style={styles.cardImagePlaceholderText}>Không có ảnh</Text>
           </View>
         )}
         <View style={styles.statusPillContainer}>
@@ -119,16 +119,16 @@ function AssetCard({ asset, onPress }) {
 function EmptyState({ onUpload }) {
   return (
     <View style={styles.emptyState} testID="empty-state">
-      <Text style={styles.emptyStateTitle}>No assets yet</Text>
+      <Text style={styles.emptyStateTitle}>Chưa có tài sản</Text>
       <Text style={styles.emptyStateText}>
-        Upload your first collectible to get started
+        Tải lên tài sản đầu tiên của bạn để bắt đầu
       </Text>
       <Button
         testID="empty-state-cta"
         onPress={onUpload}
         style={styles.emptyStateCta}
       >
-        Upload First Asset
+        Tải lên tài sản đầu tiên
       </Button>
     </View>
   );
@@ -140,9 +140,9 @@ function EmptyState({ onUpload }) {
 function ErrorState({ error, onRetry }) {
   return (
     <View style={styles.errorState}>
-      <Text style={styles.errorStateTitle}>Something went wrong</Text>
+      <Text style={styles.errorStateTitle}>Đã xảy ra lỗi</Text>
       <Text style={styles.errorStateText}>
-        {error?.message || 'Failed to load assets'}
+        {error?.message || 'Không thể tải tài sản'}
       </Text>
       <Button
         testID="retry-button"
@@ -150,7 +150,7 @@ function ErrorState({ error, onRetry }) {
         variant="secondary"
         style={styles.retryButton}
       >
-        Try Again
+        Thử lại
       </Button>
     </View>
   );
@@ -267,7 +267,7 @@ export default function AssetsLibraryScreen() {
     if (!isLoadingMore) return null;
     return (
       <View style={styles.loadingMore}>
-        <Text style={styles.loadingMoreText}>Loading more...</Text>
+        <Text style={styles.loadingMoreText}>Đang tải thêm...</Text>
       </View>
     );
   }, [isLoadingMore]);
@@ -285,7 +285,7 @@ export default function AssetsLibraryScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Library</Text>
+        <Text style={styles.title}>Thư viện</Text>
       </View>
       
       {showSkeleton && (

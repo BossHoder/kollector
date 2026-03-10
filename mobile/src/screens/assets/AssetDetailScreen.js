@@ -64,12 +64,12 @@ function InfoRow({ label, value }) {
  */
 function ConditionMeter({ condition }) {
   const conditionMap = {
-    mint: { label: 'Mint', width: 100, color: colors.success },
-    excellent: { label: 'Excellent', width: 90, color: '#22c55e' },
-    'very-good': { label: 'Very Good', width: 75, color: '#84cc16' },
-    good: { label: 'Good', width: 60, color: '#eab308' },
-    fair: { label: 'Fair', width: 40, color: colors.warning },
-    poor: { label: 'Poor', width: 20, color: colors.error },
+    mint: { label: 'Tuyệt vời', width: 100, color: colors.success },
+    excellent: { label: 'Xuất sắc', width: 90, color: '#22c55e' },
+    'very-good': { label: 'Rất tốt', width: 75, color: '#84cc16' },
+    good: { label: 'Tốt', width: 60, color: '#eab308' },
+    fair: { label: 'Trung bình', width: 40, color: colors.warning },
+    poor: { label: 'Kém', width: 20, color: colors.error },
   };
 
   const config = conditionMap[condition?.toLowerCase()] || conditionMap.good;
@@ -77,7 +77,7 @@ function ConditionMeter({ condition }) {
   return (
     <View style={styles.conditionContainer}>
       <View style={styles.conditionHeader}>
-        <Text style={styles.conditionLabel}>Condition</Text>
+        <Text style={styles.conditionLabel}>Tình trạng</Text>
         <Text style={[styles.conditionValue, { color: config.color }]}>
           {config.label}
         </Text>
@@ -136,9 +136,9 @@ export default function AssetDetailScreen() {
       setActionLoading(true);
       await archiveAsset(assetId);
       updateAsset({ status: 'archived' });
-      toast.success('Asset archived');
+      toast.success('Tài sản đã lưu trữ');
     } catch (err) {
-      toast.error('Failed to archive asset');
+      toast.error('Không thể lưu trữ tài sản');
     } finally {
       setActionLoading(false);
     }
@@ -150,9 +150,9 @@ export default function AssetDetailScreen() {
       setActionLoading(true);
       await retryAsset(assetId);
       updateAsset({ status: 'processing', error: null });
-      toast.success('Analysis restarted');
+      toast.success('Phân tích đã được khởi động lại');
     } catch (err) {
-      toast.error('Failed to retry analysis');
+      toast.error('Không thể thử lại phân tích');
     } finally {
       setActionLoading(false);
     }
@@ -166,12 +166,12 @@ export default function AssetDetailScreen() {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
-            accessibilityLabel="Go back"
+            accessibilityLabel="Quay lại"
             accessibilityRole="button"
           >
-            <Text style={styles.backText}>← Back</Text>
+            <Text style={styles.backText}>← Quay lại</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Loading...</Text>
+          <Text style={styles.title}>Đang tải...</Text>
         </View>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary} testID="loading-indicator" />
@@ -188,17 +188,17 @@ export default function AssetDetailScreen() {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
-            accessibilityLabel="Go back"
+            accessibilityLabel="Quay lại"
             accessibilityRole="button"
           >
-            <Text style={styles.backText}>← Back</Text>
+            <Text style={styles.backText}>← Quay lại</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Error</Text>
+          <Text style={styles.title}>Lỗi</Text>
         </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Failed to load asset</Text>
+          <Text style={styles.errorText}>Không thể tải tài sản</Text>
           <TouchableOpacity style={styles.retryButton} onPress={refetch}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+            <Text style={styles.retryButtonText}>Thử lại</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -212,15 +212,15 @@ export default function AssetDetailScreen() {
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
-            accessibilityLabel="Go back"
+            accessibilityLabel="Quay lại"
             accessibilityRole="button"
           >
-            <Text style={styles.backText}>← Back</Text>
+            <Text style={styles.backText}>← Quay lại</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Not Found</Text>
+          <Text style={styles.title}>Không tìm thấy</Text>
         </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Asset not found</Text>
+          <Text style={styles.errorText}>Không tìm thấy tài sản</Text>
         </View>
       </SafeAreaView>
     );
@@ -251,13 +251,13 @@ export default function AssetDetailScreen() {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
-          accessibilityLabel="Go back"
+          accessibilityLabel="Quay lại"
           accessibilityRole="button"
         >
-          <Text style={styles.backText}>← Back</Text>
+          <Text style={styles.backText}>← Quay lại</Text>
         </TouchableOpacity>
         <Text style={styles.title} numberOfLines={1}>
-          {asset.title || 'Asset Detail'}
+          {asset.title || 'Chi tiết tài sản'}
         </Text>
         <View style={styles.statusPillContainer}>
           <StatusPill status={status} />
@@ -288,14 +288,14 @@ export default function AssetDetailScreen() {
             />
           )}
           {isProcessing && (
-            <ProcessingOverlay visible message="Analyzing image..." testID="processing-overlay" />
+            <ProcessingOverlay visible message="Đang phân tích ảnh..." testID="processing-overlay" />
           )}
         </View>
 
         {/* Error message for failed */}
         {isFailed && asset.error && (
           <Card style={styles.errorCard}>
-            <Text style={styles.errorCardTitle}>Analysis Failed</Text>
+            <Text style={styles.errorCardTitle}>Phân tích thất bại</Text>
             <Text style={styles.errorCardMessage}>{asset.error}</Text>
           </Card>
         )}
@@ -303,71 +303,71 @@ export default function AssetDetailScreen() {
         {/* Partial warning */}
         {isPartial && (
           <Card style={styles.warningCard}>
-            <Text style={styles.warningCardTitle}>Partial Analysis</Text>
+            <Text style={styles.warningCardTitle}>Phân tích một phần</Text>
             <Text style={styles.warningCardMessage}>
-              Some analysis data may be incomplete. You can retry to get full results.
+              Một số dữ liệu phân tích có thể không đầy đủ. Bạn có thể thử lại để có kết quả đầy đủ.
             </Text>
           </Card>
         )}
 
         {/* Condition (if available) */}
         {condition && !isProcessing && (
-          <Card title="Condition">
+          <Card title="Tình trạng">
             <ConditionMeter condition={condition} />
           </Card>
         )}
 
         {/* AI Analysis (if available) */}
         {hasAnalysis && !isProcessing && (
-          <Card title="AI Analysis">
+          <Card title="Phân tích AI">
             {(analysis.brand || analysis.details?.brand) && (
-              <InfoRow label="Brand" value={analysis.brand || analysis.details?.brand} />
+              <InfoRow label="Thương hiệu" value={analysis.brand || analysis.details?.brand} />
             )}
             {(analysis.model || analysis.details?.model) && (
-              <InfoRow label="Model" value={analysis.model || analysis.details?.model} />
+              <InfoRow label="Mẫu" value={analysis.model || analysis.details?.model} />
             )}
             {(analysis.colorway || analysis.details?.colorway) && (
-              <InfoRow label="Colorway" value={analysis.colorway || analysis.details?.colorway} />
+              <InfoRow label="Phối màu" value={analysis.colorway || analysis.details?.colorway} />
             )}
             {analysis.year && (
-              <InfoRow label="Year" value={analysis.year} />
+              <InfoRow label="Năm" value={analysis.year} />
             )}
             {analysis.estimatedValue && (
               <InfoRow
-                label="Est. Value"
+                label="Giá trị ước tính"
                 value={typeof analysis.estimatedValue === 'string'
                   ? analysis.estimatedValue
                   : `$${analysis.estimatedValue.toLocaleString()}`}
               />
             )}
             {analysis.rarity && (
-              <InfoRow label="Rarity" value={analysis.rarity} />
+              <InfoRow label="Độ hiếm" value={analysis.rarity} />
             )}
             {analysis.authenticity && (
-              <InfoRow label="Authenticity" value={analysis.authenticity} />
+              <InfoRow label="Xác thực" value={analysis.authenticity} />
             )}
           </Card>
         )}
 
         {/* Metadata */}
-        <Card title="Details">
-          <InfoRow label="Category" value={asset.category} />
+        <Card title="Chi tiết">
+          <InfoRow label="Danh mục" value={asset.category} />
           <InfoRow
-            label="Created"
+            label="Ngày tạo"
             value={
               asset.createdAt
-                ? new Date(asset.createdAt).toLocaleDateString()
+                ? new Date(asset.createdAt).toLocaleDateString('vi-VN')
                 : '-'
             }
           />
           {asset.updatedAt && (
             <InfoRow
-              label="Updated"
-              value={new Date(asset.updatedAt).toLocaleDateString()}
+              label="Cập nhật"
+              value={new Date(asset.updatedAt).toLocaleDateString('vi-VN')}
             />
           )}
           {asset.tags && asset.tags.length > 0 && (
-            <InfoRow label="Tags" value={asset.tags.join(', ')} />
+            <InfoRow label="Nhãn" value={asset.tags.join(', ')} />
           )}
         </Card>
 
@@ -378,14 +378,14 @@ export default function AssetDetailScreen() {
               style={[styles.actionButton, styles.retryActionButton]}
               onPress={handleRetry}
               disabled={actionLoading}
-              accessibilityLabel="Retry analysis"
+              accessibilityLabel="Thử lại phân tích"
               accessibilityRole="button"
               testID="retry-button"
             >
               {actionLoading ? (
                 <ActivityIndicator size="small" color={colors.textPrimary} />
               ) : (
-                <Text style={styles.retryActionText}>Retry Analysis</Text>
+                <Text style={styles.retryActionText}>Thử lại phân tích</Text>
               )}
             </TouchableOpacity>
           )}
@@ -399,7 +399,7 @@ export default function AssetDetailScreen() {
               ]}
               onPress={handleArchive}
               disabled={actionLoading}
-              accessibilityLabel="Archive asset"
+              accessibilityLabel="Lưu trữ tài sản"
               accessibilityRole="button"
               testID="archive-button"
             >
@@ -409,7 +409,7 @@ export default function AssetDetailScreen() {
                   canRetry && styles.secondaryActionText,
                 ]}
               >
-                Archive
+                Lưu trữ
               </Text>
             </TouchableOpacity>
           )}

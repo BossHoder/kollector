@@ -135,9 +135,9 @@ describe('AssetsLibraryScreen', () => {
       render(<AssetsLibraryScreen />);
 
       await waitFor(() => {
-        expect(screen.getByText('Ready')).toBeTruthy(); // active -> Ready
-        expect(screen.getByText('Processing')).toBeTruthy();
-        expect(screen.getByText('Draft')).toBeTruthy();
+        expect(screen.getByText('Sẵn sàng')).toBeTruthy(); // active -> Sẵn sàng
+        expect(screen.getByText('Đang xử lý')).toBeTruthy();
+        expect(screen.getByText('Bản nháp')).toBeTruthy();
       });
     });
 
@@ -226,7 +226,7 @@ describe('AssetsLibraryScreen', () => {
       render(<AssetsLibraryScreen />);
 
       await waitFor(() => {
-        expect(screen.getAllByText(/upload.*first/i).length).toBeGreaterThanOrEqual(1);
+        expect(screen.getAllByText(/tải lên.*đầu tiên/i).length).toBeGreaterThanOrEqual(1);
       });
     });
 
@@ -256,7 +256,7 @@ describe('AssetsLibraryScreen', () => {
       render(<AssetsLibraryScreen />);
 
       await waitFor(() => {
-        expect(screen.getByText(/error|failed/i)).toBeTruthy();
+        expect(screen.getByText(/lỗi|không thể/i)).toBeTruthy();
       });
     });
 

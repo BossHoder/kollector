@@ -61,19 +61,19 @@ export default function ReconnectingBanner() {
         <View style={styles.content}>
           {isMaxReconnectReached ? (
             <>
-              <Text style={styles.text}>Connection lost</Text>
+              <Text style={styles.text}>Mất kết nối</Text>
               <TouchableOpacity
                 style={styles.reconnectButton}
                 onPress={forceReconnect}
-                accessibilityLabel="Reconnect"
+                accessibilityLabel="Kết nối lại"
                 accessibilityRole="button"
               >
-                <Text style={styles.reconnectText}>Reconnect</Text>
+                <Text style={styles.reconnectText}>Kết nối lại</Text>
               </TouchableOpacity>
             </>
           ) : (
             <Text style={styles.text}>
-              Reconnecting{reconnectAttempts > 0 ? ` (${reconnectAttempts})` : ''}...
+              Đang kết nối lại{reconnectAttempts > 0 ? ` (${reconnectAttempts})` : ''}...
             </Text>
           )}
         </View>
