@@ -45,13 +45,13 @@ export function ToastProvider({ children }) {
   const cleanupRecentMessages = useCallback(() => {
     const now = Date.now();
     const toDelete = [];
-    
+
     recentMessagesRef.current.forEach((timestamp, key) => {
       if (now - timestamp > DUPLICATE_THRESHOLD_MS) {
         toDelete.push(key);
       }
     });
-    
+
     toDelete.forEach((key) => recentMessagesRef.current.delete(key));
   }, []);
 
@@ -86,10 +86,20 @@ export function ToastProvider({ children }) {
   const addToast = useCallback((type, message, options = {}) => {
     const { allowDuplicate = false, ...restOptions } = options;
 
-    // Coerce message to string — callers may accidentally pass Error objects
-    const msg = typeof message === 'string'
-      ? message
-      : (message?.message || String(message));
+    // Coerce message to string — callers may accidentally pass Error objects,
+    // arrays (validation errors), or nested objects
+    const toReadableString = (val) => {
+      if (typeof val === 'string') return val;
+      if (Array.isArray(val)) return val.map(toReadableString).join('; ');
+      if (val && typeof val === 'object') {
+        if (typeof val.message === 'string') return val.message;
+        if (typeof val.error === 'string') return val.error;
+        // Last resort: JSON, but guard against circular structures
+        try { return JSON.stringify(val); } catch { return 'An error occurred'; }
+      }
+      return String(val ?? 'An error occurred');
+    };
+    const msg = toReadableString(message);
 
     // Prevent duplicate toast spam (unless explicitly allowed)
     if (!allowDuplicate && isRecentDuplicate(msg)) {
@@ -99,10 +109,10 @@ export function ToastProvider({ children }) {
     markAsRecent(msg);
 
     const id = generateId();
-    
+
     // Error toasts persist by default; others auto-dismiss
     const persistent = restOptions.persistent ?? (type === 'error');
-    
+
     const newToast = {
       id,
       type,

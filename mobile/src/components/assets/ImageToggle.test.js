@@ -37,8 +37,8 @@ describe('ImageToggle', () => {
         />
       );
 
-      expect(screen.getByText(/original/i)).toBeTruthy();
-      expect(screen.getByText(/processed/i)).toBeTruthy();
+      expect(screen.getByText(/gốc/i)).toBeTruthy();
+      expect(screen.getByText(/đã xử lý/i)).toBeTruthy();
     });
 
     it('should show processed image by default', () => {
@@ -241,7 +241,7 @@ describe('ImageToggle', () => {
       );
 
       const originalButton = screen.getByTestId('toggle-original');
-      expect(originalButton.props.accessibilityLabel).toContain('Original');
+      expect(originalButton.props.accessibilityLabel).toContain('Ảnh gốc');
     });
 
     it('should indicate selected state', () => {

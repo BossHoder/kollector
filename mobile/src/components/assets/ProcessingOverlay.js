@@ -26,7 +26,7 @@ import { coerceBool, assertBool } from '../../utils/coerceBool';
  */
 export function ProcessingOverlay({
   visible: rawVisible,
-  message = 'Processing...',
+  message = 'Đang xử lý...',
   testID,
 }) {
   // Coerce to strict boolean to prevent Android native crash
