@@ -18,7 +18,7 @@ export default function ReconnectingBanner() {
   const showBanner = isReconnecting || isMaxReconnectReached;
 
   useEffect(() => {
-    Animated.parallel([
+    const animation = Animated.parallel([
       Animated.timing(heightAnim, {
         toValue: showBanner ? 1 : 0,
         duration: 200,
@@ -29,7 +29,13 @@ export default function ReconnectingBanner() {
         duration: 200,
         useNativeDriver: false,
       }),
-    ]).start();
+    ]);
+
+    animation.start();
+
+    return () => {
+      animation.stop();
+    };
   }, [showBanner, heightAnim, opacityAnim]);
 
   const animatedHeight = heightAnim.interpolate({
