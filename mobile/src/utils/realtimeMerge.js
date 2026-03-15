@@ -129,6 +129,38 @@ export function mergeAssetUpdates(updates) {
 }
 
 /**
+ * Deduplicate realtime events by assetId/timestamp/status tuple.
+ * Keeps first-seen event ordering while dropping exact duplicates.
+ *
+ * @param {AssetUpdate[]} events
+ * @returns {AssetUpdate[]}
+ */
+export function dedupeRealtimeEvents(events) {
+  if (!Array.isArray(events) || events.length === 0) {
+    return [];
+  }
+
+  const seen = new Set();
+  const deduped = [];
+
+  for (const event of events) {
+    if (!event || !event.assetId) {
+      continue;
+    }
+
+    const key = `${event.assetId}|${event.timestamp || ''}|${event.status || ''}`;
+    if (seen.has(key)) {
+      continue;
+    }
+
+    seen.add(key);
+    deduped.push(event);
+  }
+
+  return deduped;
+}
+
+/**
  * @typedef {Object} DebounceOptions
  * @property {boolean} [leading=false] - Call on leading edge
  * @property {boolean} [trailing=true] - Call on trailing edge
@@ -206,5 +238,6 @@ export function debounceUpdates(callback, wait, options = {}) {
 export default {
   createRealtimeMerger,
   mergeAssetUpdates,
+  dedupeRealtimeEvents,
   debounceUpdates,
 };

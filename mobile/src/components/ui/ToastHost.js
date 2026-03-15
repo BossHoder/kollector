@@ -1,8 +1,5 @@
 /**
  * Toast Host Component
- *
- * Renders toast notifications in an overlay at the top of the screen.
- * Must be placed at the root of the app (inside ToastProvider).
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -21,31 +18,35 @@ const TOAST_COLORS = {
   success: {
     background: colors.success,
     text: '#ffffff',
+    progress: 'rgba(255,255,255,0.9)',
   },
   error: {
     background: colors.error,
     text: '#ffffff',
+    progress: 'rgba(255,255,255,0.9)',
   },
   info: {
     background: colors.info,
     text: colors.backgroundDark,
+    progress: colors.backgroundDark,
   },
   warning: {
     background: colors.warning,
     text: colors.backgroundDark,
+    progress: colors.backgroundDark,
   },
 };
 
-/**
- * Individual Toast Component with animation
- */
 function ToastItem({ toast, onDismiss }) {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-20)).current;
+  const progress = useRef(new Animated.Value(1)).current;
+  const dismissTimerRef = useRef(null);
+  const colorScheme = TOAST_COLORS[toast.type] || TOAST_COLORS.info;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, {
+      Animated.timing(opacity, {
         toValue: 1,
         duration: 200,
         useNativeDriver: true,
@@ -56,11 +57,44 @@ function ToastItem({ toast, onDismiss }) {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [fadeAnim, translateY]);
+
+    if (!toast.persistent) {
+      Animated.timing(progress, {
+        toValue: 0,
+        duration: toast.duration,
+        useNativeDriver: false,
+      }).start();
+
+      dismissTimerRef.current = setTimeout(() => {
+        Animated.parallel([
+          Animated.timing(opacity, {
+            toValue: 0,
+            duration: 180,
+            useNativeDriver: true,
+          }),
+          Animated.timing(translateY, {
+            toValue: -20,
+            duration: 180,
+            useNativeDriver: true,
+          }),
+        ]).start(() => onDismiss(toast.id));
+      }, toast.duration);
+    }
+
+    return () => {
+      if (dismissTimerRef.current) {
+        clearTimeout(dismissTimerRef.current);
+      }
+    };
+  }, [onDismiss, opacity, progress, toast.duration, toast.id, toast.persistent, translateY]);
 
   const handleDismiss = () => {
+    if (dismissTimerRef.current) {
+      clearTimeout(dismissTimerRef.current);
+    }
+
     Animated.parallel([
-      Animated.timing(fadeAnim, {
+      Animated.timing(opacity, {
         toValue: 0,
         duration: 150,
         useNativeDriver: true,
@@ -73,14 +107,12 @@ function ToastItem({ toast, onDismiss }) {
     ]).start(() => onDismiss(toast.id));
   };
 
-  const colorScheme = TOAST_COLORS[toast.type] || TOAST_COLORS.info;
-
   return (
     <Animated.View
       style={[
         styles.toast,
         { backgroundColor: colorScheme.background },
-        { opacity: fadeAnim, transform: [{ translateY }] },
+        { opacity, transform: [{ translateY }] },
       ]}
     >
       <Text
@@ -89,23 +121,34 @@ function ToastItem({ toast, onDismiss }) {
       >
         {toast.message}
       </Text>
-      {toast.persistent && (
-        <TouchableOpacity
-          onPress={handleDismiss}
-          style={styles.dismissButton}
-          accessibilityLabel="Dismiss notification"
-          accessibilityRole="button"
-        >
-          <Text style={[styles.dismissText, { color: colorScheme.text }]}>✕</Text>
-        </TouchableOpacity>
+      <TouchableOpacity
+        onPress={handleDismiss}
+        style={styles.dismissButton}
+        accessibilityLabel="Dismiss notification"
+        accessibilityRole="button"
+      >
+        <Text style={[styles.dismissText, { color: colorScheme.text }]}>✕</Text>
+      </TouchableOpacity>
+      {!toast.persistent && (
+        <View style={styles.progressTrack}>
+          <Animated.View
+            style={[
+              styles.progressBar,
+              {
+                backgroundColor: colorScheme.progress,
+                width: progress.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0%', '100%'],
+                }),
+              },
+            ]}
+          />
+        </View>
       )}
     </Animated.View>
   );
 }
 
-/**
- * Toast Host - renders all active toasts
- */
 export default function ToastHost() {
   const { toasts, dismissToast } = useToast();
 
@@ -142,6 +185,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   toast: {
+    position: 'relative',
+    overflow: 'hidden',
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,
@@ -165,5 +210,16 @@ const styles = StyleSheet.create({
   dismissText: {
     fontSize: typography.fontSizes.lg,
     fontWeight: typography.fontWeights.bold,
+  },
+  progressTrack: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  progressBar: {
+    height: '100%',
   },
 });

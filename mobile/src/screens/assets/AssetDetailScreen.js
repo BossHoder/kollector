@@ -16,13 +16,13 @@ import {
   StyleSheet,
   View,
   Text,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Alert,
   RefreshControl,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { colors, spacing, typography, borderRadius, touchTargetSize } from '../../styles/tokens';
 import { coerceBool } from '../../utils/coerceBool';
@@ -34,6 +34,8 @@ import { useToast } from '../../contexts/ToastContext';
 import StatusPill from '../../components/ui/StatusPill';
 import ImageToggle from '../../components/assets/ImageToggle';
 import ProcessingOverlay from '../../components/assets/ProcessingOverlay';
+import { normalizeMetadata } from '../../utils/assetMetadata';
+import { useRealtimeFallback } from '../../hooks/useRealtimeFallback';
 
 /**
  * Card component for sections
@@ -72,7 +74,20 @@ function ConditionMeter({ condition }) {
     poor: { label: 'Kém', width: 20, color: colors.error },
   };
 
-  const config = conditionMap[condition?.toLowerCase()] || conditionMap.good;
+  // condition can be a string grade (from AI) or an object { health: 0-100 } (from server model)
+  let config;
+  if (condition && typeof condition === 'object') {
+    const health = condition.health ?? 60;
+    const grade =
+      health >= 90 ? 'mint' :
+      health >= 75 ? 'excellent' :
+      health >= 60 ? 'very-good' :
+      health >= 40 ? 'good' :
+      health >= 20 ? 'fair' : 'poor';
+    config = { ...conditionMap[grade], width: health };
+  } else {
+    config = conditionMap[typeof condition === 'string' ? condition.toLowerCase() : ''] || conditionMap.good;
+  }
 
   return (
     <View style={styles.conditionContainer}>
@@ -98,7 +113,13 @@ export default function AssetDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { assetId, fromUpload } = route.params || {};
-  const { onAssetProcessed } = useSocket();
+  const { onAssetProcessed, isConnected } = useSocket();
+  let insets = { top: 0, right: 0, bottom: 0, left: 0 };
+  try {
+    insets = useSafeAreaInsets();
+  } catch {
+    // Tests may render without SafeAreaProvider; fall back to zero insets.
+  }
 
   const [showProcessed, setShowProcessed] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -107,6 +128,12 @@ export default function AssetDetailScreen() {
   const { asset, isLoading, error, refetch, updateAsset } = useAsset(assetId, {
     enabled: Boolean(assetId),
     pollInterval: 0, // Realtime handled via socket
+  });
+
+  useRealtimeFallback({
+    isConnected,
+    onPoll: refetch,
+    onReconnect: refetch,
   });
 
   // Subscribe to realtime asset_processed events for this asset
@@ -134,8 +161,12 @@ export default function AssetDetailScreen() {
   const handleArchive = useCallback(async () => {
     try {
       setActionLoading(true);
-      await archiveAsset(assetId);
-      updateAsset({ status: 'archived' });
+      const updated = await archiveAsset(assetId);
+      updateAsset((prev) => ({
+        ...prev,
+        ...updated,
+        status: updated?.status || 'archived',
+      }));
       toast.success('Tài sản đã lưu trữ');
     } catch (err) {
       toast.error('Không thể lưu trữ tài sản');
@@ -148,8 +179,13 @@ export default function AssetDetailScreen() {
   const handleRetry = useCallback(async () => {
     try {
       setActionLoading(true);
-      await retryAsset(assetId);
-      updateAsset({ status: 'processing', error: null });
+      const updated = await retryAsset(assetId);
+      updateAsset((prev) => ({
+        ...prev,
+        ...updated,
+        status: updated?.status || 'processing',
+        error: null,
+      }));
       toast.success('Phân tích đã được khởi động lại');
     } catch (err) {
       toast.error('Không thể thử lại phân tích');
@@ -240,9 +276,10 @@ export default function AssetDetailScreen() {
   const originalImageUrl = asset.originalImageUrl || asset.primaryImage?.url || asset.imageUrl;
 
   // AI Analysis data
-  const analysis = asset.aiAnalysis || asset.analysis || {};
+  const analysis = asset.aiMetadata || asset.aiAnalysis || asset.analysis || {};
   const hasAnalysis = Object.keys(analysis).length > 0;
   const condition = asset.condition || analysis.condition;
+  const fileMetadata = normalizeMetadata(asset);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -266,7 +303,7 @@ export default function AssetDetailScreen() {
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: spacing.xxxl + insets.bottom }]}
         refreshControl={
           <RefreshControl
             refreshing={coerceBool(isLoading)}
@@ -274,6 +311,7 @@ export default function AssetDetailScreen() {
             tintColor={colors.primary}
           />
         }
+        showsVerticalScrollIndicator={false}
       >
         {/* Image Section */}
         <View style={styles.imageSection}>
@@ -293,10 +331,10 @@ export default function AssetDetailScreen() {
         </View>
 
         {/* Error message for failed */}
-        {isFailed && asset.error && (
+        {isFailed && (asset.error || asset.aiMetadata?.error) && (
           <Card style={styles.errorCard}>
             <Text style={styles.errorCardTitle}>Phân tích thất bại</Text>
-            <Text style={styles.errorCardMessage}>{asset.error}</Text>
+            <Text style={styles.errorCardMessage}>{asset.error || asset.aiMetadata?.error}</Text>
           </Card>
         )}
 
@@ -351,6 +389,10 @@ export default function AssetDetailScreen() {
 
         {/* Metadata */}
         <Card title="Chi tiết">
+          <InfoRow label="Tên file" value={fileMetadata.originalFilename} />
+          <InfoRow label="Kích thước" value={fileMetadata.fileSizeMB} />
+          <InfoRow label="Định dạng" value={fileMetadata.mimeType} />
+          <InfoRow label="Tải lên lúc" value={fileMetadata.uploadedAt} />
           <InfoRow label="Danh mục" value={asset.category} />
           <InfoRow
             label="Ngày tạo"
@@ -416,7 +458,7 @@ export default function AssetDetailScreen() {
         </View>
 
         {/* Spacer at bottom */}
-        <View style={styles.bottomSpacer} />
+        <View style={[styles.bottomSpacer, { height: spacing.xxl + insets.bottom }]} />
       </ScrollView>
     </SafeAreaView>
   );

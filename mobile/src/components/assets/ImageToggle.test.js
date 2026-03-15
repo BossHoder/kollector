@@ -214,6 +214,19 @@ describe('ImageToggle', () => {
       const image = screen.getByTestId('toggle-image');
       expect(image.props.source.uri).toBe(mockImages.original);
     });
+
+    it('should fall back to original source when value="processed" but processed image is missing', () => {
+      render(
+        <ImageToggle
+          originalUri={mockImages.original}
+          processedUri={null}
+          value="processed"
+        />
+      );
+
+      const image = screen.getByTestId('toggle-image');
+      expect(image.props.source.uri).toBe(mockImages.original);
+    });
   });
 
   describe('Accessibility', () => {

@@ -46,6 +46,10 @@ const mockAssets = {
     title: 'Yeezy Boost 350',
     status: 'processing',
     category: 'sneakers',
+    originalFilename: 'yeezy-350.jpg',
+    fileSizeMB: 3.2,
+    mimeType: 'image/jpeg',
+    uploadedAt: '2024-01-14T09:00:00Z',
     primaryImage: { url: 'https://example.com/original.jpg' },
     processedImage: null,
     aiAnalysis: null,
@@ -196,6 +200,15 @@ describe('AssetDetailScreen', () => {
 
       expect(screen.queryByTestId('image-toggle')).toBeNull();
     });
+
+    it('should show file metadata while processing', async () => {
+      render(<AssetDetailScreen />);
+
+      await waitFor(() => {
+        expect(screen.getByText('yeezy-350.jpg')).toBeTruthy();
+        expect(screen.getByText(/image\/jpeg/i)).toBeTruthy();
+      });
+    });
   });
 
   describe('Status: Failed', () => {
@@ -241,6 +254,10 @@ describe('AssetDetailScreen', () => {
 
       await waitFor(() => {
         expect(assetsApi.retryAsset).toHaveBeenCalledWith('asset-failed');
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Đang xử lý')).toBeTruthy();
       });
     });
   });
@@ -332,6 +349,10 @@ describe('AssetDetailScreen', () => {
 
       await waitFor(() => {
         expect(mockToast.success).toHaveBeenCalled();
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Đã lưu trữ')).toBeTruthy();
       });
     });
   });

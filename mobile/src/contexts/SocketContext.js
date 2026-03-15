@@ -17,6 +17,7 @@ import React, {
 } from 'react';
 import { socketService } from '../services/socketService';
 import { useAuth } from './AuthContext';
+import { useRealtimeFallback } from '../hooks/useRealtimeFallback';
 
 /**
  * @typedef {'connected' | 'disconnected' | 'connecting' | 'reconnecting'} ConnectionState
@@ -81,6 +82,9 @@ export function SocketProvider({ children }) {
    * Check if max reconnect attempts reached
    */
   const isMaxReconnectReached = socketService.isMaxReconnectReached();
+  const fallback = useRealtimeFallback({
+    isConnected: connectionState === 'connected',
+  });
 
   const value = useMemo(
     () => ({
@@ -89,6 +93,7 @@ export function SocketProvider({ children }) {
       isReconnecting,
       reconnectAttempts,
       isMaxReconnectReached,
+      isFallbackActive: fallback.isFallbackActive,
       onAssetProcessed,
       forceReconnect,
     }),
@@ -97,6 +102,7 @@ export function SocketProvider({ children }) {
       isReconnecting,
       reconnectAttempts,
       isMaxReconnectReached,
+      fallback.isFallbackActive,
       onAssetProcessed,
       forceReconnect,
     ]

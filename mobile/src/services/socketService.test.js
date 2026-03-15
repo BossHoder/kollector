@@ -71,15 +71,18 @@ describe('socketService', () => {
       expect(io).not.toHaveBeenCalled();
     });
 
-    it('should use websocket transport', async () => {
+    it('should include polling transport for reliability', async () => {
       await socketService.connect();
+
+      const transportConfig = io.mock.calls[0]?.[1]?.transports || [];
 
       expect(io).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
-          transports: ['websocket'],
+          transports: expect.any(Array),
         })
       );
+      expect(transportConfig).toContain('polling');
     });
   });
 

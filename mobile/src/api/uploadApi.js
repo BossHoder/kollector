@@ -7,34 +7,30 @@
 
 import { uploadFile } from '../services/apiClient';
 import { Platform } from 'react-native';
+import { mapAsset } from '../utils/assetMapper';
 
 /**
  * @typedef {Object} UploadAssetParams
- * @property {string} uri - Local file URI
- * @property {string} type - MIME type (e.g., 'image/jpeg')
- * @property {string} [fileName] - File name
- * @property {string} category - Asset category
- * @property {string} [title] - Optional title
- * @property {string} [notes] - Optional notes
+ * @property {string} uri
+ * @property {string} type
+ * @property {string} [fileName]
+ * @property {string} category
+ * @property {string} assetName
+ * @property {boolean} [runAi]
+ * @property {string} [title]
+ * @property {string} [notes]
  */
 
-/**
- * @typedef {Object} UploadAssetResponse
- * @property {Object} asset - Created asset object
- * @property {string} asset.id - Asset ID
- * @property {string} asset.status - Asset status ('processing')
- */
-
-/**
- * Upload an asset image for AI analysis
- *
- * This calls POST /api/assets/analyze-queue with multipart form data.
- * The server will create the asset and queue it for AI processing.
- *
- * @param {UploadAssetParams} params
- * @returns {Promise<UploadAssetResponse>}
- */
-export async function uploadAsset({ uri, type, fileName, category, title, notes }) {
+export async function uploadAsset({
+  uri,
+  type,
+  fileName,
+  category,
+  assetName,
+  runAi = true,
+  title,
+  notes,
+}) {
   if (!uri) {
     throw new Error('Image URI is required');
   }
@@ -43,17 +39,17 @@ export async function uploadAsset({ uri, type, fileName, category, title, notes 
     throw new Error('Category is required');
   }
 
-  // Build FormData
+  if (!assetName) {
+    throw new Error('Asset name is required');
+  }
+
   const formData = new FormData();
 
-  // Add the image file
   if (Platform.OS === 'web') {
-    // On web, fetch the blob from the URI and append it properly
     const response = await fetch(uri);
     const blob = await response.blob();
     formData.append('image', blob, fileName || `upload_${Date.now()}.jpg`);
   } else {
-    // React Native requires a specific format for file uploads
     formData.append('image', {
       uri,
       type: type || 'image/jpeg',
@@ -61,34 +57,36 @@ export async function uploadAsset({ uri, type, fileName, category, title, notes 
     });
   }
 
-  // Add metadata
   formData.append('category', category);
-  
+  formData.append('assetName', assetName);
+  formData.append('runAi', String(runAi));
+
   if (title) {
     formData.append('title', title);
   }
-  
+
   if (notes) {
     formData.append('notes', notes);
   }
 
-  // Use the uploadFile function from apiClient for proper multipart handling
   const response = await uploadFile('/assets/analyze-queue', formData);
+  const payload = response.data || response;
+  const mappedAsset = mapAsset(payload.asset || response.asset || response);
 
   return {
-    asset: response.asset || response,
+    asset: {
+      ...mappedAsset,
+      originalFilename: mappedAsset.originalFilename || fileName || null,
+      fileSizeMB: mappedAsset.fileSizeMB || null,
+      mimeType: mappedAsset.mimeType || type || null,
+      uploadedAt: mappedAsset.uploadedAt || mappedAsset.createdAt || new Date().toISOString(),
+    },
+    jobId: payload.jobId ?? null,
+    status: payload.status ?? mappedAsset.status,
   };
 }
 
-/**
- * Get upload progress (if supported by implementation)
- * This is a placeholder for future upload progress tracking
- *
- * @param {string} uploadId
- * @returns {Promise<{ progress: number, status: string }>}
- */
 export async function getUploadProgress(uploadId) {
-  // Placeholder - actual implementation would track upload progress
   return {
     progress: 100,
     status: 'complete',

@@ -14,9 +14,11 @@ import {
   getRefreshToken,
   clearAllTokens,
 } from './tokenStore';
+import { Platform } from 'react-native';
 
-// API base URL - should be configured from environment
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000/api';
+// API base URL - prefer env, otherwise choose a sane platform default.
+const defaultApiHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || `http://${defaultApiHost}:3000/api`;
 
 /**
  * Refresh state management
@@ -274,7 +276,7 @@ export async function uploadFile(endpoint, formData) {
 
   const url = `${API_BASE_URL}${endpoint}`;
 
-  const response = await fetch(url, {
+  let response = await fetch(url, {
     method: 'POST',
     headers,
     body: formData,
@@ -282,7 +284,7 @@ export async function uploadFile(endpoint, formData) {
 
   // Handle 401 with refresh
   if (response.status === 401) {
-    return handle401(async () => {
+    response = await handle401(async () => {
       const freshToken = await getAccessToken();
       headers.Authorization = `Bearer ${freshToken}`;
       return fetch(url, {

@@ -7,6 +7,7 @@
 import {
   createRealtimeMerger,
   mergeAssetUpdates,
+  dedupeRealtimeEvents,
   debounceUpdates,
 } from './realtimeMerge';
 
@@ -149,6 +150,21 @@ describe('realtimeMerge', () => {
       const merged = mergeAssetUpdates(updates);
 
       expect(merged).toEqual([{ assetId: '1', status: 'active' }]);
+    });
+
+    it('should dedupe duplicate realtime events by assetId + timestamp + status', () => {
+      const deduped = dedupeRealtimeEvents([
+        { assetId: '1', status: 'processing', timestamp: 't1' },
+        { assetId: '1', status: 'processing', timestamp: 't1' },
+        { assetId: '1', status: 'active', timestamp: 't2' },
+        { assetId: '2', status: 'processing', timestamp: 't1' },
+      ]);
+
+      expect(deduped).toEqual([
+        { assetId: '1', status: 'processing', timestamp: 't1' },
+        { assetId: '1', status: 'active', timestamp: 't2' },
+        { assetId: '2', status: 'processing', timestamp: 't1' },
+      ]);
     });
   });
 

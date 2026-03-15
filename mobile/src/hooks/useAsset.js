@@ -71,11 +71,15 @@ export function useAsset(assetId, { enabled = true, pollInterval = 0 } = {}) {
       if (!prev) return null;
       
       // Support both partial updates and full replacement
-      if (typeof updates === 'function') {
-        return updates(prev);
+      const next = typeof updates === 'function' ? updates(prev) : { ...prev, ...updates };
+      if (!next) {
+        return next;
       }
-      
-      return { ...prev, ...updates };
+
+      return {
+        ...next,
+        updatedAt: next.updatedAt || prev.updatedAt || new Date().toISOString(),
+      };
     });
   }, []);
 
