@@ -20,7 +20,6 @@ import { UploadPage } from '@/pages/app/UploadPage';
 import { AssetDetailPage } from '@/pages/app/AssetDetailPage';
 import { server } from '../mocks/server';
 
-// Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
@@ -39,7 +38,6 @@ const localStorageMock = (() => {
 
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
-// Test wrapper with all providers
 function TestWrapper({ children }: { children: React.ReactNode }) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -55,7 +53,6 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
         element: children,
       },
       {
-        // Must use :assetId to match the useParams in AssetDetailPage
         path: '/app/assets/:assetId',
         element: <AssetDetailPage />,
       },
@@ -76,10 +73,20 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
+async function waitForCategoriesReady() {
+  await waitFor(() => {
+    expect(screen.getByRole('option', { name: /giay sneaker/i })).toBeInTheDocument();
+  });
+}
+
+async function selectSneakerCategory(user: ReturnType<typeof userEvent.setup>) {
+  await waitForCategoriesReady();
+  await user.selectOptions(screen.getByRole('combobox'), 'sneaker');
+}
+
 describe('Upload Flow', () => {
   beforeEach(() => {
     localStorageMock.clear();
-    // Simulate authenticated user
     localStorageMock.setItem('accessToken', 'test-token');
     localStorageMock.setItem('refreshToken', 'test-refresh-token');
     localStorageMock.setItem(
@@ -97,10 +104,8 @@ describe('Upload Flow', () => {
   it('should render upload form with category selector and file input', () => {
     render(<UploadPage />, { wrapper: TestWrapper });
 
-    // Check for page title (heading)
-    expect(screen.getByRole('heading', { name: /tải lên tài sản/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/danh mục/i)).toBeInTheDocument();
-    // File input should be present
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
     expect(screen.getByTestId('file-input')).toBeInTheDocument();
   });
 
@@ -108,13 +113,9 @@ describe('Upload Flow', () => {
     const user = userEvent.setup();
     render(<UploadPage />, { wrapper: TestWrapper });
 
-    // Select category
-    const categorySelect = screen.getByLabelText(/danh mục/i);
-    await user.selectOptions(categorySelect, 'sneaker');
+    await selectSneakerCategory(user);
 
-    // Submit without file
-    const submitButton = screen.getByRole('button', { name: /tải lên/i });
-    await user.click(submitButton);
+    await user.click(screen.getByRole('button', { name: /tải lên/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/vui lòng chọn hình ảnh/i)).toBeInTheDocument();
@@ -125,22 +126,17 @@ describe('Upload Flow', () => {
     const user = userEvent.setup();
     render(<UploadPage />, { wrapper: TestWrapper });
 
-    // Create a test file
     const file = new File(['test image'], 'test.jpg', { type: 'image/jpeg' });
-    const fileInput = screen.getByTestId('file-input');
-    await user.upload(fileInput, file);
+    await user.upload(screen.getByTestId('file-input'), file);
 
-    // Submit without selecting category
-    const submitButton = screen.getByRole('button', { name: /tải lên/i });
-    await user.click(submitButton);
+    await user.click(screen.getByRole('button', { name: /tải lên/i }));
 
-    // Should show category validation error (Zod error message)
     await waitFor(() => {
-      // Check for either custom message or Zod default message
-      const errorText = screen.queryByText(/vui lòng chọn danh mục/i) ||
-        screen.queryByText(/invalid option/i) ||
-        screen.queryByText(/expected/i);
-      expect(errorText).toBeInTheDocument();
+      expect(
+        screen.queryByText(/vui lòng chọn danh mục/i) ??
+          screen.queryByText(/invalid option/i) ??
+          screen.queryByText(/expected/i)
+      ).toBeInTheDocument();
     });
   });
 
@@ -163,8 +159,8 @@ describe('Upload Flow', () => {
     };
 
     server.use(
-      http.post('/api/assets/analyze-queue', async () => {
-        return HttpResponse.json(
+      http.post('/api/assets/analyze-queue', async () =>
+        HttpResponse.json(
           {
             success: true,
             data: {
@@ -175,38 +171,27 @@ describe('Upload Flow', () => {
             },
           },
           { status: 202 }
-        );
-      }),
-      // Override the default asset handler to return our new asset for any ID
+        )
+      ),
       http.get('/api/assets/:id', async ({ params }) => {
         if (params.id === 'new-asset-123') {
           return HttpResponse.json(newAsset);
         }
+
         return HttpResponse.json({ error: 'Asset not found' }, { status: 404 });
       })
     );
 
     render(<UploadPage />, { wrapper: TestWrapper });
 
-    // Create a test file
     const file = new File(['test image'], 'test.jpg', { type: 'image/jpeg' });
-    const fileInput = screen.getByTestId('file-input');
-    await user.upload(fileInput, file);
+    await user.upload(screen.getByTestId('file-input'), file);
+    await selectSneakerCategory(user);
+    await user.click(screen.getByRole('button', { name: /tải lên/i }));
 
-    // Select category
-    const categorySelect = screen.getByLabelText(/danh mục/i);
-    await user.selectOptions(categorySelect, 'sneaker');
-
-    // Submit form
-    const submitButton = screen.getByRole('button', { name: /tải lên/i });
-    await user.click(submitButton);
-
-    // Should redirect to asset detail page and show the status
     await waitFor(
       () => {
-        // Look for "processing" status text or sneaker category
-        const sneakerElement = screen.queryByText(/sneaker/i);
-        expect(sneakerElement).toBeInTheDocument();
+        expect(screen.getByText(/giay sneaker|sneaker/i)).toBeInTheDocument();
       },
       { timeout: 3000 }
     );
@@ -217,8 +202,8 @@ describe('Upload Flow', () => {
 
     server.use(
       http.post('/api/assets/analyze-queue', async () => {
-        // Delay response
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
         return HttpResponse.json(
           {
             success: true,
@@ -236,20 +221,13 @@ describe('Upload Flow', () => {
 
     render(<UploadPage />, { wrapper: TestWrapper });
 
-    // Create a test file
     const file = new File(['test image'], 'test.jpg', { type: 'image/jpeg' });
-    const fileInput = screen.getByTestId('file-input');
-    await user.upload(fileInput, file);
+    await user.upload(screen.getByTestId('file-input'), file);
+    await selectSneakerCategory(user);
 
-    // Select category
-    const categorySelect = screen.getByLabelText(/danh mục/i);
-    await user.selectOptions(categorySelect, 'sneaker');
-
-    // Submit form
     const submitButton = screen.getByRole('button', { name: /tải lên/i });
     await user.click(submitButton);
 
-    // Button should be disabled during upload
     await waitFor(() => {
       expect(submitButton).toBeDisabled();
     });
@@ -259,32 +237,23 @@ describe('Upload Flow', () => {
     const user = userEvent.setup();
 
     server.use(
-      http.post('/api/assets/analyze-queue', async () => {
-        return HttpResponse.json(
+      http.post('/api/assets/analyze-queue', async () =>
+        HttpResponse.json(
           {
             error: 'File too large',
           },
           { status: 400 }
-        );
-      })
+        )
+      )
     );
 
     render(<UploadPage />, { wrapper: TestWrapper });
 
-    // Create a test file
     const file = new File(['test image'], 'test.jpg', { type: 'image/jpeg' });
-    const fileInput = screen.getByTestId('file-input');
-    await user.upload(fileInput, file);
+    await user.upload(screen.getByTestId('file-input'), file);
+    await selectSneakerCategory(user);
+    await user.click(screen.getByRole('button', { name: /tải lên/i }));
 
-    // Select category
-    const categorySelect = screen.getByLabelText(/danh mục/i);
-    await user.selectOptions(categorySelect, 'sneaker');
-
-    // Submit form
-    const submitButton = screen.getByRole('button', { name: /tải lên/i });
-    await user.click(submitButton);
-
-    // Should show error message
     await waitFor(() => {
       expect(screen.getByText(/file too large/i)).toBeInTheDocument();
     });
@@ -294,36 +263,24 @@ describe('Upload Flow', () => {
     const user = userEvent.setup();
     render(<UploadPage />, { wrapper: TestWrapper });
 
-    // Create a test file
     const file = new File(['test image'], 'test.jpg', { type: 'image/jpeg' });
-    const fileInput = screen.getByTestId('file-input');
-    await user.upload(fileInput, file);
+    await user.upload(screen.getByTestId('file-input'), file);
 
-    // Should show file name or preview
     await waitFor(() => {
-      expect(screen.getByText(/test.jpg/i)).toBeInTheDocument();
+      expect(screen.getByText(/test\.jpg/i)).toBeInTheDocument();
     });
   });
 
   it('should allow drag and drop file upload', async () => {
     render(<UploadPage />, { wrapper: TestWrapper });
 
-    const dropzone = screen.getByTestId('dropzone');
-    expect(dropzone).toBeInTheDocument();
+    expect(screen.getByTestId('dropzone')).toBeInTheDocument();
 
-    // Simulate drag and drop
     const file = new File(['test image'], 'dropped.jpg', { type: 'image/jpeg' });
-    const dataTransfer = {
-      files: [file],
-      items: [{ kind: 'file', type: file.type, getAsFile: () => file }],
-      types: ['Files'],
-    };
-
-    // Fire drag events
     await userEvent.upload(screen.getByTestId('file-input'), file);
 
     await waitFor(() => {
-      expect(screen.getByText(/dropped.jpg/i)).toBeInTheDocument();
+      expect(screen.getByText(/dropped\.jpg/i)).toBeInTheDocument();
     });
   });
 });

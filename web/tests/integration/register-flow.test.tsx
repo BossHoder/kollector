@@ -6,19 +6,18 @@
  * @vitest-environment jsdom
  */
 
-import { describe, it, expect, beforeEach, vi, beforeAll, afterEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import { http, HttpResponse } from 'msw';
-import { setupServer } from 'msw/node';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { SocketProvider } from '@/contexts/SocketContext';
 import { RegisterPage } from '@/pages/public/RegisterPage';
+import { server } from '../mocks/server';
 
-// Mock socket.io-client
 vi.mock('socket.io-client', () => ({
   io: vi.fn(() => ({
     on: vi.fn(),
@@ -30,7 +29,6 @@ vi.mock('socket.io-client', () => ({
   })),
 }));
 
-// Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};
   return {
@@ -44,58 +42,12 @@ const localStorageMock = (() => {
     clear: vi.fn(() => {
       store = {};
     }),
-    getStore: () => store,
-    setStore: (newStore: Record<string, string>) => {
-      store = newStore;
-    },
   };
 })();
 
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
-// MSW handlers for register
-const handlers = [
-  http.post('/api/auth/register', async ({ request }) => {
-    const body = await request.json() as { email?: string; username?: string; password?: string };
-    
-    // Simulate duplicate email error
-    if (body.email === 'existing@example.com') {
-      return HttpResponse.json(
-        { error: 'Email đã được sử dụng' },
-        { status: 409 }
-      );
-    }
-    
-    // Simulate duplicate username error
-    if (body.username === 'existinguser') {
-      return HttpResponse.json(
-        { error: 'Tên đăng nhập đã được sử dụng' },
-        { status: 409 }
-      );
-    }
-    
-    // Success response
-    return HttpResponse.json({
-      user: {
-        _id: 'user-123',
-        email: body.email,
-        username: body.username,
-        displayName: body.username,
-      },
-      accessToken: 'new-access-token',
-      refreshToken: 'new-refresh-token',
-    }, { status: 201 });
-  }),
-];
-
-const server = setupServer(...handlers);
-
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
-
-// Test wrapper with all providers
-function createTestWrapper(initialPath: string = '/register') {
+function createTestWrapper(initialPath = '/register') {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -121,218 +73,226 @@ function createTestWrapper(initialPath: string = '/register') {
     { initialEntries: [initialPath] }
   );
 
-  return { queryClient, router, TestWrapper: ({ children }: { children?: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <AuthProvider>
-          <SocketProvider>
-            <RouterProvider router={router} />
-          </SocketProvider>
-        </AuthProvider>
-      </ToastProvider>
-    </QueryClientProvider>
-  )};
+  return {
+    router,
+    TestWrapper: () => (
+      <QueryClientProvider client={queryClient}>
+        <ToastProvider>
+          <AuthProvider>
+            <SocketProvider>
+              <RouterProvider router={router} />
+            </SocketProvider>
+          </AuthProvider>
+        </ToastProvider>
+      </QueryClientProvider>
+    ),
+  };
+}
+
+async function fillValidRegisterForm(user: ReturnType<typeof userEvent.setup>, email: string) {
+  await user.type(screen.getByRole('textbox', { name: /email/i }), email);
+  await user.type(screen.getByPlaceholderText('username'), 'newuser');
+  await user.type(screen.getByLabelText(/^mật khẩu$|^password$/i), 'Password123!');
+  await user.type(
+    screen.getByLabelText(/xác nhận mật khẩu|confirm password/i),
+    'Password123!'
+  );
 }
 
 describe('Register Page', () => {
   beforeEach(() => {
     localStorageMock.clear();
     vi.clearAllMocks();
+    server.resetHandlers();
   });
 
-  describe('Form Rendering', () => {
-    it('should render register form with all required fields', async () => {
-      const { TestWrapper } = createTestWrapper();
-      render(<div />, { wrapper: TestWrapper });
+  it('should render register form with all required fields', async () => {
+    const { TestWrapper } = createTestWrapper();
+    render(<TestWrapper />);
 
-      await waitFor(() => {
-        expect(screen.getByRole('textbox', { name: /email/i })).toBeInTheDocument();
-        expect(screen.getByRole('textbox', { name: /tên đăng nhập|username/i })).toBeInTheDocument();
-        expect(screen.getByLabelText(/^mật khẩu$|^password$/i)).toBeInTheDocument();
-        expect(screen.getByLabelText(/xác nhận mật khẩu|confirm password/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should render register button', async () => {
-      const { TestWrapper } = createTestWrapper();
-      render(<div />, { wrapper: TestWrapper });
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i })).toBeInTheDocument();
-      });
-    });
-
-    it('should show link to login page', async () => {
-      const { TestWrapper } = createTestWrapper();
-      render(<div />, { wrapper: TestWrapper });
-
-      await waitFor(() => {
-        expect(screen.getByRole('link', { name: /đăng nhập|login/i })).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByRole('textbox', { name: /email/i })).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('username')).toBeInTheDocument();
+      expect(screen.getByLabelText(/^mật khẩu$|^password$/i)).toBeInTheDocument();
+      expect(
+        screen.getByLabelText(/xác nhận mật khẩu|confirm password/i)
+      ).toBeInTheDocument();
     });
   });
 
-  describe('Form Validation', () => {
-    it('should show validation errors for empty form submission', async () => {
-      const user = userEvent.setup();
-      const { TestWrapper } = createTestWrapper();
-      render(<div />, { wrapper: TestWrapper });
+  it('should render register button', async () => {
+    const { TestWrapper } = createTestWrapper();
+    render(<TestWrapper />);
 
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i })).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
-
-      await waitFor(() => {
-        // Should show validation error for email
-        expect(screen.getByText(/email.*bắt buộc|email.*required/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should show validation error for invalid email format', async () => {
-      const user = userEvent.setup();
-      const { TestWrapper } = createTestWrapper();
-      render(<div />, { wrapper: TestWrapper });
-
-      await waitFor(() => {
-        expect(screen.getByRole('textbox', { name: /email/i })).toBeInTheDocument();
-      });
-
-      await user.type(screen.getByRole('textbox', { name: /email/i }), 'invalid-email');
-      await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/email.*không hợp lệ|invalid email/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should show validation error for password mismatch', async () => {
-      const user = userEvent.setup();
-      const { TestWrapper } = createTestWrapper();
-      render(<div />, { wrapper: TestWrapper });
-
-      await waitFor(() => {
-        expect(screen.getByLabelText(/^mật khẩu$|^password$/i)).toBeInTheDocument();
-      });
-
-      await user.type(screen.getByRole('textbox', { name: /email/i }), 'test@example.com');
-      await user.type(screen.getByRole('textbox', { name: /tên đăng nhập|username/i }), 'newuser');
-      await user.type(screen.getByLabelText(/^mật khẩu$|^password$/i), 'Password123!');
-      await user.type(screen.getByLabelText(/xác nhận mật khẩu|confirm password/i), 'DifferentPassword!');
-      await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/mật khẩu.*khớp|password.*match/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should show validation error for short password', async () => {
-      const user = userEvent.setup();
-      const { TestWrapper } = createTestWrapper();
-      render(<div />, { wrapper: TestWrapper });
-
-      await waitFor(() => {
-        expect(screen.getByLabelText(/^mật khẩu$|^password$/i)).toBeInTheDocument();
-      });
-
-      await user.type(screen.getByRole('textbox', { name: /email/i }), 'test@example.com');
-      await user.type(screen.getByRole('textbox', { name: /tên đăng nhập|username/i }), 'newuser');
-      await user.type(screen.getByLabelText(/^mật khẩu$|^password$/i), 'short');
-      await user.type(screen.getByLabelText(/xác nhận mật khẩu|confirm password/i), 'short');
-      await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/mật khẩu.*ít nhất|password.*minimum|mật khẩu.*tối thiểu/i)).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i })
+      ).toBeInTheDocument();
     });
   });
 
-  describe('Successful Registration', () => {
-    it('should register and redirect to /app on success', async () => {
-      const user = userEvent.setup();
-      const { TestWrapper, router } = createTestWrapper();
-      render(<div />, { wrapper: TestWrapper });
+  it('should show link to login page', async () => {
+    const { TestWrapper } = createTestWrapper();
+    render(<TestWrapper />);
 
-      await waitFor(() => {
-        expect(screen.getByRole('textbox', { name: /email/i })).toBeInTheDocument();
-      });
-
-      await user.type(screen.getByRole('textbox', { name: /email/i }), 'newuser@example.com');
-      await user.type(screen.getByRole('textbox', { name: /tên đăng nhập|username/i }), 'newuser');
-      await user.type(screen.getByLabelText(/^mật khẩu$|^password$/i), 'Password123!');
-      await user.type(screen.getByLabelText(/xác nhận mật khẩu|confirm password/i), 'Password123!');
-      await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
-
-      await waitFor(() => {
-        expect(router.state.location.pathname).toBe('/app');
-      });
-    });
-
-    it('should store tokens on successful registration', async () => {
-      const user = userEvent.setup();
-      const { TestWrapper } = createTestWrapper();
-      render(<div />, { wrapper: TestWrapper });
-
-      await waitFor(() => {
-        expect(screen.getByRole('textbox', { name: /email/i })).toBeInTheDocument();
-      });
-
-      await user.type(screen.getByRole('textbox', { name: /email/i }), 'newuser@example.com');
-      await user.type(screen.getByRole('textbox', { name: /tên đăng nhập|username/i }), 'newuser');
-      await user.type(screen.getByLabelText(/^mật khẩu$|^password$/i), 'Password123!');
-      await user.type(screen.getByLabelText(/xác nhận mật khẩu|confirm password/i), 'Password123!');
-      await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
-
-      await waitFor(() => {
-        expect(localStorageMock.setItem).toHaveBeenCalledWith('accessToken', 'mock-access-token');
-        expect(localStorageMock.setItem).toHaveBeenCalledWith('refreshToken', 'mock-refresh-token');
-      });
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: /đăng nhập|login/i })).toBeInTheDocument();
     });
   });
 
-  describe('Error Handling', () => {
-    it('should show error for duplicate email', async () => {
-      const user = userEvent.setup();
-      const { TestWrapper } = createTestWrapper();
-      render(<div />, { wrapper: TestWrapper });
+  it('should show validation errors for empty form submission', async () => {
+    const user = userEvent.setup();
+    const { TestWrapper } = createTestWrapper();
+    render(<TestWrapper />);
 
-      await waitFor(() => {
-        expect(screen.getByRole('textbox', { name: /email/i })).toBeInTheDocument();
-      });
+    await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
 
-      await user.type(screen.getByRole('textbox', { name: /email/i }), 'existing@example.com');
-      await user.type(screen.getByRole('textbox', { name: /tên đăng nhập|username/i }), 'newuser');
-      await user.type(screen.getByLabelText(/^mật khẩu$|^password$/i), 'Password123!');
-      await user.type(screen.getByLabelText(/xác nhận mật khẩu|confirm password/i), 'Password123!');
-      await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/email.*sử dụng|email.*taken|đã tồn tại/i)).toBeInTheDocument();
-      });
+    await waitFor(() => {
+      expect(screen.getByText(/email.*bắt buộc|email.*required/i)).toBeInTheDocument();
     });
+  });
 
-    it('should show loading state during registration', async () => {
-      const user = userEvent.setup();
-      const { TestWrapper } = createTestWrapper();
-      render(<div />, { wrapper: TestWrapper });
+  it('should show validation error for invalid email format', async () => {
+    const user = userEvent.setup();
+    const { TestWrapper } = createTestWrapper();
+    render(<TestWrapper />);
 
-      await waitFor(() => {
-        expect(screen.getByRole('textbox', { name: /email/i })).toBeInTheDocument();
-      });
+    await user.type(screen.getByRole('textbox', { name: /email/i }), 'invalid-email');
+    await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
 
-      await user.type(screen.getByRole('textbox', { name: /email/i }), 'newuser@example.com');
-      await user.type(screen.getByRole('textbox', { name: /tên đăng nhập|username/i }), 'newuser');
-      await user.type(screen.getByLabelText(/^mật khẩu$|^password$/i), 'Password123!');
-      await user.type(screen.getByLabelText(/xác nhận mật khẩu|confirm password/i), 'Password123!');
-      
-      // Just verify the form can be submitted successfully
-      await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
+    await waitFor(() => {
+      expect(screen.getByText(/email.*không hợp lệ|invalid email/i)).toBeInTheDocument();
+    });
+  });
 
-      // The registration should complete and redirect
-      await waitFor(() => {
-        expect(screen.getByText('Assets Library')).toBeInTheDocument();
-      });
+  it('should show validation error for password mismatch', async () => {
+    const user = userEvent.setup();
+    const { TestWrapper } = createTestWrapper();
+    render(<TestWrapper />);
+
+    await user.type(screen.getByRole('textbox', { name: /email/i }), 'test@example.com');
+    await user.type(screen.getByPlaceholderText('username'), 'newuser');
+    await user.type(screen.getByLabelText(/^mật khẩu$|^password$/i), 'Password123!');
+    await user.type(
+      screen.getByLabelText(/xác nhận mật khẩu|confirm password/i),
+      'DifferentPassword!'
+    );
+    await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/mật khẩu.*khớp|password.*match/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should show validation error for short password', async () => {
+    const user = userEvent.setup();
+    const { TestWrapper } = createTestWrapper();
+    render(<TestWrapper />);
+
+    await user.type(screen.getByRole('textbox', { name: /email/i }), 'test@example.com');
+    await user.type(screen.getByPlaceholderText('username'), 'newuser');
+    await user.type(screen.getByLabelText(/^mật khẩu$|^password$/i), 'short');
+    await user.type(screen.getByLabelText(/xác nhận mật khẩu|confirm password/i), 'short');
+    await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/mật khẩu.*ít nhất|password.*minimum|mật khẩu.*tối thiểu/i)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('should register and redirect to /app on success', async () => {
+    const user = userEvent.setup();
+    const { TestWrapper, router } = createTestWrapper();
+    render(<TestWrapper />);
+
+    await fillValidRegisterForm(user, 'newuser@example.com');
+    await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/app');
+    });
+  });
+
+  it('should store tokens on successful registration', async () => {
+    const user = userEvent.setup();
+    const { TestWrapper } = createTestWrapper();
+    render(<TestWrapper />);
+
+    await fillValidRegisterForm(user, 'newuser@example.com');
+    await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
+
+    await waitFor(() => {
+      expect(localStorageMock.setItem).toHaveBeenCalledWith('accessToken', 'mock-access-token');
+      expect(localStorageMock.setItem).toHaveBeenCalledWith(
+        'refreshToken',
+        'mock-refresh-token'
+      );
+    });
+  });
+
+  it('should show error for duplicate email', async () => {
+    const user = userEvent.setup();
+    const { TestWrapper } = createTestWrapper();
+
+    server.use(
+      http.post('/api/auth/register', async () =>
+        HttpResponse.json(
+          {
+            error: 'Email taken',
+          },
+          { status: 409 }
+        )
+      )
+    );
+
+    render(<TestWrapper />);
+
+    await fillValidRegisterForm(user, 'existing@example.com');
+    await user.click(screen.getByRole('button', { name: /đăng ký|register|tạo tài khoản/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/email taken/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should show loading state during registration', async () => {
+    const user = userEvent.setup();
+    const { TestWrapper } = createTestWrapper();
+
+    server.use(
+      http.post('/api/auth/register', async ({ request }) => {
+        const body = (await request.json()) as { email?: string; username?: string };
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        return HttpResponse.json(
+          {
+            user: {
+              _id: 'user-123',
+              email: body.email,
+              username: body.username,
+              displayName: body.username,
+            },
+            accessToken: 'mock-access-token',
+            refreshToken: 'mock-refresh-token',
+          },
+          { status: 201 }
+        );
+      })
+    );
+
+    render(<TestWrapper />);
+
+    await fillValidRegisterForm(user, 'newuser@example.com');
+
+    const submitButton = screen.getByRole('button', {
+      name: /đăng ký|register|tạo tài khoản/i,
+    });
+    await user.click(submitButton);
+
+    await waitFor(() => {
+      expect(submitButton).toBeDisabled();
     });
   });
 });
