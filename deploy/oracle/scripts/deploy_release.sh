@@ -41,7 +41,18 @@ docker compose \
   -f "${CURRENT_LINK}/docker-compose.prod.yml" \
   up -d --build --remove-orphans
 
-bash "${CURRENT_LINK}/deploy/oracle/scripts/warm_models.sh" "${CURRENT_LINK}" "${ENV_FILE}"
+WARM_MODELS_REQUIRED="${WARM_MODELS_REQUIRED:-$(read_env_value WARM_MODELS_REQUIRED)}"
+WARM_MODELS_REQUIRED="${WARM_MODELS_REQUIRED:-false}"
+
+if ! bash "${CURRENT_LINK}/deploy/oracle/scripts/warm_models.sh" "${CURRENT_LINK}" "${ENV_FILE}"; then
+  echo "AI model warmup failed."
+  if [ "${WARM_MODELS_REQUIRED}" = "true" ]; then
+    echo "WARM_MODELS_REQUIRED=true, aborting deployment." >&2
+    exit 1
+  fi
+  echo "Continuing deployment without preloaded AI models."
+fi
+
 bash "${CURRENT_LINK}/deploy/oracle/scripts/health_check.sh" "${CURRENT_LINK}" "${ENV_FILE}"
 
 ENABLE_HOST_NGINX_CUTOVER="${ENABLE_HOST_NGINX_CUTOVER:-$(read_env_value ENABLE_HOST_NGINX_CUTOVER)}"
