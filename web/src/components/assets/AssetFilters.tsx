@@ -1,32 +1,15 @@
-/**
- * AssetFilters component
- *
- * Filter controls for assets list:
- * - Category dropdown
- * - Status dropdown
- * - Clear filters button
- */
-
+import { useEffect, useMemo, useState } from 'react';
 import type { AssetCategory, AssetStatus } from '@/types/asset';
+import type { AssetCategoryOption } from '@/hooks/useAssetCategories';
 
 export interface AssetFiltersProps {
   category?: AssetCategory;
   status?: AssetStatus;
+  categoryOptions: AssetCategoryOption[];
   onCategoryChange: (category: AssetCategory | undefined) => void;
   onStatusChange: (status: AssetStatus | undefined) => void;
   onClearFilters: () => void;
 }
-
-const categoryOptions: { value: AssetCategory | ''; label: string }[] = [
-  { value: '', label: 'Tất cả danh mục' },
-  { value: 'cards', label: 'Thẻ' },
-  { value: 'stamps', label: 'Tem' },
-  { value: 'coins', label: 'Tiền xu' },
-  { value: 'toys', label: 'Đồ chơi' },
-  { value: 'art', label: 'Nghệ thuật' },
-  { value: 'memorabilia', label: 'Kỷ vật' },
-  { value: 'other', label: 'Khác' },
-];
 
 const statusOptions: { value: AssetStatus | ''; label: string }[] = [
   { value: '', label: 'Tất cả trạng thái' },
@@ -41,15 +24,52 @@ const statusOptions: { value: AssetStatus | ''; label: string }[] = [
 export function AssetFilters({
   category,
   status,
+  categoryOptions,
   onCategoryChange,
   onStatusChange,
   onClearFilters,
 }: AssetFiltersProps) {
-  const hasFilters = category || status;
+  const categoryValues = useMemo(
+    () => new Set(categoryOptions.map((option) => option.value)),
+    [categoryOptions]
+  );
+  const selectedCategoryOption = category
+    ? categoryOptions.find((option) => option.value === category)
+    : undefined;
+  const shouldShowCustomCategory =
+    Boolean(selectedCategoryOption?.allowCustomValue) ||
+    Boolean(category && !categoryValues.has(category));
+  const [customCategory, setCustomCategory] = useState(
+    category && !categoryValues.has(category) ? category : ''
+  );
+  const hasFilters = Boolean(category || status);
+
+  useEffect(() => {
+    if (!category) {
+      setCustomCategory('');
+      return;
+    }
+
+    if (!categoryValues.has(category)) {
+      setCustomCategory(category);
+      return;
+    }
+
+    if (category !== 'other') {
+      setCustomCategory('');
+    }
+  }, [category, categoryValues]);
+
+  const renderedCategoryOptions = [
+    { value: '', label: 'Tất cả danh mục' },
+    ...categoryOptions.map((option) => ({
+      value: option.value,
+      label: option.label,
+    })),
+  ];
 
   return (
     <div className="flex flex-wrap items-center gap-4">
-      {/* Category Filter */}
       <div className="relative">
         <label htmlFor="category-filter" className="sr-only">
           Danh mục
@@ -57,15 +77,27 @@ export function AssetFilters({
         <select
           id="category-filter"
           aria-label="Danh mục"
-          value={category || ''}
-          onChange={e =>
-            onCategoryChange(
-              e.target.value ? (e.target.value as AssetCategory) : undefined
-            )
-          }
+          value={category ? (categoryValues.has(category) ? category : 'other') : ''}
+          onChange={(e) => {
+            const nextValue = e.target.value;
+
+            if (!nextValue) {
+              setCustomCategory('');
+              onCategoryChange(undefined);
+              return;
+            }
+
+            if (nextValue === 'other') {
+              onCategoryChange(customCategory.trim() || 'other');
+              return;
+            }
+
+            setCustomCategory('');
+            onCategoryChange(nextValue);
+          }}
           className="appearance-none bg-surface-dark text-white border border-border-dark rounded-lg px-4 py-2.5 pr-10 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
         >
-          {categoryOptions.map(option => (
+          {renderedCategoryOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -76,7 +108,20 @@ export function AssetFilters({
         </span>
       </div>
 
-      {/* Status Filter */}
+      {shouldShowCustomCategory && (
+        <input
+          type="text"
+          value={customCategory}
+          onChange={(e) => {
+            const value = e.target.value;
+            setCustomCategory(value);
+            onCategoryChange(value.trim() || 'other');
+          }}
+          placeholder="Nhập danh mục tùy chỉnh"
+          className="min-w-[220px] bg-surface-dark text-white border border-border-dark rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+        />
+      )}
+
       <div className="relative">
         <label htmlFor="status-filter" className="sr-only">
           Trạng thái
@@ -85,14 +130,14 @@ export function AssetFilters({
           id="status-filter"
           aria-label="Trạng thái"
           value={status || ''}
-          onChange={e =>
+          onChange={(e) =>
             onStatusChange(
               e.target.value ? (e.target.value as AssetStatus) : undefined
             )
           }
           className="appearance-none bg-surface-dark text-white border border-border-dark rounded-lg px-4 py-2.5 pr-10 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
         >
-          {statusOptions.map(option => (
+          {statusOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
@@ -103,7 +148,6 @@ export function AssetFilters({
         </span>
       </div>
 
-      {/* Clear Filters */}
       {hasFilters && (
         <button
           onClick={onClearFilters}

@@ -135,6 +135,54 @@ export const formatApiError = (error: unknown): string => {
   return DEFAULT_ERROR.message;
 };
 
+export const isInvalidCategoryError = (error: unknown): boolean => {
+  const text = extractErrorText(error);
+  if (!text) {
+    return false;
+  }
+
+  return /category/i.test(text)
+    && /(must be one of|invalid|not allowed|validation)/i.test(text);
+};
+
+const extractErrorText = (error: unknown): string => {
+  if (typeof error === 'string') {
+    return error;
+  }
+
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (error && typeof error === 'object') {
+    const maybeError = error as {
+      message?: unknown;
+      error?: unknown;
+      data?: { message?: unknown; error?: unknown; details?: unknown };
+      details?: unknown;
+    };
+
+    const parts = [
+      maybeError.message,
+      maybeError.error,
+      maybeError.data?.message,
+      maybeError.data?.error,
+      maybeError.data?.details,
+      maybeError.details,
+    ]
+      .map((value) => (typeof value === 'string' ? value : ''))
+      .filter(Boolean);
+
+    return parts.join(' | ');
+  }
+
+  return '';
+};
+
+export const shouldResetCategoryFilter = (error: unknown): boolean => {
+  return isInvalidCategoryError(error);
+};
+
 /**
  * Get field validation error message
  */

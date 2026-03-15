@@ -2,11 +2,11 @@
  * AssetDetailPage
  *
  * Display asset details with AI metadata, image toggle, and status-specific UI
- * Matches Stitch prototype design from stitch_kollector_assets_detail_page
  */
 
 import { useParams, Link } from 'react-router-dom';
 import { useAsset } from '@/hooks/useAssets';
+import { useAssetCategories } from '@/hooks/useAssetCategories';
 import { useRetryAsset } from '@/hooks/useRetryAsset';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -18,6 +18,7 @@ import { ProcessingOverlay } from '@/components/assets/ProcessingOverlay';
 export function AssetDetailPage() {
   const { assetId } = useParams<{ assetId: string }>();
   const { data: asset, isLoading, isError } = useAsset(assetId);
+  const { data: categoryOptions = [] } = useAssetCategories();
   const retryMutation = useRetryAsset();
 
   const handleRetry = async () => {
@@ -68,10 +69,17 @@ export function AssetDetailPage() {
   const isProcessing = asset.status === 'processing';
   const isFailed = asset.status === 'failed';
   const hasAiMetadata = asset.aiMetadata && !asset.aiMetadata.error;
+  const uploadedAt = asset.uploadedAt || asset.createdAt;
+  const formattedSize = typeof asset.fileSizeMB === 'number' ? `${asset.fileSizeMB.toFixed(2)} MB` : '-';
+  const formattedUploadedAt = uploadedAt
+    ? new Date(uploadedAt).toLocaleString('vi-VN')
+    : '-';
+  const categoryLabel =
+    categoryOptions.find((option) => option.value === asset.category)?.label ||
+    asset.category;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-      {/* Back Link */}
       <Link
         to="/app"
         className="inline-flex items-center gap-2 text-text-secondary hover:text-white transition-colors mb-6"
@@ -80,37 +88,32 @@ export function AssetDetailPage() {
         <span>Quay lại thư viện</span>
       </Link>
 
-      {/* Asset Header */}
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-white">
             {asset.title || 'Chưa có tiêu đề'}
           </h1>
-          <p className="text-text-secondary mt-1 capitalize">{asset.category}</p>
+          <p className="text-text-secondary mt-1">{categoryLabel}</p>
         </div>
         <StatusPill status={asset.status} data-testid="status-pill" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column - Image */}
         <div className="relative">
           <div className="bg-surface-dark border border-border-dark rounded-xl overflow-hidden p-4">
             <ImageToggle
-              originalUrl={asset.imageUrl || ''}
-              processedUrl={asset.thumbnailUrl || ''} // Using thumbnail as "processed" for now
+              originalUrl={asset.originalImageUrl || asset.imageUrl || ''}
+              processedUrl={asset.processedImageUrl || asset.thumbnailUrl || ''}
               alt={asset.title || 'Asset'}
             />
           </div>
 
-          {/* Processing Overlay */}
           {isProcessing && (
             <ProcessingOverlay message="Đang xử lý" />
           )}
         </div>
 
-        {/* Right Column - Details */}
         <div className="space-y-6">
-          {/* Status-specific Messages */}
           {isProcessing && (
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-xl p-4">
               <div className="flex items-center gap-3">
@@ -155,7 +158,6 @@ export function AssetDetailPage() {
             </div>
           )}
 
-          {/* AI Metadata Section */}
           {hasAiMetadata && (
             <div className="bg-surface-dark border border-border-dark rounded-xl p-6 space-y-6" data-testid="ai-metadata">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
@@ -165,7 +167,6 @@ export function AssetDetailPage() {
                 Phân tích AI
               </h2>
 
-              {/* Description */}
               {asset.aiMetadata?.description && (
                 <div>
                   <h3 className="text-sm font-medium text-text-secondary mb-2">
@@ -175,7 +176,6 @@ export function AssetDetailPage() {
                 </div>
               )}
 
-              {/* Condition */}
               {asset.aiMetadata?.condition && (
                 <div>
                   <h3 className="text-sm font-medium text-text-secondary mb-2">
@@ -193,7 +193,6 @@ export function AssetDetailPage() {
                 </div>
               )}
 
-              {/* Authenticity */}
               {asset.aiMetadata?.authenticity && (
                 <div>
                   <h3 className="text-sm font-medium text-text-secondary mb-2">
@@ -211,7 +210,6 @@ export function AssetDetailPage() {
                 </div>
               )}
 
-              {/* Estimated Value */}
               {asset.aiMetadata?.estimatedValue && (
                 <div>
                   <h3 className="text-sm font-medium text-text-secondary mb-2">
@@ -226,7 +224,6 @@ export function AssetDetailPage() {
                 </div>
               )}
 
-              {/* Tags */}
               {asset.aiMetadata?.tags && asset.aiMetadata.tags.length > 0 && (
                 <div>
                   <h3 className="text-sm font-medium text-text-secondary mb-2">
@@ -247,27 +244,24 @@ export function AssetDetailPage() {
             </div>
           )}
 
-          {/* File Info */}
           <div className="bg-surface-dark border border-border-dark rounded-xl p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Thông tin file</h2>
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <dt className="text-text-secondary">Tên file</dt>
-                <dd className="text-white">{asset.originalFilename}</dd>
+                <dd className="text-white">{asset.originalFilename || '-'}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-text-secondary">Kích thước</dt>
-                <dd className="text-white">{asset.fileSizeMB?.toFixed(2)} MB</dd>
+                <dd className="text-white">{formattedSize}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-text-secondary">Định dạng</dt>
-                <dd className="text-white">{asset.mimeType}</dd>
+                <dd className="text-white">{asset.mimeType || '-'}</dd>
               </div>
               <div className="flex justify-between">
                 <dt className="text-text-secondary">Tải lên lúc</dt>
-                <dd className="text-white">
-                  {asset.createdAt ? new Date(asset.createdAt).toLocaleDateString('vi-VN') : 'N/A'}
-                </dd>
+                <dd className="text-white">{formattedUploadedAt}</dd>
               </div>
             </dl>
           </div>

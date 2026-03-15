@@ -8,15 +8,18 @@
 import { AssetCard } from './AssetCard';
 import { SkeletonAssetCard } from '@/components/ui/Skeleton';
 import type { Asset } from '@/types/asset';
+import type { AssetCategoryOption } from '@/hooks/useAssetCategories';
 
 export interface AssetGridProps {
   assets: Asset[];
+  categoryOptions?: AssetCategoryOption[];
   isLoading?: boolean;
   skeletonCount?: number;
 }
 
 export function AssetGrid({
   assets,
+  categoryOptions,
   isLoading = false,
   skeletonCount = 6,
 }: AssetGridProps) {
@@ -37,7 +40,7 @@ export function AssetGrid({
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {assets.map(asset => (
-        <AssetCard key={asset._id} asset={asset} />
+        <AssetCard key={asset._id} asset={asset} categoryOptions={categoryOptions} />
       ))}
     </div>
   );

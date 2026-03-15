@@ -9,7 +9,7 @@ import { useState } from 'react';
 
 interface ImageToggleProps {
   /** Original image URL */
-  originalUrl: string;
+  originalUrl?: string | null;
   /** Processed image URL (optional - may not exist for processing/failed) */
   processedUrl?: string | null;
   /** Alt text for images */
@@ -24,8 +24,8 @@ export function ImageToggle({
   alt = 'Asset image',
   onToggle,
 }: ImageToggleProps) {
-  const [showProcessed, setShowProcessed] = useState(!!processedUrl);
-  const hasProcessed = !!processedUrl;
+  const [showProcessed, setShowProcessed] = useState(Boolean(processedUrl));
+  const hasProcessed = Boolean(processedUrl);
 
   const handleToggle = (value: boolean) => {
     if (!hasProcessed) return;
@@ -34,16 +34,23 @@ export function ImageToggle({
   };
 
   const currentUrl = showProcessed && processedUrl ? processedUrl : originalUrl;
+  const hasImage = Boolean(currentUrl);
 
   return (
     <div className="space-y-4">
       {/* Image Display */}
       <div className="relative aspect-square bg-[#111817] rounded-xl overflow-hidden">
-        <img
-          src={currentUrl}
-          alt={alt}
-          className="w-full h-full object-contain"
-        />
+        {hasImage ? (
+          <img
+            src={currentUrl ?? undefined}
+            alt={alt}
+            className="w-full h-full object-contain"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-text-secondary text-sm">
+            Không có ảnh hiển thị
+          </div>
+        )}
         
         {/* Toggle indicator overlay */}
         {hasProcessed && (
