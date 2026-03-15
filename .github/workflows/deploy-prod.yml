@@ -1,0 +1,116 @@
+name: Deploy Production
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            web/package-lock.json
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install server dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Run server tests
+        working-directory: server
+        env:
+          MONGODB_URI: mongodb://127.0.0.1:27017/kollector-ci
+        run: npm test
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Run web tests
+        working-directory: web
+        run: npm run test:run
+
+      - name: Build web
+        working-directory: web
+        run: npm run build
+
+      - name: Install ai-worker dependencies
+        working-directory: ai-worker
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Run ai-worker tests
+        working-directory: ai-worker
+        run: pytest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    if: ${{ secrets.PROD_SSH_HOST != '' && secrets.PROD_SSH_USER != '' && secrets.PROD_SSH_KEY != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create release archive
+        run: |
+          tar \
+            --exclude=.git \
+            --exclude=node_modules \
+            --exclude=venv \
+            --exclude=.pytest_cache \
+            --exclude=coverage \
+            --exclude=dist \
+            -czf kollector-release.tgz .
+
+      - name: Upload release archive
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          source: kollector-release.tgz
+          target: /tmp
+
+      - name: Deploy on Oracle VM
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          APP_ROOT: ${{ vars.PROD_APP_ROOT }}
+          RELEASE_SHA: ${{ github.sha }}
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          envs: APP_ROOT,RELEASE_SHA
+          script: |
+            APP_ROOT="${APP_ROOT:-/opt/kollector}"
+            RELEASE_DIR="${APP_ROOT}/releases/${RELEASE_SHA}"
+            mkdir -p "${RELEASE_DIR}"
+            tar -xzf /tmp/kollector-release.tgz -C "${RELEASE_DIR}"
+            APP_ROOT="${APP_ROOT}" bash "${RELEASE_DIR}/deploy/oracle/scripts/deploy_release.sh" "${RELEASE_DIR}"
+            rm -f /tmp/kollector-release.tgz
