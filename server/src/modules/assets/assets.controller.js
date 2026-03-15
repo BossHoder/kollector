@@ -3,7 +3,6 @@ const { getQueueMetrics } = require('./assets.queue');
 const logger = require('../../config/logger');
 const { getAssetCategoryOptions } = require('./categories.catalog');
 const {
-  ANALYZE_QUEUE_CATEGORIES,
   buildAssetFilename,
   normalizeAnalyzeQueueCategory,
   normalizeOptionalText,
@@ -44,20 +43,15 @@ class AssetController {
 
       // Validate category
       if (!category) {
-        const rawCategory = String(req.body.category ?? '').trim();
-        const isMissingCategory = rawCategory.length === 0;
-
         return res.status(400).json({
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: isMissingCategory ? 'Category is required' : 'Invalid category',
+            message: 'Category is required',
             details: [
               {
                 field: 'category',
-                message: isMissingCategory
-                  ? 'Category is required'
-                  : `Must be one of: ${ANALYZE_QUEUE_CATEGORIES.join(', ')}`
+                message: 'Category is required'
               }
             ]
           }

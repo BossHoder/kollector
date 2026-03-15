@@ -62,7 +62,7 @@ function getQueue() {
  * @param {string} jobData.assetId - MongoDB ObjectId of the asset
  * @param {string} jobData.userId - MongoDB ObjectId of the owner
  * @param {string} jobData.imageUrl - Public URL of original image
- * @param {string} jobData.category - Asset category (sneaker, lego, camera, other)
+ * @param {string} jobData.category - Asset category label used for AI context
  * @param {string} jobData.createdAt - ISO timestamp
  * @returns {Promise<string>} Job ID
  */

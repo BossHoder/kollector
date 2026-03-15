@@ -146,8 +146,8 @@ describe('POST /api/assets/analyze-queue', () => {
       expect(asset.userId.toString()).toBe(userId.toString());
     });
 
-    it('should accept all valid categories', async () => {
-      const categories = ['sneaker', 'lego', 'camera', 'other'];
+    it('should accept canonical, catalog, and custom categories', async () => {
+      const categories = ['sneaker', 'lego', 'camera', 'other', 'cards', 'stamps', 'vinyl records'];
       
       for (const category of categories) {
         const testImageBuffer = Buffer.from('fake-image');
@@ -193,33 +193,9 @@ describe('POST /api/assets/analyze-queue', () => {
   });
 
   /**
-   * T015: Contract test - Invalid category returns 400
+   * T015: Contract test - Missing/blank category returns 400
    */
-  describe('Invalid Category Validation', () => {
-    it('should return 400 with VALIDATION_ERROR for invalid category', async () => {
-      const testImageBuffer = Buffer.from('fake-image');
-      
-      const response = await request(app)
-        .post('/api/assets/analyze-queue')
-        .set('Authorization', `Bearer ${accessToken}`)
-        .attach('image', testImageBuffer, { 
-          filename: 'test.jpg',
-          contentType: 'image/jpeg'
-        })
-        .field('category', 'invalid-category')
-        .expect('Content-Type', /json/)
-        .expect(400);
-
-      expect(response.body).toHaveProperty('success', false);
-      expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toHaveProperty('code', 'VALIDATION_ERROR');
-      expect(response.body.error).toHaveProperty('details');
-      
-      // Should have error detail for category field
-      const categoryError = response.body.error.details.find(d => d.field === 'category');
-      expect(categoryError).toBeDefined();
-    });
-
+  describe('Category Validation', () => {
     it('should return 400 when category is missing', async () => {
       const testImageBuffer = Buffer.from('fake-image');
       
@@ -234,6 +210,25 @@ describe('POST /api/assets/analyze-queue', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('should return 400 when category is blank', async () => {
+      const testImageBuffer = Buffer.from('fake-image');
+
+      const response = await request(app)
+        .post('/api/assets/analyze-queue')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .attach('image', testImageBuffer, {
+          filename: 'test.jpg',
+          contentType: 'image/jpeg'
+        })
+        .field('category', '   ')
+        .expect('Content-Type', /json/)
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.error.code).toBe('VALIDATION_ERROR');
+      expect(response.body.error.message).toBe('Category is required');
     });
   });
 

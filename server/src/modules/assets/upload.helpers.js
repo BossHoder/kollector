@@ -8,8 +8,6 @@ const MIME_EXTENSION_MAP = {
   'image/gif': '.gif',
 };
 
-const ANALYZE_QUEUE_CATEGORIES = ['sneaker', 'lego', 'camera', 'other'];
-
 function sanitizeText(value) {
   return String(value ?? '')
     .trim()
@@ -37,12 +35,15 @@ function buildAssetFilename(assetName, originalFilename, mimeType) {
 }
 
 function normalizeAnalyzeQueueCategory(category) {
-  const normalized = String(category ?? '').trim().toLowerCase();
+  const normalized = String(category ?? '')
+    .trim()
+    .replace(/\s+/g, ' ');
+
   if (!normalized) {
     return null;
   }
 
-  return ANALYZE_QUEUE_CATEGORIES.includes(normalized) ? normalized : null;
+  return normalized;
 }
 
 function normalizeOptionalText(value) {
@@ -63,7 +64,6 @@ function serializeUploadedAsset(asset) {
 }
 
 module.exports = {
-  ANALYZE_QUEUE_CATEGORIES,
   buildAssetFilename,
   normalizeAnalyzeQueueCategory,
   normalizeOptionalText,
