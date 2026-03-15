@@ -58,7 +58,7 @@ export function RegisterPage() {
         <RegisterForm
           onSubmit={handleSubmit}
           isLoading={isLoading}
-          error={null}
+          error={error}
         />
 
         {/* Login Link */}

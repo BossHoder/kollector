@@ -58,7 +58,7 @@ export function LoginPage() {
         <LoginForm
           onSubmit={handleSubmit}
           isLoading={isLoading}
-          error={null}
+          error={error}
         />
 
         {/* Sign Up Link */}

@@ -12,10 +12,7 @@ import { Button } from '@/components/ui/Button';
 import type { AssetCategoryOption } from '@/hooks/useAssetCategories';
 
 const uploadSchema = z.object({
-  assetName: z
-    .string()
-    .trim()
-    .min(1, 'Vui lòng nhập tên tài sản'),
+  assetName: z.string().trim(),
   category: z
     .string()
     .trim()
@@ -47,6 +44,11 @@ export interface UploadFormProps {
   isCategoryLoading?: boolean;
   isLoading?: boolean;
   error?: string | null;
+}
+
+function deriveAssetName(filename: string): string {
+  const normalized = filename.trim().replace(/\.[^.]+$/, '');
+  return normalized || 'uploaded-asset';
 }
 
 export function UploadForm({
@@ -150,7 +152,7 @@ export function UploadForm({
     }
 
     await onSubmit({
-      assetName: data.assetName.trim(),
+      assetName: data.assetName.trim() || deriveAssetName(selectedFile.name),
       category: data.category === 'other' ? data.customCategory : data.category,
       runAi: data.runAi,
       file: selectedFile,
@@ -254,21 +256,16 @@ export function UploadForm({
           {...register('assetName')}
           id="asset-name"
           disabled={isLoading}
-          placeholder="Ví dụ: Album tem Nhật Bản"
+          placeholder="Ví dụ: Album tem Nhật Bản (nếu để trống sẽ lấy tên file)"
           className={[
             'w-full bg-[#111817] text-white border rounded-lg px-4 py-3 text-base',
             'placeholder:text-[#4a635e]',
             'transition-all duration-200',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             'focus:outline-none focus:ring-1',
-            errors.assetName
-              ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-              : 'border-[#3b5450] focus:border-primary focus:ring-primary',
+            'border-[#3b5450] focus:border-primary focus:ring-primary',
           ].join(' ')}
         />
-        {errors.assetName && (
-          <p className="text-red-400 text-sm">{errors.assetName.message}</p>
-        )}
       </div>
 
       <div className="space-y-2">

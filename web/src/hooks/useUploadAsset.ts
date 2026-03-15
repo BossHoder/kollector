@@ -37,17 +37,28 @@ function resolveUploadExtension(file: File): string {
   return '.jpg';
 }
 
+function resolveAssetName(file: File, assetName: string): string {
+  const normalized = assetName.trim().replace(/\.[^.]+$/, '');
+  if (normalized) {
+    return normalized;
+  }
+
+  const fromFilename = file.name.trim().replace(/\.[^.]+$/, '');
+  return fromFilename || 'uploaded-asset';
+}
+
 export function useUploadAsset() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async ({ file, category, assetName, runAi }: UploadAssetParams) => {
-      const uploadFilename = `${assetName.trim().replace(/\.[^.]+$/, '')}${resolveUploadExtension(file)}`;
+      const resolvedAssetName = resolveAssetName(file, assetName);
+      const uploadFilename = `${resolvedAssetName}${resolveUploadExtension(file)}`;
       const normalizedCategory = normalizeCategory(category) ?? 'other';
       const formData = new FormData();
       formData.append('image', file, uploadFilename);
       formData.append('category', normalizedCategory);
-      formData.append('assetName', assetName.trim());
+      formData.append('assetName', resolvedAssetName);
       formData.append('runAi', String(runAi));
 
       const response = await apiClient.upload<UploadAssetResponse>(

@@ -4,7 +4,6 @@ import type { Asset } from '@/types/asset';
 
 const API_BASE = '/api';
 
-// Mock user data
 const mockUser: User = {
   id: 'user-123',
   _id: 'user-123',
@@ -14,27 +13,22 @@ const mockUser: User = {
   avatar: undefined,
 };
 
-// Mock tokens
 const mockAccessToken = 'mock-access-token';
 const mockRefreshToken = 'mock-refresh-token';
 const mockCategories = [
-  { value: 'cards', label: 'Thẻ' },
-  { value: 'stamps', label: 'Tem' },
-  { value: 'coins', label: 'Tiền xu' },
-  { value: 'toys', label: 'Đồ chơi' },
-  { value: 'art', label: 'Nghệ thuật' },
-  { value: 'memorabilia', label: 'Kỷ vật' },
-  { value: 'other', label: 'Khác', allowCustomValue: true },
+  { value: 'sneaker', label: 'Giay Sneaker' },
+  { value: 'lego', label: 'LEGO' },
+  { value: 'camera', label: 'May anh' },
+  { value: 'other', label: 'Khac' },
 ];
 
-// Mock assets data
 const mockAssets: Asset[] = [
   {
     id: 'asset-1',
     _id: 'asset-1',
     userId: 'user-123',
     title: 'Vintage Card',
-    category: 'cards',
+    category: 'sneaker',
     status: 'active',
     imageUrl: 'https://example.com/card.jpg',
     thumbnailUrl: 'https://example.com/card-thumb.jpg',
@@ -54,7 +48,7 @@ const mockAssets: Asset[] = [
     _id: 'asset-2',
     userId: 'user-123',
     title: 'Processing Stamp',
-    category: 'stamps',
+    category: 'camera',
     status: 'processing',
     imageUrl: 'https://example.com/stamp.jpg',
     thumbnailUrl: 'https://example.com/stamp-thumb.jpg',
@@ -69,7 +63,7 @@ const mockAssets: Asset[] = [
     _id: 'asset-3',
     userId: 'user-123',
     title: 'Failed Coin',
-    category: 'coins',
+    category: 'lego',
     status: 'failed',
     imageUrl: 'https://example.com/coin.jpg',
     thumbnailUrl: 'https://example.com/coin-thumb.jpg',
@@ -82,10 +76,9 @@ const mockAssets: Asset[] = [
 ];
 
 export const handlers = [
-  // Auth handlers
   http.post(`${API_BASE}/auth/login`, async ({ request }) => {
-    const body = await request.json() as { email: string; password: string };
-    
+    const body = (await request.json()) as { email: string; password: string };
+
     if (body.email === 'test@example.com' && body.password === 'password123') {
       return HttpResponse.json({
         user: mockUser,
@@ -93,13 +86,13 @@ export const handlers = [
         refreshToken: mockRefreshToken,
       });
     }
-    
+
     return HttpResponse.json(
       {
         success: false,
         error: {
           code: 'UNAUTHORIZED',
-          message: 'Sai tài khoản hoặc mật khẩu',
+          message: 'Sai tÃ i khoáº£n hoáº·c máº­t kháº©u',
         },
       },
       { status: 401 }
@@ -107,36 +100,34 @@ export const handlers = [
   }),
 
   http.post(`${API_BASE}/auth/register`, async ({ request }) => {
-    const body = await request.json() as { email: string; username: string; password: string };
-    
-    // Simulate duplicate email error
+    const body = (await request.json()) as { email: string; username: string; password: string };
+
     if (body.email === 'existing@example.com') {
       return HttpResponse.json(
         {
           success: false,
           error: {
             code: 'CONFLICT',
-            message: 'Email đã được sử dụng',
+            message: 'Email Ä‘Ã£ Ä‘Æ°á»£c sá»­ dá»¥ng',
           },
         },
         { status: 409 }
       );
     }
-    
-    // Simulate duplicate username error
+
     if (body.username === 'existinguser') {
       return HttpResponse.json(
         {
           success: false,
           error: {
             code: 'CONFLICT',
-            message: 'Tên đăng nhập đã được sử dụng',
+            message: 'TÃªn Ä‘Äƒng nháº­p Ä‘Ã£ Ä‘Æ°á»£c sá»­ dá»¥ng',
           },
         },
         { status: 409 }
       );
     }
-    
+
     return HttpResponse.json(
       {
         user: {
@@ -157,41 +148,40 @@ export const handlers = [
     );
   }),
 
-  http.post(`${API_BASE}/auth/refresh`, () => {
-    return HttpResponse.json({
+  http.post(`${API_BASE}/auth/refresh`, () =>
+    HttpResponse.json({
       accessToken: 'new-access-token',
       refreshToken: 'new-refresh-token',
-    });
-  }),
+    })
+  ),
 
-  http.get(`${API_BASE}/assets/categories`, () => {
-    return HttpResponse.json({
+  http.get(`${API_BASE}/assets/categories`, () =>
+    HttpResponse.json({
       success: true,
       data: mockCategories,
-    });
-  }),
+    })
+  ),
 
-  // Assets handlers
   http.get(`${API_BASE}/assets`, ({ request }) => {
     const url = new URL(request.url);
     const category = url.searchParams.get('category');
     const status = url.searchParams.get('status');
     const page = parseInt(url.searchParams.get('page') || '1', 10);
     const limit = parseInt(url.searchParams.get('limit') || '12', 10);
-    
+
     let filteredAssets = [...mockAssets];
-    
+
     if (category) {
-      filteredAssets = filteredAssets.filter(a => a.category === category);
+      filteredAssets = filteredAssets.filter((asset) => asset.category === category);
     }
+
     if (status) {
-      filteredAssets = filteredAssets.filter(a => a.status === status);
+      filteredAssets = filteredAssets.filter((asset) => asset.status === status);
     }
-    
-    // Page-based pagination
+
     const startIndex = (page - 1) * limit;
     const assets = filteredAssets.slice(startIndex, startIndex + limit);
-    
+
     return HttpResponse.json({
       assets,
       total: filteredAssets.length,
@@ -201,21 +191,17 @@ export const handlers = [
   }),
 
   http.get(`${API_BASE}/assets/:id`, ({ params }) => {
-    const { id } = params;
-    const asset = mockAssets.find(a => a._id === id);
-    
+    const asset = mockAssets.find((item) => item._id === params.id);
+
     if (!asset) {
-      return HttpResponse.json(
-        { error: 'Asset not found' },
-        { status: 404 }
-      );
+      return HttpResponse.json({ error: 'Asset not found' }, { status: 404 });
     }
-    
+
     return HttpResponse.json(asset);
   }),
 
-  http.post(`${API_BASE}/assets/analyze-queue`, async () => {
-    return HttpResponse.json(
+  http.post(`${API_BASE}/assets/analyze-queue`, async () =>
+    HttpResponse.json(
       {
         success: true,
         data: {
@@ -227,7 +213,7 @@ export const handlers = [
             id: 'new-asset-id',
             _id: 'new-asset-id',
             userId: mockUser.id,
-            category: 'cards',
+            category: 'sneaker',
             status: 'processing',
             originalFilename: 'new-asset.jpg',
             fileSizeBytes: 1024 * 1024,
@@ -244,19 +230,18 @@ export const handlers = [
         },
       },
       { status: 202 }
-    );
-  }),
+    )
+  ),
 
-  http.post(`${API_BASE}/assets/:id/retry`, ({ params }) => {
-    const { id } = params;
-    return HttpResponse.json({
+  http.post(`${API_BASE}/assets/:id/retry`, ({ params }) =>
+    HttpResponse.json({
       success: true,
       data: {
-        assetId: id,
+        assetId: params.id,
         jobId: 'retry-job-123',
         status: 'processing',
         message: 'Asset re-queued for analysis',
       },
-    });
-  }),
+    })
+  ),
 ];

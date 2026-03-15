@@ -6,21 +6,19 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { server } from '../mocks/server';
 import { http, HttpResponse } from 'msw';
 
-// Components under test
 import { AuthProvider } from '@/contexts/AuthContext';
 import { SocketProvider } from '@/contexts/SocketContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 import { AssetsPage } from '@/pages/app/AssetsPage';
 import type { Asset } from '@/types/asset';
 
-// Mock localStorage with authenticated user
 const localStorageMock = (() => {
   let store: Record<string, string> = {
     accessToken: 'valid-token',
@@ -47,7 +45,6 @@ const localStorageMock = (() => {
 
 Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
-// Mock socket.io-client
 vi.mock('socket.io-client', () => ({
   io: vi.fn(() => ({
     on: vi.fn(),
@@ -59,7 +56,6 @@ vi.mock('socket.io-client', () => ({
   })),
 }));
 
-// Test wrapper with all providers
 function TestWrapper({ children }: { children: React.ReactNode }) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -86,13 +82,12 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Mock assets data
 const mockAssets: Asset[] = [
   {
     _id: 'asset-1',
     userId: 'user-123',
     title: 'Vintage Card',
-    category: 'cards',
+    category: 'sneaker',
     status: 'active',
     imageUrl: 'https://example.com/card.jpg',
     thumbnailUrl: 'https://example.com/card-thumb.jpg',
@@ -106,7 +101,7 @@ const mockAssets: Asset[] = [
     _id: 'asset-2',
     userId: 'user-123',
     title: 'Processing Stamp',
-    category: 'stamps',
+    category: 'camera',
     status: 'processing',
     imageUrl: 'https://example.com/stamp.jpg',
     thumbnailUrl: 'https://example.com/stamp-thumb.jpg',
@@ -120,7 +115,7 @@ const mockAssets: Asset[] = [
     _id: 'asset-3',
     userId: 'user-123',
     title: 'Failed Coin',
-    category: 'coins',
+    category: 'lego',
     status: 'failed',
     imageUrl: 'https://example.com/coin.jpg',
     thumbnailUrl: 'https://example.com/coin-thumb.jpg',
@@ -141,22 +136,19 @@ describe('Assets List', () => {
   it('should display loading skeleton while fetching assets', () => {
     server.use(
       http.get('/api/assets', async () => {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
         return HttpResponse.json({ assets: mockAssets, total: 3 });
       })
     );
 
     render(<AssetsPage />, { wrapper: TestWrapper });
 
-    // Should show skeleton loaders
     expect(screen.getAllByRole('generic', { hidden: true })).toBeDefined();
   });
 
   it('should display assets grid after loading', async () => {
     server.use(
-      http.get('/api/assets', () => {
-        return HttpResponse.json({ assets: mockAssets, total: 3 });
-      })
+      http.get('/api/assets', () => HttpResponse.json({ assets: mockAssets, total: 3 }))
     );
 
     render(<AssetsPage />, { wrapper: TestWrapper });
@@ -170,9 +162,7 @@ describe('Assets List', () => {
 
   it('should display correct status pills for each asset', async () => {
     server.use(
-      http.get('/api/assets', () => {
-        return HttpResponse.json({ assets: mockAssets, total: 3 });
-      })
+      http.get('/api/assets', () => HttpResponse.json({ assets: mockAssets, total: 3 }))
     );
 
     render(<AssetsPage />, { wrapper: TestWrapper });
@@ -192,12 +182,13 @@ describe('Assets List', () => {
         const url = new URL(request.url);
         const category = url.searchParams.get('category');
 
-        if (category === 'cards') {
+        if (category === 'sneaker') {
           return HttpResponse.json({
-            assets: mockAssets.filter(a => a.category === 'cards'),
+            assets: mockAssets.filter((asset) => asset.category === 'sneaker'),
             total: 1,
           });
         }
+
         return HttpResponse.json({ assets: mockAssets, total: 3 });
       })
     );
@@ -208,9 +199,8 @@ describe('Assets List', () => {
       expect(screen.getByText('Vintage Card')).toBeInTheDocument();
     });
 
-    // Click on category filter
     const categoryFilter = screen.getByRole('combobox', { name: /danh mục/i });
-    await user.selectOptions(categoryFilter, 'cards');
+    await user.selectOptions(categoryFilter, 'sneaker');
 
     await waitFor(() => {
       expect(screen.getByText('Vintage Card')).toBeInTheDocument();
@@ -228,10 +218,11 @@ describe('Assets List', () => {
 
         if (status === 'failed') {
           return HttpResponse.json({
-            assets: mockAssets.filter(a => a.status === 'failed'),
+            assets: mockAssets.filter((asset) => asset.status === 'failed'),
             total: 1,
           });
         }
+
         return HttpResponse.json({ assets: mockAssets, total: 3 });
       })
     );
@@ -242,7 +233,6 @@ describe('Assets List', () => {
       expect(screen.getByText('Vintage Card')).toBeInTheDocument();
     });
 
-    // Click on status filter
     const statusFilter = screen.getByRole('combobox', { name: /trạng thái/i });
     await user.selectOptions(statusFilter, 'failed');
 
@@ -254,9 +244,7 @@ describe('Assets List', () => {
 
   it('should show empty state when no assets', async () => {
     server.use(
-      http.get('/api/assets', () => {
-        return HttpResponse.json({ assets: [], total: 0 });
-      })
+      http.get('/api/assets', () => HttpResponse.json({ assets: [], total: 0 }))
     );
 
     render(<AssetsPage />, { wrapper: TestWrapper });
@@ -268,9 +256,7 @@ describe('Assets List', () => {
 
   it('should show error state when fetch fails', async () => {
     server.use(
-      http.get('/api/assets', () => {
-        return HttpResponse.json({ error: 'Server error' }, { status: 500 });
-      })
+      http.get('/api/assets', () => HttpResponse.json({ error: 'Server error' }, { status: 500 }))
     );
 
     render(<AssetsPage />, { wrapper: TestWrapper });
@@ -284,9 +270,7 @@ describe('Assets List', () => {
     const user = userEvent.setup();
 
     server.use(
-      http.get('/api/assets', () => {
-        return HttpResponse.json({ assets: mockAssets, total: 3 });
-      })
+      http.get('/api/assets', () => HttpResponse.json({ assets: mockAssets, total: 3 }))
     );
 
     render(<AssetsPage />, { wrapper: TestWrapper });
@@ -295,7 +279,6 @@ describe('Assets List', () => {
       expect(screen.getByText('Vintage Card')).toBeInTheDocument();
     });
 
-    // Click on asset card
     const assetCard = screen.getByText('Vintage Card').closest('a');
     if (assetCard) {
       await user.click(assetCard);
