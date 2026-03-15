@@ -22,37 +22,37 @@ export default function SettingsScreen() {
   const handleLogout = async () => {
     try {
       await logout();
-      toast.success('Logged out successfully');
+      toast.success('Đã đăng xuất thành công');
     } catch (error) {
-      toast.error('Logout failed');
+      toast.error('Đăng xuất không thành công');
     }
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>Cài đặt</Text>
       </View>
       <View style={styles.content}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
+          <Text style={styles.sectionTitle}>Thông tin tài khoản</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Email</Text>
-            <Text style={styles.value}>{user?.email || 'Not logged in'}</Text>
+            <Text style={styles.value}>{user?.email || 'Chưa đăng nhập'}</Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Connection</Text>
+          <Text style={styles.sectionTitle}>Trạng thái kết nối</Text>
           <View style={styles.row}>
-            <Text style={styles.label}>Realtime Status</Text>
+            <Text style={styles.label}>Kết nối realtime</Text>
             <Text style={[
               styles.value,
               connectionState === 'connected' && styles.connected,
               connectionState === 'disconnected' && styles.disconnected,
               connectionState === 'reconnecting' && styles.reconnecting,
             ]}>
-              {connectionState}
+              {connectionState === 'connected' ? 'Đã kết nối' : connectionState === 'disconnected' ? 'Mất kết nối' : connectionState === 'reconnecting' ? 'Đang kết nối lại' : connectionState}
             </Text>
           </View>
         </View>
@@ -60,10 +60,10 @@ export default function SettingsScreen() {
         <TouchableOpacity
           style={styles.logoutButton}
           onPress={handleLogout}
-          accessibilityLabel="Log out"
+          accessibilityLabel="Đăng xuất"
           accessibilityRole="button"
         >
-          <Text style={styles.logoutText}>Log Out</Text>
+          <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

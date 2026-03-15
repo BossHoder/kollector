@@ -48,7 +48,7 @@ function onRefreshComplete(newAccessToken) {
  */
 async function refreshAccessToken() {
   const refreshToken = await getRefreshToken();
-  
+
   if (!refreshToken) {
     return null;
   }
@@ -70,7 +70,7 @@ async function refreshAccessToken() {
     }
 
     const data = await response.json();
-    
+
     // Mobile response only contains accessToken (per research.md)
     if (data.accessToken) {
       await setAccessToken(data.accessToken);
@@ -125,6 +125,25 @@ async function handle401(retryRequest) {
     }
     isRefreshing = false;
   }
+}
+
+/**
+ * Normalize any value to a readable error string.
+ * Handles: string, Error, array, plain object.
+ * @param {*} value
+ * @returns {string}
+ */
+function extractErrorString(value) {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.map(extractErrorString).join('; ');
+  if (value && typeof value === 'object') {
+    // Error or ApiError instance
+    if (typeof value.message === 'string') return value.message;
+    // Generic object — try common server keys before JSON fallback
+    if (typeof value.error === 'string') return value.error;
+    try { return JSON.stringify(value); } catch { return 'An error occurred'; }
+  }
+  return String(value);
 }
 
 /**
@@ -215,7 +234,10 @@ export async function apiRequest(endpoint, options = {}) {
 
   // Handle error responses
   if (!response.ok) {
-    const message = data?.message || data?.error || `Request failed with status ${response.status}`;
+    const raw = (typeof data === 'object' && data !== null)
+      ? (data.message ?? data.error ?? data)
+      : data;
+    const message = extractErrorString(raw) || `Request failed with status ${response.status}`;
     throw new ApiError(message, response.status, data);
   }
 
@@ -274,7 +296,8 @@ export async function uploadFile(endpoint, formData) {
   const data = await response.json();
 
   if (!response.ok) {
-    const message = data?.message || data?.error || 'Upload failed';
+    const raw = (data && typeof data === 'object') ? (data.message ?? data.error ?? data) : data;
+    const message = extractErrorString(raw) || 'Upload failed';
     throw new ApiError(message, response.status, data);
   }
 

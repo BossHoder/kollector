@@ -55,17 +55,17 @@ export default function TabsNavigator() {
       <Tab.Screen
         name="Library"
         component={AssetsLibraryScreen}
-        options={{ title: 'Library' }}
+        options={{ title: 'Thư viện' }}
       />
       <Tab.Screen
         name="Upload"
         component={UploadScreen}
-        options={{ title: 'Upload' }}
+        options={{ title: 'Tải lên' }}
       />
       <Tab.Screen
         name="Settings"
         component={SettingsScreen}
-        options={{ title: 'Settings' }}
+        options={{ title: 'Cài đặt' }}
       />
     </Tab.Navigator>
   );

@@ -59,7 +59,7 @@ describe('LoginScreen', () => {
     it('should render password input', () => {
       render(<LoginScreen />);
       
-      expect(screen.getByPlaceholderText(/password/i)).toBeTruthy();
+      expect(screen.getByPlaceholderText(/•••/)).toBeTruthy();
     });
 
     it('should render login button', () => {
@@ -79,14 +79,14 @@ describe('LoginScreen', () => {
     it('should show error for empty email', async () => {
       render(<LoginScreen />);
       
-      const passwordInput = screen.getByPlaceholderText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/•••/);
       fireEvent.changeText(passwordInput, 'password123');
       
       const submitButton = screen.getByTestId('login-button');
       fireEvent.press(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/email.*required/i)).toBeTruthy();
+        expect(screen.getByText(/email.*trống/i)).toBeTruthy();
       });
 
       expect(mockLogin).not.toHaveBeenCalled();
@@ -96,7 +96,7 @@ describe('LoginScreen', () => {
       render(<LoginScreen />);
       
       const emailInput = screen.getByPlaceholderText(/email/i);
-      const passwordInput = screen.getByPlaceholderText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/•••/);
       
       fireEvent.changeText(emailInput, 'invalid-email');
       fireEvent.changeText(passwordInput, 'password123');
@@ -105,7 +105,7 @@ describe('LoginScreen', () => {
       fireEvent.press(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/valid.*email/i)).toBeTruthy();
+        expect(screen.getByText(/email.*hợp lệ/i)).toBeTruthy();
       });
 
       expect(mockLogin).not.toHaveBeenCalled();
@@ -121,7 +121,7 @@ describe('LoginScreen', () => {
       fireEvent.press(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/password.*required/i)).toBeTruthy();
+        expect(screen.getByText(/mật khẩu.*trống/i)).toBeTruthy();
       });
 
       expect(mockLogin).not.toHaveBeenCalled();
@@ -147,7 +147,7 @@ describe('LoginScreen', () => {
       render(<LoginScreen />);
       
       const emailInput = screen.getByPlaceholderText(/email/i);
-      const passwordInput = screen.getByPlaceholderText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/•••/);
       
       fireEvent.changeText(emailInput, 'test@example.com');
       fireEvent.changeText(passwordInput, 'password123');
@@ -181,13 +181,13 @@ describe('LoginScreen', () => {
     });
 
     it('should display API error message on login failure', async () => {
-      const apiError = new Error('Invalid credentials');
+      const apiError = new Error('Thông tin đăng nhập không hợp lệ');
       mockLogin.mockRejectedValue(apiError);
       
       render(<LoginScreen />);
       
       const emailInput = screen.getByPlaceholderText(/email/i);
-      const passwordInput = screen.getByPlaceholderText(/password/i);
+      const passwordInput = screen.getByPlaceholderText(/•••/);
       
       fireEvent.changeText(emailInput, 'test@example.com');
       fireEvent.changeText(passwordInput, 'wrongpassword');
@@ -196,7 +196,7 @@ describe('LoginScreen', () => {
       fireEvent.press(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/invalid credentials/i)).toBeTruthy();
+        expect(screen.getByText(/đăng nhập không hợp lệ/i)).toBeTruthy();
       });
     });
   });
@@ -217,7 +217,7 @@ describe('LoginScreen', () => {
       render(<LoginScreen />);
       
       const emailInput = screen.getByPlaceholderText(/email/i);
-      const passwordInput = screen.getByPlaceholderText(/password/i);
+      const passwordInput = screen.getByPlaceholderText('••••••••');
       
       expect(emailInput.props.accessibilityLabel || emailInput.props.accessible).toBeTruthy();
       expect(passwordInput.props.accessibilityLabel || passwordInput.props.accessible).toBeTruthy();
@@ -226,7 +226,7 @@ describe('LoginScreen', () => {
     it('should mask password input', () => {
       render(<LoginScreen />);
       
-      const passwordInput = screen.getByPlaceholderText(/password/i);
+      const passwordInput = screen.getByPlaceholderText('••••••••');
       expect(passwordInput.props.secureTextEntry).toBe(true);
     });
 

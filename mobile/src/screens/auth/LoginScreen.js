@@ -46,14 +46,14 @@ export default function LoginScreen() {
 
     // Email validation
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'Email không được để trống';
     } else if (!EMAIL_REGEX.test(email.trim())) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = 'Email không hợp lệ';
     }
 
     // Password validation
     if (!password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Mật khẩu không được để trống';
     }
 
     setErrors(newErrors);
@@ -70,9 +70,9 @@ export default function LoginScreen() {
     setIsSubmitting(true);
     try {
       await login(email.trim(), password);
-      toast.success('Logged in successfully');
+      toast.success('Đã đăng nhập thành công');
     } catch (error) {
-      const message = error.message || 'Invalid credentials';
+      const message = error.message || 'Thông tin đăng nhập không hợp lệ';
       setApiError(message);
       toast.error(message);
     } finally {
@@ -113,12 +113,12 @@ export default function LoginScreen() {
       >
         <View style={styles.content}>
           <Text style={styles.title}>Kollector</Text>
-          <Text style={styles.subtitle}>Sign in to your account</Text>
+          <Text style={styles.subtitle}>Tiếp tục hành trình sưu tầm của bạn</Text>
 
           <View style={styles.form}>
             <Input
               label="Email"
-              placeholder="Enter your email"
+              placeholder="vidu@email.com"
               value={email}
               onChangeText={handleEmailChange}
               keyboardType="email-address"
@@ -129,8 +129,8 @@ export default function LoginScreen() {
             />
 
             <Input
-              label="Password"
-              placeholder="Enter your password"
+              label="Mật khẩu"
+              placeholder="••••••••"
               value={password}
               onChangeText={handlePasswordChange}
               secureTextEntry
@@ -151,7 +151,7 @@ export default function LoginScreen() {
               fullWidth
               style={styles.submitButton}
             >
-              Sign In
+              Đăng nhập
             </Button>
           </View>
 
@@ -159,11 +159,11 @@ export default function LoginScreen() {
             style={styles.registerLink}
             onPress={() => navigation.navigate('Register')}
             testID="register-link"
-            accessibilityLabel="Create an account"
+            accessibilityLabel="Tạo tài khoản"
             accessibilityRole="button"
           >
             <Text style={styles.registerText}>
-              Don't have an account? <Text style={styles.registerTextBold}>Sign Up</Text>
+              Chưa có tài khoản? <Text style={styles.registerTextBold}>Tạo tài khoản</Text>
             </Text>
           </TouchableOpacity>
         </View>

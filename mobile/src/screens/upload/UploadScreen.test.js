@@ -67,7 +67,7 @@ describe('UploadScreen', () => {
     it('should render upload screen with image selection', () => {
       render(<UploadScreen />);
       
-      expect(screen.getByTestId('select-image-button') || screen.getByText(/select.*image|choose.*photo|add.*photo/i)).toBeTruthy();
+      expect(screen.getByTestId('select-image-button') || screen.getByText(/chọn.*ảnh/i)).toBeTruthy();
     });
 
     it('should have submit button disabled initially', () => {
@@ -91,7 +91,7 @@ describe('UploadScreen', () => {
       // Select image
       const selectButton = screen.getByTestId('select-image-button');
       fireEvent.press(selectButton);
-      fireEvent.press(screen.getByText(/gallery|library/i));
+      fireEvent.press(screen.getByText(/thư viện/i));
 
       await waitFor(() => {
         // Image should be displayed
@@ -109,7 +109,7 @@ describe('UploadScreen', () => {
       // Select category
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Sneaker'));
+      fireEvent.press(screen.getByText('Giày'));
 
       // Submit should still be disabled (no image)
       const submitButton = screen.getByTestId('submit-button');
@@ -122,7 +122,7 @@ describe('UploadScreen', () => {
       // Select image
       const selectButton = screen.getByTestId('select-image-button');
       fireEvent.press(selectButton);
-      fireEvent.press(screen.getByText(/gallery|library/i));
+      fireEvent.press(screen.getByText(/thư viện/i));
 
       await waitFor(() => {
         expect(screen.getByTestId('selected-image')).toBeTruthy();
@@ -131,7 +131,7 @@ describe('UploadScreen', () => {
       // Select category
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Sneaker'));
+      fireEvent.press(screen.getByText('Giày'));
 
       await waitFor(() => {
         const submitButton = screen.getByTestId('submit-button');
@@ -156,7 +156,7 @@ describe('UploadScreen', () => {
       
       const selectButton = screen.getByTestId('select-image-button');
       fireEvent.press(selectButton);
-      fireEvent.press(screen.getByText(/gallery|library/i));
+      fireEvent.press(screen.getByText(/thư viện/i));
 
       await waitFor(() => {
         expect(imagePicker.pickImageFromGallery).toHaveBeenCalled();
@@ -180,7 +180,7 @@ describe('UploadScreen', () => {
       
       const selectButton = screen.getByTestId('select-image-button');
       fireEvent.press(selectButton);
-      fireEvent.press(screen.getByText(/gallery|library/i));
+      fireEvent.press(screen.getByText(/thư viện/i));
 
       await waitFor(() => {
         expect(screen.getByTestId('selected-image')).toBeTruthy();
@@ -193,7 +193,7 @@ describe('UploadScreen', () => {
       // Select first image
       const selectButton = screen.getByTestId('select-image-button');
       fireEvent.press(selectButton);
-      fireEvent.press(screen.getByText(/gallery|library/i));
+      fireEvent.press(screen.getByText(/thư viện/i));
 
       await waitFor(() => {
         expect(screen.getByTestId('selected-image')).toBeTruthy();
@@ -202,7 +202,7 @@ describe('UploadScreen', () => {
       // Change image - opens source picker, then pick gallery again
       const changeButton = screen.getByTestId('change-image-button');
       fireEvent.press(changeButton);
-      fireEvent.press(screen.getByText(/gallery|library/i));
+      fireEvent.press(screen.getByText(/thư viện/i));
 
       await waitFor(() => {
         expect(imagePicker.pickImageFromGallery).toHaveBeenCalledTimes(2);
@@ -222,7 +222,7 @@ describe('UploadScreen', () => {
       
       const selectButton = screen.getByTestId('select-image-button');
       fireEvent.press(selectButton);
-      fireEvent.press(screen.getByText(/gallery|library/i));
+      fireEvent.press(screen.getByText(/thư viện/i));
 
       await waitFor(() => {
         expect(mockToast.error).toHaveBeenCalledWith(expect.stringContaining('10MB'));
@@ -240,10 +240,10 @@ describe('UploadScreen', () => {
       
       const selectButton = screen.getByTestId('select-image-button');
       fireEvent.press(selectButton);
-      fireEvent.press(screen.getByText(/gallery|library/i));
+      fireEvent.press(screen.getByText(/thư viện/i));
 
       await waitFor(() => {
-        expect(mockToast.error).toHaveBeenCalledWith(expect.stringContaining('not supported'));
+        expect(mockToast.error).toHaveBeenCalledWith(expect.stringContaining('không được hỗ trợ'));
       });
     });
   });
@@ -255,7 +255,7 @@ describe('UploadScreen', () => {
       // Select image
       const selectButton = screen.getByTestId('select-image-button');
       fireEvent.press(selectButton);
-      fireEvent.press(screen.getByText(/gallery|library/i));
+      fireEvent.press(screen.getByText(/thư viện/i));
 
       await waitFor(() => {
         expect(screen.getByTestId('selected-image')).toBeTruthy();
@@ -264,7 +264,7 @@ describe('UploadScreen', () => {
       // Select category
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Sneaker'));
+      fireEvent.press(screen.getByText('Giày'));
 
       // Submit
       const submitButton = screen.getByTestId('submit-button');
@@ -286,7 +286,7 @@ describe('UploadScreen', () => {
       // Select image and category
       const selectButton = screen.getByTestId('select-image-button');
       fireEvent.press(selectButton);
-      fireEvent.press(screen.getByText(/gallery|library/i));
+      fireEvent.press(screen.getByText(/thư viện/i));
 
       await waitFor(() => {
         expect(screen.getByTestId('selected-image')).toBeTruthy();
@@ -294,7 +294,7 @@ describe('UploadScreen', () => {
 
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Sneaker'));
+      fireEvent.press(screen.getByText('Giày'));
 
       // Submit
       const submitButton = screen.getByTestId('submit-button');
@@ -312,7 +312,7 @@ describe('UploadScreen', () => {
       // Select image and category
       const selectButton = screen.getByTestId('select-image-button');
       fireEvent.press(selectButton);
-      fireEvent.press(screen.getByText(/gallery|library/i));
+      fireEvent.press(screen.getByText(/thư viện/i));
 
       await waitFor(() => {
         expect(screen.getByTestId('selected-image')).toBeTruthy();
@@ -320,7 +320,7 @@ describe('UploadScreen', () => {
 
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Sneaker'));
+      fireEvent.press(screen.getByText('Giày'));
 
       // Submit
       const submitButton = screen.getByTestId('submit-button');
@@ -337,7 +337,7 @@ describe('UploadScreen', () => {
       // Select image and category
       const selectButton = screen.getByTestId('select-image-button');
       fireEvent.press(selectButton);
-      fireEvent.press(screen.getByText(/gallery|library/i));
+      fireEvent.press(screen.getByText(/thư viện/i));
 
       await waitFor(() => {
         expect(screen.getByTestId('selected-image')).toBeTruthy();
@@ -345,7 +345,7 @@ describe('UploadScreen', () => {
 
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Sneaker'));
+      fireEvent.press(screen.getByText('Giày'));
 
       // Submit
       const submitButton = screen.getByTestId('submit-button');
@@ -364,7 +364,7 @@ describe('UploadScreen', () => {
       // Select image and category
       const selectButton = screen.getByTestId('select-image-button');
       fireEvent.press(selectButton);
-      fireEvent.press(screen.getByText(/gallery|library/i));
+      fireEvent.press(screen.getByText(/thư viện/i));
 
       await waitFor(() => {
         expect(screen.getByTestId('selected-image')).toBeTruthy();
@@ -372,7 +372,7 @@ describe('UploadScreen', () => {
 
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Sneaker'));
+      fireEvent.press(screen.getByText('Giày'));
 
       // Submit
       const submitButton = screen.getByTestId('submit-button');

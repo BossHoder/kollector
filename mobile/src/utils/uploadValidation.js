@@ -52,7 +52,7 @@ export function validateFileType(mimeType) {
   if (!mimeType) {
     return {
       valid: false,
-      error: 'File type could not be determined',
+      error: 'Không thể xác định loại tệp',
     };
   }
 
@@ -65,7 +65,7 @@ export function validateFileType(mimeType) {
   const acceptedTypes = Object.values(TYPE_DESCRIPTIONS).join(', ');
   return {
     valid: false,
-    error: `File type "${mimeType}" is not supported. Accepted types: ${acceptedTypes}`,
+    error: `Loại tệp "${mimeType}" không được hỗ trợ. Các loại được hỗ trợ: ${acceptedTypes}`,
   };
 }
 
@@ -78,21 +78,21 @@ export function validateFileSize(sizeInBytes) {
   if (sizeInBytes === undefined || sizeInBytes === null || sizeInBytes < 0) {
     return {
       valid: false,
-      error: 'File size could not be determined',
+      error: 'Không thể xác định kích thước tệp',
     };
   }
 
   if (sizeInBytes === 0) {
     return {
       valid: false,
-      error: 'File appears to be empty',
+      error: 'Tệp dường như trống',
     };
   }
 
   if (sizeInBytes > MAX_FILE_SIZE) {
     return {
       valid: false,
-      error: `File size (${formatBytes(sizeInBytes)}) exceeds maximum allowed size of 10MB`,
+      error: `Kích thước tệp (${formatBytes(sizeInBytes)}) vượt quá 10MB tối đa`,
     };
   }
 
@@ -110,7 +110,7 @@ export function validateUploadFile(file) {
   if (!file) {
     return {
       valid: false,
-      errors: ['No file provided'],
+      errors: ['Chưa cung cấp tệp'],
     };
   }
 

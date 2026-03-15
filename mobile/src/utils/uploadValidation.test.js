@@ -59,13 +59,13 @@ describe('uploadValidation', () => {
     it('should reject PDF files', () => {
       const result = validateFileType('application/pdf');
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('not supported');
+      expect(result.error).toContain('không được hỗ trợ');
     });
 
     it('should reject video files', () => {
       const result = validateFileType('video/mp4');
       expect(result.valid).toBe(false);
-      expect(result.error).toContain('not supported');
+      expect(result.error).toContain('không được hỗ trợ');
     });
 
     it('should reject text files', () => {
@@ -153,7 +153,7 @@ describe('uploadValidation', () => {
       const result = validateUploadFile(file);
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors[0]).toContain('not supported');
+      expect(result.errors[0]).toContain('không được hỗ trợ');
     });
 
     it('should fail for oversized file', () => {

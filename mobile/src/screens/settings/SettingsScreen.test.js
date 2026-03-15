@@ -66,7 +66,7 @@ describe('SettingsScreen', () => {
 
       const { getByText } = render(<SettingsScreen />);
 
-      expect(getByText('Not logged in')).toBeTruthy();
+      expect(getByText('Chưa đăng nhập')).toBeTruthy();
     });
 
     it('should display email label', () => {
@@ -84,7 +84,7 @@ describe('SettingsScreen', () => {
 
       const { getByText } = render(<SettingsScreen />);
 
-      expect(getByText('connected')).toBeTruthy();
+      expect(getByText('Đã kết nối')).toBeTruthy();
     });
 
     it('should display disconnected status', () => {
@@ -94,7 +94,7 @@ describe('SettingsScreen', () => {
 
       const { getByText } = render(<SettingsScreen />);
 
-      expect(getByText('disconnected')).toBeTruthy();
+      expect(getByText('Mất kết nối')).toBeTruthy();
     });
 
     it('should display reconnecting status', () => {
@@ -104,13 +104,13 @@ describe('SettingsScreen', () => {
 
       const { getByText } = render(<SettingsScreen />);
 
-      expect(getByText('reconnecting')).toBeTruthy();
+      expect(getByText('Đang kết nối lại')).toBeTruthy();
     });
 
     it('should display Realtime Status label', () => {
       const { getByText } = render(<SettingsScreen />);
 
-      expect(getByText('Realtime Status')).toBeTruthy();
+      expect(getByText('Kết nối realtime')).toBeTruthy();
     });
   });
 
@@ -118,14 +118,14 @@ describe('SettingsScreen', () => {
     it('should render logout button', () => {
       const { getByRole } = render(<SettingsScreen />);
 
-      expect(getByRole('button', { name: /log out/i })).toBeTruthy();
+      expect(getByRole('button', { name: /đăng xuất/i })).toBeTruthy();
     });
 
     it('should call logout on button press', async () => {
       mockLogout.mockResolvedValue(undefined);
 
       const { getByRole } = render(<SettingsScreen />);
-      const logoutButton = getByRole('button', { name: /log out/i });
+      const logoutButton = getByRole('button', { name: /đăng xuất/i });
 
       fireEvent.press(logoutButton);
 
@@ -138,10 +138,10 @@ describe('SettingsScreen', () => {
       mockLogout.mockResolvedValue(undefined);
 
       const { getByRole } = render(<SettingsScreen />);
-      fireEvent.press(getByRole('button', { name: /log out/i }));
+      fireEvent.press(getByRole('button', { name: /đăng xuất/i }));
 
       await waitFor(() => {
-        expect(mockToast.success).toHaveBeenCalledWith('Logged out successfully');
+        expect(mockToast.success).toHaveBeenCalledWith('Đã đăng xuất thành công');
       });
     });
 
@@ -149,10 +149,10 @@ describe('SettingsScreen', () => {
       mockLogout.mockRejectedValue(new Error('Logout failed'));
 
       const { getByRole } = render(<SettingsScreen />);
-      fireEvent.press(getByRole('button', { name: /log out/i }));
+      fireEvent.press(getByRole('button', { name: /đăng xuất/i }));
 
       await waitFor(() => {
-        expect(mockToast.error).toHaveBeenCalledWith('Logout failed');
+        expect(mockToast.error).toHaveBeenCalledWith('Đăng xuất không thành công');
       });
     });
   });
@@ -161,19 +161,19 @@ describe('SettingsScreen', () => {
     it('should show Account section', () => {
       const { getByText } = render(<SettingsScreen />);
 
-      expect(getByText('Account')).toBeTruthy();
+      expect(getByText('Thông tin tài khoản')).toBeTruthy();
     });
 
     it('should show Connection section', () => {
       const { getByText } = render(<SettingsScreen />);
 
-      expect(getByText('Connection')).toBeTruthy();
+      expect(getByText('Trạng thái kết nối')).toBeTruthy();
     });
 
     it('should show Settings title', () => {
       const { getByText } = render(<SettingsScreen />);
 
-      expect(getByText('Settings')).toBeTruthy();
+      expect(getByText('Cài đặt')).toBeTruthy();
     });
   });
 
@@ -181,9 +181,9 @@ describe('SettingsScreen', () => {
     it('should have accessible logout button', () => {
       const { getByRole } = render(<SettingsScreen />);
 
-      const button = getByRole('button', { name: /log out/i });
+      const button = getByRole('button', { name: /đăng xuất/i });
       expect(button.props.accessibilityRole).toBe('button');
-      expect(button.props.accessibilityLabel).toBe('Log out');
+      expect(button.props.accessibilityLabel).toBe('Đăng xuất');
     });
   });
 });

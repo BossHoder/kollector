@@ -32,10 +32,10 @@ import { colors, spacing, typography, borderRadius, touchTargetSize } from '../.
 
 // Category options (must match server VALID_CATEGORIES)
 const CATEGORIES = [
-  { key: 'sneaker', label: 'Sneaker' },
+  { key: 'sneaker', label: 'Giày' },
   { key: 'lego', label: 'Lego' },
-  { key: 'camera', label: 'Camera' },
-  { key: 'other', label: 'Other' },
+  { key: 'camera', label: 'Máy ảnh' },
+  { key: 'other', label: 'Khác' },
 ];
 
 export default function UploadScreen() {
@@ -62,12 +62,12 @@ export default function UploadScreen() {
       e.preventDefault();
 
       Alert.alert(
-        'Cancel Upload?',
-        'You have an upload in progress. Are you sure you want to leave? The upload will be cancelled.',
+        'Hủy tải lên?',
+        'Việc rời khỏi trang sẽ hủy quá trình tải lên. Bạn có chắc muốn tiếp tục?',
         [
-          { text: 'Stay', style: 'cancel' },
+          { text: 'Tiếp tục tải lên', style: 'cancel' },
           {
-            text: 'Leave',
+            text: 'Rời khỏi trang',
             style: 'destructive',
             onPress: () => {
               setIsUploading(false);
@@ -130,7 +130,7 @@ export default function UploadScreen() {
         category: selectedCategory.key,
       });
 
-      toast.success('Upload started! Processing your image...');
+      toast.success('Bắt đầu tải lên! Đang xử lý ảnh của bạn...');
       
       // Navigate to asset detail
       navigation.navigate('AssetDetail', { assetId: result.asset.id });
@@ -139,7 +139,7 @@ export default function UploadScreen() {
       setSelectedImage(null);
       setSelectedCategory(null);
     } catch (error) {
-      toast.error(error.message || 'Upload failed. Please try again.');
+      toast.error(error.message || 'Tải lên không thành công. Vui lòng thử lại.');
     } finally {
       setIsUploading(false);
     }
@@ -153,7 +153,7 @@ export default function UploadScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Upload</Text>
+        <Text style={styles.title}>Tải lên tài sản</Text>
       </View>
 
       <ScrollView
@@ -163,7 +163,7 @@ export default function UploadScreen() {
       >
         {/* Image Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Photo</Text>
+          <Text style={styles.sectionTitle}>Ảnh</Text>
           
           {selectedImage ? (
             <View style={styles.selectedImageContainer}>
@@ -178,7 +178,7 @@ export default function UploadScreen() {
                 onPress={handleChangeImage}
                 testID="change-image-button"
               >
-                <Text style={styles.changeImageText}>Change Photo</Text>
+                <Text style={styles.changeImageText}>Thay đổi ảnh</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -189,7 +189,7 @@ export default function UploadScreen() {
             >
               <View style={styles.addPhotoContent}>
                 <Text style={styles.addPhotoIcon}>📷</Text>
-                <Text style={styles.addPhotoText}>Add Photo</Text>
+                <Text style={styles.addPhotoText}>Chọn ảnh</Text>
                 <Text style={styles.addPhotoHint}>
                   {getSupportedTypesText()} • Max {getMaxFileSizeText()}
                 </Text>
@@ -200,7 +200,7 @@ export default function UploadScreen() {
 
         {/* Category Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Category</Text>
+          <Text style={styles.sectionTitle}>Danh mục</Text>
           <View style={styles.categoryGrid} testID="category-selector">
             {CATEGORIES.map((category) => (
               <TouchableOpacity
@@ -237,7 +237,7 @@ export default function UploadScreen() {
           fullWidth
           size="large"
         >
-          {isUploading ? 'Uploading...' : 'Submit for Analysis'}
+          {isUploading ? 'Đang tải lên...' : 'Gửi để phân tích'}
         </Button>
       </View>
 
@@ -250,7 +250,7 @@ export default function UploadScreen() {
             activeOpacity={1}
           />
           <View style={styles.sourcePickerSheet}>
-            <Text style={styles.sourcePickerTitle}>Add Photo</Text>
+            <Text style={styles.sourcePickerTitle}>Chọn ảnh</Text>
             
             <TouchableOpacity
               style={styles.sourceOption}
@@ -258,7 +258,7 @@ export default function UploadScreen() {
               testID="source-camera"
             >
               <Text style={styles.sourceOptionIcon}>📸</Text>
-              <Text style={styles.sourceOptionText}>Camera</Text>
+              <Text style={styles.sourceOptionText}>Máy ảnh</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
@@ -267,14 +267,14 @@ export default function UploadScreen() {
               testID="source-gallery"
             >
               <Text style={styles.sourceOptionIcon}>🖼️</Text>
-              <Text style={styles.sourceOptionText}>Gallery</Text>
+              <Text style={styles.sourceOptionText}>Thư viện ảnh</Text>
             </TouchableOpacity>
             
             <TouchableOpacity
               style={[styles.sourceOption, styles.sourceOptionCancel]}
               onPress={() => setShowSourcePicker(false)}
             >
-              <Text style={styles.sourceOptionCancelText}>Cancel</Text>
+              <Text style={styles.sourceOptionCancelText}>Hủy</Text>
             </TouchableOpacity>
           </View>
         </View>

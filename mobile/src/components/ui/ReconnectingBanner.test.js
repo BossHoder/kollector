@@ -38,7 +38,7 @@ describe('ReconnectingBanner', () => {
       const { queryByText } = render(<ReconnectingBanner />);
 
       // Banner content shouldn't be visible (height animated to 0)
-      expect(queryByText(/reconnect/i)).toBeFalsy();
+      expect(queryByText(/kết nối/i)).toBeFalsy();
     });
 
     it('should show banner when reconnecting', async () => {
@@ -50,7 +50,7 @@ describe('ReconnectingBanner', () => {
       const { getByText } = render(<ReconnectingBanner />);
 
       await waitFor(() => {
-        expect(getByText(/reconnecting/i)).toBeTruthy();
+        expect(getByText(/Đang kết nối lại/i)).toBeTruthy();
       });
     });
 
@@ -63,7 +63,7 @@ describe('ReconnectingBanner', () => {
       const { getByText } = render(<ReconnectingBanner />);
 
       await waitFor(() => {
-        expect(getByText(/connection lost/i)).toBeTruthy();
+        expect(getByText(/mất kết nối/i)).toBeTruthy();
       });
     });
   });
@@ -79,7 +79,7 @@ describe('ReconnectingBanner', () => {
       const { getByText } = render(<ReconnectingBanner />);
 
       await waitFor(() => {
-        expect(getByText(/reconnecting.*\(3\)/i)).toBeTruthy();
+        expect(getByText(/Đang kết nối lại.*\(3\)/i)).toBeTruthy();
       });
     });
 
@@ -93,7 +93,7 @@ describe('ReconnectingBanner', () => {
       const { getByText, queryByText } = render(<ReconnectingBanner />);
 
       await waitFor(() => {
-        expect(getByText(/reconnecting/i)).toBeTruthy();
+        expect(getByText(/Đang kết nối lại/i)).toBeTruthy();
         expect(queryByText(/\(0\)/)).toBeFalsy();
       });
     });
@@ -109,7 +109,7 @@ describe('ReconnectingBanner', () => {
       const { getByRole } = render(<ReconnectingBanner />);
 
       await waitFor(() => {
-        expect(getByRole('button', { name: /reconnect/i })).toBeTruthy();
+        expect(getByRole('button', { name: /kết nối lại/i })).toBeTruthy();
       });
     });
 
@@ -123,7 +123,7 @@ describe('ReconnectingBanner', () => {
       const { queryByRole } = render(<ReconnectingBanner />);
 
       await waitFor(() => {
-        expect(queryByRole('button', { name: /reconnect/i })).toBeFalsy();
+        expect(queryByRole('button', { name: /kết nối lại/i })).toBeFalsy();
       });
     });
 
@@ -138,7 +138,7 @@ describe('ReconnectingBanner', () => {
       const { getByRole } = render(<ReconnectingBanner />);
 
       await waitFor(() => {
-        const button = getByRole('button', { name: /reconnect/i });
+        const button = getByRole('button', { name: /kết nối lại/i });
         fireEvent.press(button);
       });
 
@@ -187,7 +187,7 @@ describe('ReconnectingBanner', () => {
       rerender(<ReconnectingBanner />);
 
       await waitFor(() => {
-        expect(queryByText(/reconnecting/i)).toBeTruthy();
+        expect(queryByText(/Đang kết nối lại/i)).toBeTruthy();
       });
 
       // Then connected

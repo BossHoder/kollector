@@ -151,8 +151,8 @@ const styles = StyleSheet.create({
   },
   toastText: {
     flex: 1,
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
+    fontSize: typography.fontSizes.sm,
+    fontWeight: typography.fontWeights.medium,
   },
   dismissButton: {
     marginLeft: spacing.sm,
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   dismissText: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
+    fontSize: typography.fontSizes.lg,
+    fontWeight: typography.fontWeights.bold,
   },
 });

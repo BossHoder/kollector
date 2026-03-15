@@ -51,7 +51,7 @@ export default function OfflineBanner() {
       accessibilityLiveRegion="polite"
     >
       <View style={styles.content}>
-        <Text style={styles.text}>No internet connection</Text>
+        <Text style={styles.text}>Không có kết nối internet</Text>
       </View>
     </Animated.View>
   );

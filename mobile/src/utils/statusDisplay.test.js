@@ -22,28 +22,28 @@ describe('statusDisplay', () => {
       });
     });
 
-    it('should map "active" to "Ready" label (UX parity)', () => {
-      expect(STATUS_DISPLAY.active.label).toBe('Ready');
+    it('should map "active" to "Sẵn sàng" label (UX parity)', () => {
+      expect(STATUS_DISPLAY.active.label).toBe('Sẵn sàng');
     });
 
-    it('should map "draft" to "Draft" label', () => {
-      expect(STATUS_DISPLAY.draft.label).toBe('Draft');
+    it('should map "draft" to "Bản nháp" label', () => {
+      expect(STATUS_DISPLAY.draft.label).toBe('Bản nháp');
     });
 
-    it('should map "processing" to "Processing" label', () => {
-      expect(STATUS_DISPLAY.processing.label).toBe('Processing');
+    it('should map "processing" to "Đang xử lý" label', () => {
+      expect(STATUS_DISPLAY.processing.label).toBe('Đang xử lý');
     });
 
-    it('should map "failed" to "Failed" label', () => {
-      expect(STATUS_DISPLAY.failed.label).toBe('Failed');
+    it('should map "failed" to "Thất bại" label', () => {
+      expect(STATUS_DISPLAY.failed.label).toBe('Thất bại');
     });
 
-    it('should map "partial" to "Partial" label', () => {
-      expect(STATUS_DISPLAY.partial.label).toBe('Partial');
+    it('should map "partial" to "Một phần" label', () => {
+      expect(STATUS_DISPLAY.partial.label).toBe('Một phần');
     });
 
-    it('should map "archived" to "Archived" label', () => {
-      expect(STATUS_DISPLAY.archived.label).toBe('Archived');
+    it('should map "archived" to "Đã lưu trữ" label', () => {
+      expect(STATUS_DISPLAY.archived.label).toBe('Đã lưu trữ');
     });
   });
 
@@ -91,7 +91,7 @@ describe('statusDisplay', () => {
     it('should return correct display info for valid status', () => {
       const result = getStatusDisplay('active');
       
-      expect(result.label).toBe('Ready');
+      expect(result.label).toBe('Sẵn sàng');
       expect(result.color).toBeTruthy();
       expect(result.icon).toBeTruthy();
     });
@@ -99,12 +99,12 @@ describe('statusDisplay', () => {
     it('should return draft display for unknown status', () => {
       const result = getStatusDisplay('unknown_status');
       
-      expect(result.label).toBe('Draft');
+      expect(result.label).toBe('Bản nháp');
     });
 
     it('should return draft display for null/undefined', () => {
-      expect(getStatusDisplay(null).label).toBe('Draft');
-      expect(getStatusDisplay(undefined).label).toBe('Draft');
+      expect(getStatusDisplay(null).label).toBe('Bản nháp');
+      expect(getStatusDisplay(undefined).label).toBe('Bản nháp');
     });
   });
 

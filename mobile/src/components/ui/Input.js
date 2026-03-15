@@ -91,7 +91,7 @@ export function Input({
           {label}
         </Text>
       )}
-      
+
       <View style={inputContainerStyles}>
         <TextInput
           style={inputStyles}
@@ -112,17 +112,17 @@ export function Input({
           accessible
           {...rest}
         />
-        
+
         {isPassword && (
           <TouchableOpacity
             style={styles.toggleButton}
             onPress={() => setShowPassword(!showPassword)}
-            accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+            accessibilityLabel={showPassword ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu'}
             accessibilityRole="button"
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Text style={styles.toggleText}>
-              {showPassword ? 'Hide' : 'Show'}
+              {showPassword ? 'Ẩn' : 'Hiển thị'}
             </Text>
           </TouchableOpacity>
         )}
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     fontSize: typography.fontSizes.base,
-    color: colors.neutral[900],
+    color: colors.neutral[100],
     minHeight: touchTargetSize,
   },
   inputWithToggle: {

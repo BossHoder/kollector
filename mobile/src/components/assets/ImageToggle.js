@@ -5,7 +5,7 @@
  * Follows web design language with mobile-native interactions.
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Image,
@@ -40,14 +40,15 @@ export function ImageToggle({
   onChange,
   disabled: rawDisabled = false,
   testID = 'image-toggle',
-  showLoadingIndicator = false,
+  showLoadingIndicator: rawShowLoadingIndicator = false,
 }) {
-  // Coerce to strict boolean to prevent Android native crash
+  // Coerce all boolean-like inputs to strict booleans
   const disabled = coerceBool(rawDisabled);
+  const showLoadingIndicator = coerceBool(rawShowLoadingIndicator);
 
   // Internal state for uncontrolled mode
   const [internalShowProcessed, setInternalShowProcessed] = useState(true);
-  
+
   // Loading states for each image
   const [processedLoading, setProcessedLoading] = useState(true);
   const [originalLoading, setOriginalLoading] = useState(true);
@@ -57,23 +58,39 @@ export function ImageToggle({
   const isControlledByValue = value !== undefined;
   const isControlledByProp = controlledShowProcessed !== undefined;
   const isControlled = isControlledByValue || isControlledByProp;
-  
-  let showProcessed;
-  if (isControlledByValue) {
-    showProcessed = value === 'processed';
-  } else if (isControlledByProp) {
-    showProcessed = controlledShowProcessed;
-  } else {
-    showProcessed = internalShowProcessed;
-  }
+
+  // Normalize source-of-truth toggle state to strict boolean
+  const normalizedShowProcessed = useMemo(() => {
+    if (isControlledByValue) {
+      return value === 'processed';
+    }
+
+    if (isControlledByProp) {
+      return coerceBool(controlledShowProcessed);
+    }
+
+    return coerceBool(internalShowProcessed);
+  }, [
+    isControlledByValue,
+    isControlledByProp,
+    value,
+    controlledShowProcessed,
+    internalShowProcessed,
+  ]);
 
   // Current image to display
-  const currentUri = showProcessed ? processedUri : originalUri;
-  const isLoading = showProcessed ? processedLoading : originalLoading;
+  const currentUri = normalizedShowProcessed ? processedUri : originalUri;
+  const isLoading = normalizedShowProcessed ? processedLoading : originalLoading;
+
+  // Runtime guards for Android/native props that require booleans
+  assertBool('TouchableOpacity.disabled', disabled);
+  assertBool('TouchableOpacity.accessibilityState.selected', normalizedShowProcessed);
 
   // Handle toggle
   const handleToggle = useCallback(
-    (toProcessed) => {
+    (nextValue) => {
+      const toProcessed = coerceBool(nextValue);
+
       if (disabled) return;
 
       if (!isControlled) {
@@ -95,12 +112,12 @@ export function ImageToggle({
   // Single image mode
   if (!hasBothImages) {
     const singleUri = processedUri || originalUri;
-    
+
     if (!singleUri) {
       return (
         <View style={styles.container} testID={testID}>
           <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>No image available</Text>
+            <Text style={styles.placeholderText}>Không có ảnh</Text>
           </View>
         </View>
       );
@@ -112,7 +129,7 @@ export function ImageToggle({
           source={{ uri: singleUri }}
           style={styles.image}
           resizeMode="contain"
-          accessibilityLabel={hasProcessed ? 'Processed image' : 'Original image'}
+          accessibilityLabel={hasProcessed ? 'Ảnh đã xử lý' : 'Ảnh gốc'}
           testID="toggle-image"
         />
       </View>
@@ -120,8 +137,6 @@ export function ImageToggle({
   }
 
   // Dual image mode with toggle
-  assertBool('TouchableOpacity.disabled', disabled);
-
   return (
     <View style={styles.container} testID={testID}>
       {/* Image */}
@@ -131,19 +146,26 @@ export function ImageToggle({
             <ActivityIndicator size="large" color={colors.primary} />
           </View>
         )}
+
         <Image
           source={{ uri: currentUri }}
           style={styles.image}
           resizeMode="contain"
           onLoadStart={() => {
-            if (showProcessed) setProcessedLoading(true);
-            else setOriginalLoading(true);
+            if (normalizedShowProcessed) {
+              setProcessedLoading(true);
+            } else {
+              setOriginalLoading(true);
+            }
           }}
           onLoadEnd={() => {
-            if (showProcessed) setProcessedLoading(false);
-            else setOriginalLoading(false);
+            if (normalizedShowProcessed) {
+              setProcessedLoading(false);
+            } else {
+              setOriginalLoading(false);
+            }
           }}
-          accessibilityLabel={showProcessed ? 'Processed image' : 'Original image'}
+          accessibilityLabel={normalizedShowProcessed ? 'Ảnh đã xử lý' : 'Ảnh gốc'}
           testID="toggle-image"
         />
       </View>
@@ -154,22 +176,22 @@ export function ImageToggle({
           style={[
             styles.toggleButton,
             styles.toggleButtonLeft,
-            showProcessed && styles.toggleButtonActive,
+            normalizedShowProcessed && styles.toggleButtonActive,
           ]}
           onPress={() => handleToggle(true)}
           disabled={disabled}
           accessibilityRole="button"
-          accessibilityLabel="Processed image"
-          accessibilityState={{ selected: showProcessed }}
+          accessibilityLabel="Ảnh đã xử lý"
+          accessibilityState={{ selected: normalizedShowProcessed, disabled }}
           testID="toggle-processed"
         >
           <Text
             style={[
               styles.toggleButtonText,
-              showProcessed && styles.toggleButtonTextActive,
+              normalizedShowProcessed && styles.toggleButtonTextActive,
             ]}
           >
-            Processed
+            Đã xử lý
           </Text>
         </TouchableOpacity>
 
@@ -177,22 +199,22 @@ export function ImageToggle({
           style={[
             styles.toggleButton,
             styles.toggleButtonRight,
-            !showProcessed && styles.toggleButtonActive,
+            !normalizedShowProcessed && styles.toggleButtonActive,
           ]}
           onPress={() => handleToggle(false)}
           disabled={disabled}
           accessibilityRole="button"
-          accessibilityLabel="Original image"
-          accessibilityState={{ selected: !showProcessed }}
+          accessibilityLabel="Ảnh gốc"
+          accessibilityState={{ selected: !normalizedShowProcessed, disabled }}
           testID="toggle-original"
         >
           <Text
             style={[
               styles.toggleButtonText,
-              !showProcessed && styles.toggleButtonTextActive,
+              !normalizedShowProcessed && styles.toggleButtonTextActive,
             ]}
           >
-            Original
+            Gốc
           </Text>
         </TouchableOpacity>
       </View>
@@ -249,7 +271,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.gray50,
-    minHeight: 44, // Accessibility: 44pt touch target
+    minHeight: 44,
   },
   toggleButtonLeft: {
     borderRightWidth: 1,
