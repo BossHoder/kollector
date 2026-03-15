@@ -129,9 +129,18 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           envs: APP_ROOT,RELEASE_SHA
           script: |
+            set -Eeuo pipefail
+            trap 'rm -f /tmp/kollector-release.tgz' EXIT
             APP_ROOT="${APP_ROOT:-/opt/kollector}"
             RELEASE_DIR="${APP_ROOT}/releases/${RELEASE_SHA}"
             mkdir -p "${RELEASE_DIR}"
             tar -xzf /tmp/kollector-release.tgz -C "${RELEASE_DIR}"
             APP_ROOT="${APP_ROOT}" bash "${RELEASE_DIR}/deploy/oracle/scripts/deploy_release.sh" "${RELEASE_DIR}"
-            rm -f /tmp/kollector-release.tgz
+
+            CURRENT_TARGET="$(readlink -f "${APP_ROOT}/current")"
+            if [[ "${CURRENT_TARGET}" != "${RELEASE_DIR}" ]]; then
+              echo "Deploy did not activate the expected release."
+              echo "Expected: ${RELEASE_DIR}"
+              echo "Actual:   ${CURRENT_TARGET}"
+              exit 1
+            fi
