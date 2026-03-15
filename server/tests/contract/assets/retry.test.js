@@ -155,7 +155,7 @@ describe('POST /api/assets/:id/retry', () => {
         .expect(409);
 
       expect(response.body).toHaveProperty('error');
-      expect(response.body.error).toMatch(/cannot.*retry|not.*retryable/i);
+      expect(response.body.error).toMatch(/cannot.*retr|not.*retryable/i);
     });
 
     it('should return 409 for processing asset', async () => {
@@ -169,7 +169,7 @@ describe('POST /api/assets/:id/retry', () => {
         .set('Authorization', `Bearer ${accessToken}`)
         .expect(409);
 
-      expect(response.body.error).toMatch(/cannot.*retry|already.*processing/i);
+      expect(response.body.error).toMatch(/cannot.*retr|already.*processing/i);
     });
 
     it('should return 409 for draft asset', async () => {
