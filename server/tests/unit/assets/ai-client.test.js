@@ -221,6 +221,20 @@ describe('AI Service Client', () => {
       expect(result.colorway).toBeNull();
       expect(result.processedImageUrl).toBeNull();
     });
+
+    it('should preserve explicit empty metadata objects and zero confidence', () => {
+      const response = {
+        brand: { value: '', confidence: 0 },
+        model: { value: '', confidence: 0 },
+        processed_image_url: 'https://cdn.example.com/processed.jpg'
+      };
+
+      const result = parseAIResponse(response);
+
+      expect(result.brand).toEqual({ value: '', confidence: 0 });
+      expect(result.model).toEqual({ value: '', confidence: 0 });
+      expect(result.processedImageUrl).toBe('https://cdn.example.com/processed.jpg');
+    });
   });
 
   describe('Full callAnalyze() flow', () => {

@@ -57,6 +57,21 @@ describe('Socket Event Emitters', () => {
         processedImageUrl
       });
     });
+
+    it('should allow partial success payload status', () => {
+      const payload = buildSuccessPayload(
+        '507f1f77bcf86cd799439021',
+        {
+          brand: null,
+          model: null,
+          colorway: null
+        },
+        'https://res.cloudinary.com/test/processed-partial.jpg',
+        'partial'
+      );
+
+      expect(payload.status).toBe('partial');
+    });
   });
 
   describe('buildFailurePayload()', () => {
@@ -128,6 +143,30 @@ describe('Socket Event Emitters', () => {
       // Verify timestamp is valid ISO format
       expect(emittedPayload.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
       expect(() => new Date(emittedPayload.timestamp)).not.toThrow();
+    });
+
+    it('should emit partial as a success event variant', () => {
+      const userId = '507f1f77bcf86cd799439008';
+      const payload = {
+        assetId: '507f1f77bcf86cd799439019',
+        status: 'partial',
+        aiMetadata: {
+          brand: null,
+          model: null,
+          colorway: null
+        },
+        processedImageUrl: 'https://res.cloudinary.com/test/processed-partial.jpg'
+      };
+
+      emitAssetProcessed(userId, payload);
+
+      expect(mockEmit).toHaveBeenCalledWith('asset_processed', expect.objectContaining({
+        event: 'asset_processed',
+        assetId: '507f1f77bcf86cd799439019',
+        status: 'partial',
+        processedImageUrl: 'https://res.cloudinary.com/test/processed-partial.jpg',
+        timestamp: expect.any(String)
+      }));
     });
 
     it('should handle success event without optional colorway', () => {

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "asset-processed-event.schema.json",
   "title": "Asset Processed Event",
-  "description": "Socket.io event payload emitted when AI processing completes",
+  "description": "Socket.io event payload emitted when AI processing completes. Backward compatible: legacy success payloads with status=active remain valid while status=partial is additionally accepted during migration.",
   "oneOf": [
     {
       "$ref": "#/definitions/SuccessEvent"
@@ -27,8 +27,8 @@
         },
         "status": {
           "type": "string",
-          "const": "active",
-          "description": "Asset status after successful processing"
+          "enum": ["active", "partial"],
+          "description": "Asset status after successful processing (active for complete metadata, partial for best-effort metadata)."
         },
         "aiMetadata": {
           "type": "object",
@@ -108,6 +108,17 @@
     }
   },
   "examples": [
+    {
+      "event": "asset_processed",
+      "assetId": "507f1f77bcf86cd799439011",
+      "status": "partial",
+      "aiMetadata": {
+        "brand": { "value": "", "confidence": 0 },
+        "model": { "value": "", "confidence": 0 }
+      },
+      "processedImageUrl": "https://res.cloudinary.com/klectr/image/upload/v1234567890/assets/processed.png",
+      "timestamp": "2025-12-28T10:30:00.000Z"
+    },
     {
       "event": "asset_processed",
       "assetId": "507f1f77bcf86cd799439011",

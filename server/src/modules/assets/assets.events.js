@@ -14,7 +14,7 @@ const logger = require('../../config/logger');
  * @param {string} userId - User ID for room targeting
  * @param {Object} payload - Event payload
  * @param {string} payload.assetId - Asset ID
- * @param {string} payload.status - 'active' or 'failed'
+ * @param {string} payload.status - 'active', 'partial', or 'failed'
  * @param {Object} [payload.aiMetadata] - AI extraction results (for success)
  * @param {string} [payload.processedImageUrl] - Processed image URL (for success)
  * @param {string} [payload.error] - Error message (for failure)
@@ -35,12 +35,12 @@ function emitAssetProcessed(userId, payload) {
 
   let eventPayload;
 
-  if (payload.status === 'active') {
+  if (payload.status === 'active' || payload.status === 'partial') {
     // Success event per SuccessEvent schema
     eventPayload = {
       event: 'asset_processed',
       assetId: String(payload.assetId),
-      status: 'active',
+      status: payload.status,
       aiMetadata: {
         brand: payload.aiMetadata?.brand || { value: '', confidence: 0 },
         model: payload.aiMetadata?.model || { value: '', confidence: 0 },
@@ -80,12 +80,13 @@ function emitAssetProcessed(userId, payload) {
  * @param {string} assetId - Asset ID
  * @param {Object} aiMetadata - AI extraction results
  * @param {string} processedImageUrl - Processed image URL
+ * @param {string} [status='active'] - Success status ('active' or 'partial')
  * @returns {Object} Success event payload
  */
-function buildSuccessPayload(assetId, aiMetadata, processedImageUrl) {
+function buildSuccessPayload(assetId, aiMetadata, processedImageUrl, status = 'active') {
   return {
     assetId: String(assetId),
-    status: 'active',
+    status,
     aiMetadata,
     processedImageUrl
   };

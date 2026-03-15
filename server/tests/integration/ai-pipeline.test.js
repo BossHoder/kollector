@@ -159,7 +159,7 @@ describe('AI Processing Pipeline', () => {
       expect(updatedAsset.images.processed.processedAt).toBeInstanceOf(Date);
     });
 
-    it('should handle null processedImageUrl gracefully', async () => {
+    it('should treat null processedImageUrl as retryable failure', async () => {
       callAnalyze.mockResolvedValueOnce({
         brand: { value: 'Puma', confidence: 0.88 },
         model: { value: 'Suede', confidence: 0.82 },
@@ -167,13 +167,11 @@ describe('AI Processing Pipeline', () => {
       });
 
       const job = createMockJob();
-      await processJob(job);
 
-      const updatedAsset = await Asset.findById(testAsset._id);
-      
-      expect(updatedAsset.status).toBe('active');
-      // processed should not be set if URL is null
-      expect(updatedAsset.images.processed?.url).toBeUndefined();
+      await expect(processJob(job)).rejects.toThrow('AI service missing processed image URL');
+
+      const asset = await Asset.findById(testAsset._id);
+      expect(asset.status).toBe('processing');
     });
   });
 
@@ -238,19 +236,77 @@ describe('AI Processing Pipeline', () => {
    * T044: Integration test - After max retries, asset status='failed', failure event emitted
    */
   describe('Final Failure Handling', () => {
-    it('should mark error as unrecoverable for non-retryable errors', async () => {
+    it('should mark asset as failed immediately for non-retryable errors', async () => {
       const nonRetryableError = new Error('Invalid image format');
       nonRetryableError.retryable = false;
       callAnalyze.mockRejectedValueOnce(nonRetryableError);
 
       const job = createMockJob();
-      
-      try {
-        await processJob(job);
-        fail('Should have thrown');
-      } catch (error) {
-        expect(error.unrecoverable).toBe(true);
-      }
+
+      const result = await processJob(job);
+
+      expect(result.failed).toBe(true);
+      const updatedAsset = await Asset.findById(testAsset._id);
+      expect(updatedAsset.status).toBe('failed');
+      expect(updatedAsset.aiMetadata.error).toBe('Invalid image format');
+    });
+
+    it('should discard non-retryable jobs when discard is supported', async () => {
+      const nonRetryableError = new Error('Unsupported image content');
+      nonRetryableError.retryable = false;
+      callAnalyze.mockRejectedValueOnce(nonRetryableError);
+
+      const discard = jest.fn().mockResolvedValue(undefined);
+      const job = createMockJob({ discard });
+
+      await expect(processJob(job)).rejects.toThrow('Unsupported image content');
+
+      expect(discard).toHaveBeenCalledTimes(1);
+
+      const updatedAsset = await Asset.findById(testAsset._id);
+      expect(updatedAsset.status).toBe('failed');
+    });
+  });
+
+  describe('Partial Status Handling', () => {
+    it('should mark asset partial when processed image exists but metadata is empty', async () => {
+      callAnalyze.mockResolvedValueOnce({
+        brand: null,
+        model: null,
+        colorway: null,
+        processedImageUrl: 'https://res.cloudinary.com/test/processed-only.jpg'
+      });
+
+      const job = createMockJob();
+      await processJob(job);
+
+      const updatedAsset = await Asset.findById(testAsset._id);
+      expect(updatedAsset.status).toBe('partial');
+      expect(updatedAsset.images.processed.url).toBe('https://res.cloudinary.com/test/processed-only.jpg');
+    });
+  });
+
+  describe('Safe Reprocessing', () => {
+    it('should converge to a deterministic final state when processing same asset twice', async () => {
+      const firstResponse = {
+        brand: { value: 'Nike', confidence: 0.95 },
+        model: { value: 'Dunk Low', confidence: 0.91 },
+        colorway: { value: 'Panda', confidence: 0.85 },
+        processedImageUrl: 'https://res.cloudinary.com/test/processed-v1.jpg'
+      };
+
+      callAnalyze.mockResolvedValueOnce(firstResponse);
+      callAnalyze.mockResolvedValueOnce(firstResponse);
+
+      const job = createMockJob();
+      await processJob(job);
+      await processJob(job);
+
+      const updatedAsset = await Asset.findById(testAsset._id);
+      expect(updatedAsset.status).toBe('active');
+      expect(updatedAsset.images.processed.url).toBe('https://res.cloudinary.com/test/processed-v1.jpg');
+      expect(updatedAsset.aiMetadata.brand.value).toBe('Nike');
+      expect(emitAssetProcessed).toHaveBeenCalledTimes(2);
     });
   });
 

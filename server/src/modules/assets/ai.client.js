@@ -104,20 +104,33 @@ async function callAnalyze(imageUrl, category) {
  * @returns {Object} Parsed result with brand, model, colorway, processedImageUrl
  */
 function parseAIResponse(response) {
+  const normalizeMetadataField = (field, defaultConfidence) => {
+    if (field == null) {
+      return null;
+    }
+
+    if (typeof field === 'string') {
+      const value = field.trim();
+      return value ? { value, confidence: defaultConfidence } : null;
+    }
+
+    if (typeof field === 'object') {
+      const value = typeof field.value === 'string' ? field.value : '';
+      const confidence = typeof field.confidence === 'number'
+        ? field.confidence
+        : defaultConfidence;
+
+      return { value, confidence };
+    }
+
+    return null;
+  };
+
   return {
-    brand: response.brand ? {
-      value: response.brand.value || response.brand,
-      confidence: response.brand.confidence || 0.8
-    } : null,
-    model: response.model ? {
-      value: response.model.value || response.model,
-      confidence: response.model.confidence || 0.8
-    } : null,
-    colorway: response.colorway ? {
-      value: response.colorway.value || response.colorway,
-      confidence: response.colorway.confidence || 0.7
-    } : null,
-    processedImageUrl: response.processed_image_url || response.processedImageUrl || null
+    brand: normalizeMetadataField(response.brand, 0.8),
+    model: normalizeMetadataField(response.model, 0.8),
+    colorway: normalizeMetadataField(response.colorway, 0.7),
+    processedImageUrl: response.processed_image_url ?? response.processedImageUrl ?? null
   };
 }
 
