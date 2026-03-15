@@ -146,10 +146,18 @@ describe('POST /api/assets/analyze-queue', () => {
       expect(asset.userId.toString()).toBe(userId.toString());
     });
 
-    it('should accept canonical, catalog, and custom categories', async () => {
-      const categories = ['sneaker', 'lego', 'camera', 'other', 'cards', 'stamps', 'vinyl records'];
-      
-      for (const category of categories) {
+    it('should normalize alias and custom categories to canonical values', async () => {
+      const cases = [
+        { input: 'sneaker', stored: 'sneaker' },
+        { input: 'lego', stored: 'lego' },
+        { input: 'camera', stored: 'camera' },
+        { input: 'other', stored: 'other' },
+        { input: 'cards', stored: 'other' },
+        { input: 'stamps', stored: 'other' },
+        { input: 'vinyl records', stored: 'other' },
+      ];
+
+      for (const testCase of cases) {
         const testImageBuffer = Buffer.from('fake-image');
         
         const response = await request(app)
@@ -159,10 +167,12 @@ describe('POST /api/assets/analyze-queue', () => {
             filename: 'test.jpg',
             contentType: 'image/jpeg'
           })
-          .field('category', category)
+          .field('category', testCase.input)
           .expect(202);
 
         expect(response.body.success).toBe(true);
+        const asset = await Asset.findById(response.body.data.assetId);
+        expect(asset?.category).toBe(testCase.stored);
       }
     });
   });

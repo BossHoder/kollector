@@ -71,7 +71,7 @@ describe('GET /api/assets - Status Filter Validation', () => {
         .expect(200);
 
       expect(response.body.items).toHaveLength(1);
-      expect(response.body.items[0].id).toBe(failedAsset.id);
+      expect(String(response.body.items[0]._id)).toBe(String(failedAsset._id));
       expect(response.body.items[0].status).toBe('failed');
     });
 

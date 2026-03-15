@@ -8,6 +8,30 @@ const MIME_EXTENSION_MAP = {
   'image/gif': '.gif',
 };
 
+const ASSET_CATEGORIES = ['sneaker', 'lego', 'camera', 'other'];
+
+const CATEGORY_ALIASES = {
+  shoes: 'sneaker',
+  sneakers: 'sneaker',
+  sneaker: 'sneaker',
+  lego: 'lego',
+  legos: 'lego',
+  photography: 'camera',
+  camera: 'camera',
+  cameras: 'camera',
+  collectible: 'other',
+  collectibles: 'other',
+  art: 'other',
+  stamps: 'other',
+  cards: 'other',
+  coins: 'other',
+  toys: 'other',
+  memorabilia: 'other',
+  other: 'other',
+};
+
+const ASSET_CATEGORY_VALIDATION_MESSAGE = `Category must be one of: ${ASSET_CATEGORIES.join(', ')}`;
+
 function sanitizeText(value) {
   return String(value ?? '')
     .trim()
@@ -34,16 +58,48 @@ function buildAssetFilename(assetName, originalFilename, mimeType) {
   return `${baseName}${extension}`;
 }
 
-function normalizeAnalyzeQueueCategory(category) {
+function normalizeCategoryKey(category) {
   const normalized = String(category ?? '')
     .trim()
-    .replace(/\s+/g, ' ');
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
 
   if (!normalized) {
     return null;
   }
 
   return normalized;
+}
+
+function normalizeCanonicalAssetCategory(category) {
+  const normalized = normalizeCategoryKey(category);
+  if (!normalized) {
+    return null;
+  }
+
+  return ASSET_CATEGORIES.includes(normalized) ? normalized : null;
+}
+
+function normalizeAnalyzeQueueCategory(category) {
+  const normalized = normalizeCategoryKey(category);
+  if (!normalized) {
+    return null;
+  }
+
+  if (ASSET_CATEGORIES.includes(normalized)) {
+    return normalized;
+  }
+
+  return CATEGORY_ALIASES[normalized] || 'other';
+}
+
+function sanitizeCategoryInput(category) {
+  const normalized = normalizeCategoryKey(category);
+  return normalized || category;
+}
+
+function isValidAssetCategory(category) {
+  return normalizeCanonicalAssetCategory(category) !== null;
 }
 
 function normalizeOptionalText(value) {
@@ -64,8 +120,14 @@ function serializeUploadedAsset(asset) {
 }
 
 module.exports = {
+  ASSET_CATEGORIES,
+  ASSET_CATEGORY_VALIDATION_MESSAGE,
   buildAssetFilename,
+  isValidAssetCategory,
   normalizeAnalyzeQueueCategory,
+  normalizeCanonicalAssetCategory,
+  normalizeCategoryKey,
   normalizeOptionalText,
+  sanitizeCategoryInput,
   serializeUploadedAsset,
 };

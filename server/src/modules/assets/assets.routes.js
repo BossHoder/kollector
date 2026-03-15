@@ -4,6 +4,12 @@ const assetController = require('./assets.controller');
 const authenticate = require('../../middleware/auth.middleware');
 const validate = require('../../middleware/validate.middleware');
 const { singleImage } = require('../../middleware/upload.middleware');
+const {
+  ASSET_CATEGORIES,
+  ASSET_CATEGORY_VALIDATION_MESSAGE,
+  normalizeCanonicalAssetCategory,
+  normalizeCategoryKey,
+} = require('./upload.helpers');
 
 const router = express.Router();
 
@@ -15,10 +21,9 @@ router.use(authenticate);
  */
 const createAssetValidation = [
   body('category')
-    .isString()
-    .trim()
-    .notEmpty()
-    .withMessage('Category is required'),
+    .customSanitizer((value) => normalizeCanonicalAssetCategory(value) || normalizeCategoryKey(value) || value)
+    .isIn(ASSET_CATEGORIES)
+    .withMessage(ASSET_CATEGORY_VALIDATION_MESSAGE),
   body('status')
     .optional()
     .isIn(['draft', 'processing', 'active', 'archived'])
@@ -34,10 +39,9 @@ const updateAssetValidation = [
     .withMessage('Invalid asset ID'),
   body('category')
     .optional()
-    .isString()
-    .trim()
-    .notEmpty()
-    .withMessage('Category is required'),
+    .customSanitizer((value) => normalizeCanonicalAssetCategory(value) || normalizeCategoryKey(value) || value)
+    .isIn(ASSET_CATEGORIES)
+    .withMessage(ASSET_CATEGORY_VALIDATION_MESSAGE),
   body('status')
     .optional()
     .isIn(['draft', 'processing', 'active', 'archived'])
@@ -61,6 +65,11 @@ const listAssetsValidation = [
     .optional()
     .isInt({ min: 1, max: 100 })
     .withMessage('Limit must be between 1 and 100'),
+  query('category')
+    .optional()
+    .customSanitizer((value) => normalizeCategoryKey(value) || value)
+    .isIn(ASSET_CATEGORIES)
+    .withMessage(`Category query must be one of: ${ASSET_CATEGORIES.join(', ')}`),
   query('status')
     .optional()
     .isIn(['draft', 'processing', 'partial', 'active', 'archived', 'failed'])

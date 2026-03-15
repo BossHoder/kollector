@@ -1,11 +1,8 @@
 const CURRENT_CATEGORY_OPTIONS = [
-  { value: 'cards', label: 'Thẻ' },
-  { value: 'stamps', label: 'Tem' },
-  { value: 'coins', label: 'Tiền xu' },
-  { value: 'toys', label: 'Đồ chơi' },
-  { value: 'art', label: 'Nghệ thuật' },
-  { value: 'memorabilia', label: 'Kỷ vật' },
-  { value: 'other', label: 'Khác', allowCustomValue: true },
+  { value: 'sneaker', label: 'Giay Sneaker' },
+  { value: 'lego', label: 'LEGO' },
+  { value: 'camera', label: 'May anh' },
+  { value: 'other', label: 'Khac' },
 ];
 
 function getAssetCategoryOptions() {

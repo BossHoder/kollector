@@ -10,6 +10,7 @@ import { apiClient } from '@/lib/api-client';
 import type { AssetCategory, AssetStatus } from '@/types/asset';
 import type { ListAssetsResponse } from '@/types/api';
 import { mapAsset, mapAssets } from '@/lib/assetMapper';
+import { normalizeCategory } from '@/lib/categoryNormalizer';
 
 const ASSETS_QUERY_KEY = 'assets';
 const PAGE_SIZE = 12;
@@ -27,16 +28,17 @@ export interface UseAssetsParams {
  */
 export function useAssets(params: UseAssetsParams = {}) {
   const { category, status, search, page = 1, limit = PAGE_SIZE } = params;
+  const normalizedCategory = normalizeCategory(category);
 
   return useQuery({
-    queryKey: [ASSETS_QUERY_KEY, { category: category ?? 'all', status, search, page, limit }],
+    queryKey: [ASSETS_QUERY_KEY, { category: normalizedCategory ?? 'all', status, search, page, limit }],
     queryFn: async () => {
       const queryParams = new URLSearchParams();
 
       queryParams.set('page', String(page));
       queryParams.set('limit', String(limit));
 
-      if (category) queryParams.set('category', category);
+      if (normalizedCategory) queryParams.set('category', normalizedCategory);
       if (status) queryParams.set('status', status);
       if (search) queryParams.set('search', search);
 
@@ -59,16 +61,17 @@ export function useAssets(params: UseAssetsParams = {}) {
  */
 export function useInfiniteAssets(params: Omit<UseAssetsParams, 'page'> = {}) {
   const { category, status, search, limit = PAGE_SIZE } = params;
+  const normalizedCategory = normalizeCategory(category);
 
   return useInfiniteQuery({
-    queryKey: [ASSETS_QUERY_KEY, 'infinite', { category: category ?? 'all', status, search, limit }],
+    queryKey: [ASSETS_QUERY_KEY, 'infinite', { category: normalizedCategory ?? 'all', status, search, limit }],
     queryFn: async ({ pageParam = 1 }) => {
       const queryParams = new URLSearchParams();
 
       queryParams.set('page', String(pageParam));
       queryParams.set('limit', String(limit));
 
-      if (category) queryParams.set('category', category);
+      if (normalizedCategory) queryParams.set('category', normalizedCategory);
       if (status) queryParams.set('status', status);
       if (search) queryParams.set('search', search);
 

@@ -6,6 +6,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api-client';
+import { normalizeCategory } from '@/lib/categoryNormalizer';
 
 interface UploadAssetParams {
   file: File;
@@ -42,9 +43,10 @@ export function useUploadAsset() {
   return useMutation({
     mutationFn: async ({ file, category, assetName, runAi }: UploadAssetParams) => {
       const uploadFilename = `${assetName.trim().replace(/\.[^.]+$/, '')}${resolveUploadExtension(file)}`;
+      const normalizedCategory = normalizeCategory(category) ?? 'other';
       const formData = new FormData();
       formData.append('image', file, uploadFilename);
-      formData.append('category', category);
+      formData.append('category', normalizedCategory);
       formData.append('assetName', assetName.trim());
       formData.append('runAi', String(runAi));
 

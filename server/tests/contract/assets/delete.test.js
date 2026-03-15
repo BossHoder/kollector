@@ -38,13 +38,10 @@ describe('DELETE /api/assets/:id', () => {
 
   describe('Success Cases', () => {
     it('should delete asset successfully', async () => {
-      const response = await request(app)
+      await request(app)
         .delete(`/api/assets/${asset._id}`)
         .set('Authorization', `Bearer ${accessToken}`)
-        .expect('Content-Type', /json/)
-        .expect(200);
-
-      expect(response.body).toHaveProperty('message');
+        .expect(204);
 
       // Verify asset is deleted
       const assets = await Asset.find({ _id: asset._id });

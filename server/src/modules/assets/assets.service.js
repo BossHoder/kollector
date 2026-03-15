@@ -399,7 +399,8 @@ class AssetService {
 
     // Update asset status to processing and clear previous error
     asset.status = 'processing';
-    asset.error = null;
+    asset.set('aiMetadata.error', null);
+    asset.set('aiMetadata.failedAt', null);
     asset.processingJobId = jobId;
     await asset.save();
 
