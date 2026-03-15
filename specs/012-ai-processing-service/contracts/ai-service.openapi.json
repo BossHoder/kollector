@@ -1,0 +1,177 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Klectr AI Processing Service",
+    "version": "0.1.0",
+    "description": "Local-development AI service contract consumed by the Node.js BullMQ worker via AI_SERVICE_URL."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8000",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Health check",
+        "description": "Returns liveness (and optionally readiness) for local development verification.",
+        "responses": {
+          "200": {
+            "description": "Service is alive",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analyze": {
+      "post": {
+        "summary": "Analyze asset image",
+        "description": "Downloads the image from image_url, performs background removal, uploads/persists the processed image, and extracts best-effort metadata.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnalyzeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Analysis completed (background removal required for success)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnalyzeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error (retryable)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AnalyzeRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["image_url", "category"],
+        "properties": {
+          "image_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Public URL of the original asset image (typically Cloudinary)."
+          },
+          "category": {
+            "type": "string",
+            "description": "Asset category context."
+          }
+        }
+      },
+      "MetadataValue": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["value", "confidence"],
+        "properties": {
+          "value": { "type": "string" },
+          "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      },
+      "MetadataField": {
+        "description": "May be a simple string or an object with value+confidence.",
+        "oneOf": [
+          { "type": "string" },
+          { "$ref": "#/components/schemas/MetadataValue" }
+        ]
+      },
+      "AnalyzeResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "processed_image_url": {
+            "type": ["string", "null"],
+            "format": "uri",
+            "description": "URL of the background-removed image."
+          },
+          "processedImageUrl": {
+            "type": ["string", "null"],
+            "format": "uri",
+            "description": "Alias for processed_image_url (accepted for backward/forward compatibility)."
+          },
+          "brand": { "anyOf": [ { "$ref": "#/components/schemas/MetadataField" }, { "type": "null" } ] },
+          "model": { "anyOf": [ { "$ref": "#/components/schemas/MetadataField" }, { "type": "null" } ] },
+          "colorway": { "anyOf": [ { "$ref": "#/components/schemas/MetadataField" }, { "type": "null" } ] }
+        }
+      },
+      "HealthResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["status"],
+        "properties": {
+          "status": { "type": "string", "enum": ["ok"] },
+          "models": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "Optional model readiness information."
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": ["message"],
+            "properties": {
+              "message": { "type": "string" },
+              "code": { "type": "string" },
+              "details": {}
+            }
+          }
+        }
+      }
+    }
+  }
+}
