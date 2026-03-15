@@ -5,7 +5,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api-client';
+import { ApiError, apiClient } from '@/lib/api-client';
 import { normalizeCategory } from '@/lib/categoryNormalizer';
 
 interface UploadAssetParams {
@@ -25,14 +25,24 @@ interface UploadAssetResponse {
   };
 }
 
-function resolveRequestCategory(category: string): string {
-  const normalizedCategory = normalizeCategory(category);
-  if (normalizedCategory) {
-    return normalizedCategory;
+function buildCategoryCandidates(category: string): string[] {
+  const normalizedInput = category.trim().toLowerCase();
+  const canonical = normalizeCategory(normalizedInput);
+  const candidates: string[] = [];
+
+  if (normalizedInput) {
+    candidates.push(normalizedInput);
   }
 
-  const fallback = category.trim().toLowerCase();
-  return fallback || 'other';
+  if (canonical && !candidates.includes(canonical)) {
+    candidates.push(canonical);
+  }
+
+  if (!candidates.includes('other')) {
+    candidates.push('other');
+  }
+
+  return candidates;
 }
 
 function resolveUploadExtension(file: File): string {
@@ -64,19 +74,42 @@ export function useUploadAsset() {
     mutationFn: async ({ file, category, assetName, runAi }: UploadAssetParams) => {
       const resolvedAssetName = resolveAssetName(file, assetName);
       const uploadFilename = `${resolvedAssetName}${resolveUploadExtension(file)}`;
-      const requestCategory = resolveRequestCategory(category);
-      const formData = new FormData();
-      formData.append('image', file, uploadFilename);
-      formData.append('category', requestCategory);
-      formData.append('assetName', resolvedAssetName);
-      formData.append('runAi', String(runAi));
+      const categoryCandidates = buildCategoryCandidates(category);
+      let lastCategoryError: ApiError | null = null;
 
-      const response = await apiClient.upload<UploadAssetResponse>(
-        '/api/assets/analyze-queue',
-        formData
-      );
+      for (const requestCategory of categoryCandidates) {
+        const formData = new FormData();
+        formData.append('image', file, uploadFilename);
+        formData.append('category', requestCategory);
+        formData.append('assetName', resolvedAssetName);
+        formData.append('runAi', String(runAi));
 
-      return response;
+        try {
+          const response = await apiClient.upload<UploadAssetResponse>(
+            '/api/assets/analyze-queue',
+            formData
+          );
+          return response;
+        } catch (error) {
+          const isInvalidCategoryError =
+            error instanceof ApiError
+            && error.status === 400
+            && /category/i.test(error.message);
+
+          if (isInvalidCategoryError) {
+            lastCategoryError = error;
+            continue;
+          }
+
+          throw error;
+        }
+      }
+
+      if (lastCategoryError) {
+        throw lastCategoryError;
+      }
+
+      throw new Error('Upload failed due to invalid category');
     },
     onSuccess: () => {
       // Invalidate assets cache to show new asset in list
