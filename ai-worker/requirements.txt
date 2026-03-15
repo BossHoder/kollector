@@ -8,6 +8,8 @@ Pillow==10.4.0; python_version < "3.13"
 # Known-good local CPU model stack for briaai/RMBG-1.4 + moondream2 (Python 3.11/3.12)
 numpy==1.26.4; python_version < "3.13"
 torch==2.3.1; python_version < "3.13"
+torchvision==0.18.1; python_version < "3.13"
+scikit-image==0.24.0; python_version < "3.13"
 transformers==4.44.2; python_version < "3.13"
 accelerate==0.34.2; python_version < "3.13"
 
