@@ -74,9 +74,17 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
 }
 
 async function waitForCategoriesReady() {
-  await waitFor(() => {
-    expect(screen.getByRole('option', { name: /giay sneaker/i })).toBeInTheDocument();
-  });
+  await waitFor(
+    () => {
+      const select = screen.getByRole('combobox') as HTMLSelectElement;
+      const hasSneakerOption = Array.from(select.options).some(
+        (option) => option.value === 'sneaker'
+      );
+      expect(select).not.toBeDisabled();
+      expect(hasSneakerOption).toBe(true);
+    },
+    { timeout: 5000 }
+  );
 }
 
 async function selectSneakerCategory(user: ReturnType<typeof userEvent.setup>) {
