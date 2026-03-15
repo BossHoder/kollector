@@ -38,8 +38,12 @@ Dockerfile*
 # Logs
 *.log
 logs/
+coverage/
 
 # Temp
 *.tmp
 *.temp
 *.bak
+
+# Node artifacts in monorepo contexts
+node_modules/
