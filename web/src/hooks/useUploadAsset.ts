@@ -25,6 +25,16 @@ interface UploadAssetResponse {
   };
 }
 
+function resolveRequestCategory(category: string): string {
+  const normalizedCategory = normalizeCategory(category);
+  if (normalizedCategory) {
+    return normalizedCategory;
+  }
+
+  const fallback = category.trim().toLowerCase();
+  return fallback || 'other';
+}
+
 function resolveUploadExtension(file: File): string {
   const extensionFromName = file.name.includes('.') ? file.name.slice(file.name.lastIndexOf('.')) : '';
   if (extensionFromName) {
@@ -54,10 +64,10 @@ export function useUploadAsset() {
     mutationFn: async ({ file, category, assetName, runAi }: UploadAssetParams) => {
       const resolvedAssetName = resolveAssetName(file, assetName);
       const uploadFilename = `${resolvedAssetName}${resolveUploadExtension(file)}`;
-      const normalizedCategory = normalizeCategory(category) ?? 'other';
+      const requestCategory = resolveRequestCategory(category);
       const formData = new FormData();
       formData.append('image', file, uploadFilename);
-      formData.append('category', normalizedCategory);
+      formData.append('category', requestCategory);
       formData.append('assetName', resolvedAssetName);
       formData.append('runAi', String(runAi));
 
