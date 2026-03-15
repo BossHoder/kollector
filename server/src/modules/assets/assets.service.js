@@ -2,6 +2,7 @@ const Asset = require('../../models/Asset');
 const logger = require('../../config/logger');
 const { uploadImage } = require('../../config/cloudinary');
 const { addToProcessingQueue } = require('./assets.queue');
+const { serializeUploadedAsset } = require('./upload.helpers');
 
 /**
  * Asset Service
@@ -30,21 +31,30 @@ class AssetService {
    * @param {Buffer} data.imageBuffer - Image buffer
    * @param {string} data.imageMimetype - Image MIME type
    * @param {string} data.originalFilename - Original filename
-   * @returns {Promise<{assetId: string, jobId: string}>}
+   * @returns {Promise<{assetId: string, jobId: string, asset: object}>}
    */
   async createAssetAndEnqueue(userId, data) {
-    const { category, imageBuffer, originalFilename } = data;
+    const {
+      category,
+      imageBuffer,
+      originalFilename,
+      imageMimetype,
+      fileSizeBytes,
+    } = data;
 
     // Upload image to Cloudinary first
     const uploadResult = await this.uploadToCloudinary(imageBuffer, {
       folder: 'assets/originals'
     });
 
-    // Create asset with status = 'processing'
+    // This endpoint always queues AI work per the analyze-queue contract.
     const asset = await Asset.create({
       userId,
       category,
       status: 'processing',
+      originalFilename: originalFilename || null,
+      mimeType: imageMimetype || null,
+      fileSizeBytes: fileSizeBytes || null,
       condition: {
         health: 100,
         decayRate: 2
@@ -62,7 +72,6 @@ class AssetService {
       marketData: {}
     });
 
-    // Enqueue AI processing job
     const createdAt = new Date().toISOString();
     const jobId = await addToProcessingQueue({
       assetId: asset._id.toString(),
@@ -72,21 +81,21 @@ class AssetService {
       createdAt
     });
 
-    // Update asset with processing job ID
     asset.processingJobId = jobId;
     await asset.save();
 
-    logger.info('Asset created and enqueued for processing', {
+    logger.info('Asset created from upload flow', {
       assetId: asset._id,
       jobId,
       userId,
       category,
-      imageUrl: uploadResult.url
+      imageUrl: uploadResult.url,
     });
 
     return {
       assetId: asset._id.toString(),
-      jobId
+      jobId,
+      asset: serializeUploadedAsset(asset),
     };
   }
 
@@ -148,7 +157,8 @@ class AssetService {
       const query = { userId };
       
       if (category) {
-        query.category = category;
+        const escapedCategory = String(category).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        query.category = new RegExp(`^${escapedCategory}$`, 'i');
       }
       
       if (status) {

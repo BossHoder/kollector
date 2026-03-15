@@ -15,8 +15,10 @@ router.use(authenticate);
  */
 const createAssetValidation = [
   body('category')
-    .isIn(['sneaker', 'lego', 'camera', 'other'])
-    .withMessage('Category must be one of: sneaker, lego, camera, other'),
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage('Category is required'),
   body('status')
     .optional()
     .isIn(['draft', 'processing', 'active', 'archived'])
@@ -32,8 +34,10 @@ const updateAssetValidation = [
     .withMessage('Invalid asset ID'),
   body('category')
     .optional()
-    .isIn(['sneaker', 'lego', 'camera', 'other'])
-    .withMessage('Category must be one of: sneaker, lego, camera, other'),
+    .isString()
+    .trim()
+    .notEmpty()
+    .withMessage('Category is required'),
   body('status')
     .optional()
     .isIn(['draft', 'processing', 'active', 'archived'])
@@ -57,10 +61,6 @@ const listAssetsValidation = [
     .optional()
     .isInt({ min: 1, max: 100 })
     .withMessage('Limit must be between 1 and 100'),
-  query('category')
-    .optional()
-    .isIn(['sneaker', 'lego', 'camera', 'other'])
-    .withMessage('Category must be one of: sneaker, lego, camera, other'),
   query('status')
     .optional()
     .isIn(['draft', 'processing', 'partial', 'active', 'archived', 'failed'])
@@ -72,6 +72,8 @@ const listAssetsValidation = [
  * List assets for current user with pagination
  */
 router.get('/', listAssetsValidation, validate, assetController.listAssets.bind(assetController));
+
+router.get('/categories', assetController.getCategories.bind(assetController));
 
 /**
  * POST /api/assets/analyze-queue

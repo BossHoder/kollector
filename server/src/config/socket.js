@@ -24,10 +24,11 @@ function initSocket(httpServer) {
     return io;
   }
 
-  // Get CORS origin from environment
-  const corsOrigin = process.env.SOCKET_CORS_ORIGIN || 
-                     process.env.CLIENT_URL || 
-                     '*';
+  // In development, allow native/mobile clients unless explicitly overridden.
+  const isDevelopment = (process.env.NODE_ENV || 'development') === 'development';
+  const corsOrigin = process.env.SOCKET_CORS_ORIGIN
+    || (isDevelopment ? '*' : process.env.CLIENT_URL)
+    || '*';
 
   io = new Server(httpServer, {
     cors: {
