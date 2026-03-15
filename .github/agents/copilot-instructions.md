@@ -33,7 +33,6 @@ Node.js 20 LTS (CommonJS, Express 5): Follow standard conventions
 ## Recent Changes
 - 011-mobile-ux-parity: Added React Native (Expo) with React 19 (JavaScript/TypeScript) + Expo SDK 54, socket.io-client v4, expo-camera, expo-image-picker, @shopify/react-native-skia
 - 010-fe-mvp-integration: Added TypeScript 5.x on React 19 (Vite 6.x) + React Router v7, TanStack Query v5, socket.io-client v4, React Hook Form, Zod
-- 010-fe-mvp-integration: Added TypeScript 5.x (React 19.x) + React 19, React Router 7, socket.io-client, TailwindCSS
 
 
 <!-- MANUAL ADDITIONS START -->

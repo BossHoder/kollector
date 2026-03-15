@@ -139,6 +139,8 @@ A user accesses settings to view their account info and connection status, or to
 - **Token refresh race condition**: If multiple API calls fail with 401 simultaneously, only one refresh should be attempted; others wait for the result
 - **Empty states**: Library with no assets shows an appropriate empty state with CTA to upload first asset
 - **Large library scrolling**: Ensure smooth 60fps scrolling with lazy image loading and virtualized lists to avoid memory issues
+- **Camera/upload failure after selection**: Preserve user intent by creating local placeholder record instead of dropping the selected asset context
+- **Invalid category filter value**: Normalize category before request; on non-normalizable value, fall back to All and prevent repeated 400 loops
 
 ## Requirements *(mandatory)*
 
@@ -153,7 +155,9 @@ A user accesses settings to view their account info and connection status, or to
 **Assets Library**
 - **FR-005**: System MUST display user's assets in a scrollable list or grid view
 - **FR-006**: System MUST show asset thumbnail, title, and status pill on each card
-- **FR-007**: System MUST support filtering by category (horizontal scrollable chips or bottom sheet)
+- **FR-007**: System MUST support filtering by category (horizontal scrollable chips or bottom sheet) using a canonical shared category vocabulary
+- **FR-007a**: System MUST map legacy category aliases to canonical categories before API requests and when rendering existing records
+- **FR-007b**: If selected category cannot be normalized to canonical value, client MUST fall back to All (omit category query), reset active category filter UI, and avoid repeated invalid requests
 - **FR-008**: System MUST support filtering by status (Draft, Processing, Ready, Failed, Partial, Archived)
 - **FR-009**: System MUST support text search across assets
 - **FR-010**: System MUST support pagination or infinite scroll for large collections
@@ -167,12 +171,14 @@ A user accesses settings to view their account info and connection status, or to
 - **FR-016**: System MUST validate file type and size (max 10 MB) before upload, displaying clear error for invalid files
 - **FR-017**: System MUST navigate to Asset Detail with Processing state after successful submission
 - **FR-018**: System MUST prompt for confirmation if user attempts to leave during active upload
+- **FR-018a**: If camera launch or upload submission fails after image selection, system MUST create a local placeholder asset (Pending Upload or Failed Upload) visible in library/detail and provide Retry Upload action
 
 **Asset Detail**
 - **FR-019**: System MUST render detail view based on asset status (Ready, Processing, Failed, Partial, Archived)
 - **FR-020**: System MUST display AI analysis (brand, model, colorway, confidence) for Ready assets
 - **FR-021**: System MUST display condition score and report for Ready assets
 - **FR-022**: System MUST display asset metadata for all assets
+- **FR-022a**: File metadata (filename, size, mime/format, upload timestamp) MUST be populated and shown immediately after upload from upload metadata, including while status is Processing
 - **FR-023**: System MUST show processing overlay with progress indicator for Processing assets
 - **FR-024**: System MUST show error state with Retry CTA for Failed assets
 - **FR-025**: System MUST show Partial status indicator with explanation when analysis is incomplete
@@ -184,6 +190,7 @@ A user accesses settings to view their account info and connection status, or to
 - **FR-029**: System MUST display "Reconnecting…" banner when realtime connection is lost
 - **FR-030**: System MUST automatically attempt reconnection with exponential backoff
 - **FR-031**: System MUST provide manual reconnect option after connection failure threshold
+- **FR-031a**: System MUST automatically fall back to periodic polling (10-15s interval) while realtime transport is disconnected, and stop polling once realtime reconnects
 - **FR-032**: System MUST debounce rapid successive updates to prevent UI thrashing
 
 **Settings & Session**
@@ -208,7 +215,7 @@ A user accesses settings to view their account info and connection status, or to
 
 - **User**: Authenticated account holder with email; maintains session state and owns assets
 - **Asset**: A collectible item with: image(s), status (Draft/Processing/Ready/Failed/Partial/Archived), AI analysis results (brand, model, colorway, confidence), condition report, metadata (title, category, timestamps)
-- **Category**: Classification label for organizing assets; used in filters and upload flow
+- **Category**: Canonical classification label for organizing assets; shared across web/mobile/server with backward-compatible alias mapping for legacy values
 - **Status**: Lifecycle state of an asset determining what data is available and how the UI renders
 
 ## Success Criteria *(mandatory)*
@@ -228,6 +235,7 @@ A user accesses settings to view their account info and connection status, or to
 **Realtime Experience**
 - **SC-007**: Status updates appear on library/detail screens within 3 seconds of server-side completion
 - **SC-008**: Reconnection after network interruption succeeds within 10 seconds for transient disconnects
+- **SC-008a**: During realtime outages, fallback polling keeps library/detail freshness within 15 seconds
 
 **UX Parity**
 - **SC-009**: Mobile users can perform all MVP actions (login, register, browse, filter, upload, view detail, archive) that web users can
@@ -245,6 +253,14 @@ A user accesses settings to view their account info and connection status, or to
 
 - Q: What minimum mobile OS versions should be supported? → A: iOS 15+ and Android 10+ (API 29+)
 - Q: What is the maximum file size allowed for asset image uploads? → A: 10 MB per image
+
+### Session 2026-03-10
+
+- Q: How should category mismatches between web/mobile/server be handled? → A: Use one canonical category list shared across clients and server, with backward-compatible alias mapping.
+- Q: What should happen when realtime WebSocket is unavailable? → A: Keep WebSocket as primary transport and automatically fall back to 10-15s polling until reconnect succeeds.
+- Q: What should happen if camera launch or upload submission fails after image selection? → A: Create a local placeholder asset (Pending Upload or Failed Upload) in library/detail and allow Retry Upload.
+- Q: When should file information appear on mobile Asset Detail? → A: Show filename, size, format, and upload timestamp immediately from upload metadata, even while Processing.
+- Q: How should mobile handle invalid/unmappable category filters to avoid 400 errors? → A: Normalize before API call; if not mappable, fall back to All and reset filter state.
 
 ## Assumptions
 

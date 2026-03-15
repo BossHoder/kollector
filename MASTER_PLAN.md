@@ -157,3 +157,25 @@ Phase 5: Gamification (The Soul)
 - Async First: Always use Queue for heavy tasks (Image processing).
 - Security: Always use `auth.middleware.js` for protected routes.
 
+## 8. CROSS-APP PARITY NOTE (011-MOBILE-UX-PARITY)
+
+- Canonical category contract is `sneaker|lego|camera|other` across server/web/mobile.
+- Client aliases must normalize to canonical values before query/submission; invalid values fall back to All by omitting category.
+- Mobile upload failures after image selection must create local placeholder records with retry actions.
+- Asset detail must show file metadata (filename, size, mime, uploaded time) immediately, including while processing.
+- Realtime uses Socket.io first with automatic 10-15s polling fallback during disconnect.
+
+## 9. ROLLOUT SUMMARY (011-MOBILE-UX-PARITY)
+
+- Category/status contract alignment is now enforced across spec, server, web, and mobile by test coverage.
+- Mobile upload flow preserves user intent on failure using local pending placeholders and explicit retry actions.
+- Asset detail screens render metadata as soon as upload returns, including processing states.
+- Mobile library now supports status + category filter parity with web behavior and invalid-category fallback to All.
+- Realtime behavior uses WebSocket primary updates with polling fallback to maintain freshness during disconnects.
+
+Rollout checkpoints:
+- Validate API and Socket URLs in mobile environment settings before release.
+- Monitor API 400 volume for category/status filters after deploy.
+- Track retry success ratio for failed camera/gallery upload attempts.
+- Confirm reconnect banner and fallback polling events in production telemetry.
+
