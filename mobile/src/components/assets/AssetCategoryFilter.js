@@ -2,7 +2,7 @@ import React from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { CANONICAL_CATEGORIES, CATEGORY_LABELS } from '../../config/categories';
 import { colors, spacing, borderRadius, typography } from '../../styles/tokens';
-
+//sdawdaw
 const CATEGORY_FILTER_OPTIONS = [
   { key: 'all', label: 'Tất cả' },
   ...CANONICAL_CATEGORIES.map((key) => ({ key, label: CATEGORY_LABELS[key] ?? key })),
