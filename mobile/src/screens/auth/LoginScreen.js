@@ -1,11 +1,5 @@
 /**
  * Login Screen
- *
- * Features:
- * - Email/password form with validation
- * - Error toast for API failures
- * - Navigation to Register
- * - Accessible inputs with proper labels
  */
 
 import React, { useState } from 'react';
@@ -25,44 +19,38 @@ import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
 import { colors, spacing, typography } from '../../styles/tokens';
 
-// Email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginScreen() {
   const navigation = useNavigation();
   const { login, isLoading: authLoading } = useAuth();
   const toast = useToast();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [apiError, setApiError] = useState(null);
 
   const isLoading = authLoading || isSubmitting;
 
   const validateForm = () => {
-    const newErrors = {};
+    const nextErrors = {};
 
-    // Email validation
     if (!email.trim()) {
-      newErrors.email = 'Email không được để trống';
+      nextErrors.email = 'Email không được để trống';
     } else if (!EMAIL_REGEX.test(email.trim())) {
-      newErrors.email = 'Email không hợp lệ';
+      nextErrors.email = 'Email không hợp lệ';
     }
 
-    // Password validation
     if (!password) {
-      newErrors.password = 'Mật khẩu không được để trống';
+      nextErrors.password = 'Mật khẩu không được để trống';
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleLogin = async () => {
-    setApiError(null);
-    
     if (!validateForm()) {
       return;
     }
@@ -70,11 +58,9 @@ export default function LoginScreen() {
     setIsSubmitting(true);
     try {
       await login(email.trim(), password);
-      toast.success('Đã đăng nhập thành công');
+      toast.success('Đăng nhập thành công');
     } catch (error) {
-      const message = error.message || 'Thông tin đăng nhập không hợp lệ';
-      setApiError(message);
-      toast.error(message);
+      toast.error(error.message || 'Sai tài khoản hoặc mật khẩu');
     } finally {
       setIsSubmitting(false);
     }
@@ -82,23 +68,15 @@ export default function LoginScreen() {
 
   const handleEmailChange = (text) => {
     setEmail(text);
-    // Clear error when user starts typing
     if (errors.email) {
-      setErrors(prev => ({ ...prev, email: null }));
-    }
-    if (apiError) {
-      setApiError(null);
+      setErrors((prev) => ({ ...prev, email: null }));
     }
   };
 
   const handlePasswordChange = (text) => {
     setPassword(text);
-    // Clear error when user starts typing
     if (errors.password) {
-      setErrors(prev => ({ ...prev, password: null }));
-    }
-    if (apiError) {
-      setApiError(null);
+      setErrors((prev) => ({ ...prev, password: null }));
     }
   };
 
@@ -138,10 +116,6 @@ export default function LoginScreen() {
               error={errors.password}
               disabled={isLoading}
             />
-
-            {apiError && (
-              <Text style={styles.apiError}>{apiError}</Text>
-            )}
 
             <Button
               testID="login-button"
@@ -201,12 +175,6 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: spacing.sm,
-  },
-  apiError: {
-    color: colors.statusFailed,
-    fontSize: typography.fontSizes.sm,
-    textAlign: 'center',
-    marginVertical: spacing.sm,
   },
   submitButton: {
     marginTop: spacing.md,

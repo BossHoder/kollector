@@ -25,6 +25,8 @@ import {
   getAccessToken,
 } from '../services/tokenStore';
 import { publicApiRequest, apiRequest } from '../services/apiClient';
+import { clearPendingUploadsStore } from '../hooks/usePendingUploads';
+import { socketService } from '../services/socketService';
 
 /**
  * @typedef {Object} User
@@ -175,6 +177,8 @@ export function AuthProvider({ children }) {
     } catch {
       // Ignore storage errors - still clear in-memory state
     }
+    socketService.disconnect();
+    clearPendingUploadsStore();
     setState({
       isLoading: false,
       isAuthenticated: false,

@@ -8,12 +8,14 @@
 import { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/useToast';
 import { LoginForm, type LoginFormData } from '@/components/forms/LoginForm';
 
 export function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, isLoading, error, login } = useAuth();
+  const { showError } = useToast();
 
   // Get redirect path from location state or default to /app
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/app';
@@ -24,6 +26,12 @@ export function LoginPage() {
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, navigate, from]);
+
+  useEffect(() => {
+    if (error) {
+      showError(error);
+    }
+  }, [error, showError]);
 
   const handleSubmit = async (data: LoginFormData) => {
     try {
@@ -50,7 +58,7 @@ export function LoginPage() {
         <LoginForm
           onSubmit={handleSubmit}
           isLoading={isLoading}
-          error={error}
+          error={null}
         />
 
         {/* Sign Up Link */}
