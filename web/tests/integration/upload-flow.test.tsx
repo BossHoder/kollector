@@ -181,13 +181,8 @@ describe('Upload Flow', () => {
           { status: 202 }
         )
       ),
-      http.get('/api/assets/:id', async ({ params }) => {
-        if (params.id === 'new-asset-123') {
-          return HttpResponse.json(newAsset);
-        }
-
-        return HttpResponse.json({ error: 'Asset not found' }, { status: 404 });
-      })
+      // Use a concrete path so this handler does not intercept /api/assets/categories.
+      http.get('/api/assets/new-asset-123', async () => HttpResponse.json(newAsset))
     );
 
     render(<UploadPage />, { wrapper: TestWrapper });
