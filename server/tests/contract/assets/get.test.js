@@ -97,3 +97,37 @@ describe('GET /api/assets/:id', () => {
     });
   });
 });
+
+describe('GET /api/assets category query validation', () => {
+  let accessToken;
+
+  beforeAll(async () => {
+    await connectDatabase();
+  });
+
+  afterAll(async () => {
+    await disconnectDatabase();
+  });
+
+  beforeEach(async () => {
+    await User.deleteMany({});
+    const result = await authService.register('category-user@example.com', 'TestPass123');
+    accessToken = result.accessToken;
+  });
+
+  it('returns 200 for canonical category query', async () => {
+    await request(app)
+      .get('/api/assets?category=sneaker')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+  });
+
+  it('returns 400 for invalid category query', async () => {
+    const response = await request(app)
+      .get('/api/assets?category=stamps')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(400);
+
+    expect(JSON.stringify(response.body)).toContain('Category query must be one of');
+  });
+});
