@@ -10,6 +10,7 @@ import { apiClient } from '@/lib/api-client';
 import type { AssetCategory, AssetStatus } from '@/types/asset';
 import type { ListAssetsResponse } from '@/types/api';
 import { mapAsset, mapAssets } from '@/lib/assetMapper';
+import { normalizeCategory } from '@/lib/categoryNormalizer';
 
 const ASSETS_QUERY_KEY = 'assets';
 const PAGE_SIZE = 12;
@@ -27,9 +28,10 @@ export interface UseAssetsParams {
  */
 export function useAssets(params: UseAssetsParams = {}) {
   const { category, status, search, page = 1, limit = PAGE_SIZE } = params;
-  const rawCategory = category?.trim().toLowerCase();
+  const normalizedCategory = normalizeCategory(category);
+  const fallbackCategory = category?.trim().toLowerCase();
   const requestCategory =
-    rawCategory && rawCategory !== 'all' ? rawCategory : undefined;
+    normalizedCategory ?? (fallbackCategory && fallbackCategory !== 'all' ? fallbackCategory : undefined);
 
   return useQuery({
     queryKey: [ASSETS_QUERY_KEY, { category: requestCategory ?? 'all', status, search, page, limit }],
@@ -62,9 +64,10 @@ export function useAssets(params: UseAssetsParams = {}) {
  */
 export function useInfiniteAssets(params: Omit<UseAssetsParams, 'page'> = {}) {
   const { category, status, search, limit = PAGE_SIZE } = params;
-  const rawCategory = category?.trim().toLowerCase();
+  const normalizedCategory = normalizeCategory(category);
+  const fallbackCategory = category?.trim().toLowerCase();
   const requestCategory =
-    rawCategory && rawCategory !== 'all' ? rawCategory : undefined;
+    normalizedCategory ?? (fallbackCategory && fallbackCategory !== 'all' ? fallbackCategory : undefined);
 
   return useInfiniteQuery({
     queryKey: [ASSETS_QUERY_KEY, 'infinite', { category: requestCategory ?? 'all', status, search, limit }],
