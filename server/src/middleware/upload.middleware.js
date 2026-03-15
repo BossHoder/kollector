@@ -41,7 +41,7 @@ function fileFilter(req, file, cb) {
 
 /**
  * Multer configuration with memory storage
- * Files are stored in memory as Buffer for Cloudinary upload
+ * Files are stored in memory as Buffer before forwarding to the storage adapter
  */
 const storage = multer.memoryStorage();
 

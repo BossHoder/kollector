@@ -7,8 +7,16 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const crypto = require('crypto');
+const path = require('path');
 const logger = require('./config/logger');
 const { connectDatabase } = require('./config/database');
+const { parseAllowedOrigins } = require('./config/origins');
+const {
+  getStorageDriver,
+  getStorageRoot,
+  isLocalStorageEnabled,
+  UPLOADS_ROUTE_PREFIX
+} = require('./config/cloudinary');
 const { errorHandler, notFoundHandler } = require('./middleware/error.middleware');
 const { initSocket, closeSocket } = require('./config/socket');
 const { closeQueue } = require('./modules/assets/assets.queue');
@@ -28,9 +36,15 @@ app.use((req, res, next) => {
 app.use(helmet());
 
 // CORS configuration
+const isDevelopment = (process.env.NODE_ENV || 'development') === 'development';
+const allowedOrigins = parseAllowedOrigins(
+  process.env.CORS_ORIGIN || process.env.CLIENT_URL,
+  isDevelopment ? '*' : ''
+);
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
-  credentials: true
+  origin: allowedOrigins === '' ? false : allowedOrigins,
+  credentials: allowedOrigins !== '*'
 }));
 
 // Body parsing middleware
@@ -40,12 +54,27 @@ app.use(express.urlencoded({ extended: true }));
 // Cookie parser middleware
 app.use(cookieParser());
 
+if (isLocalStorageEnabled()) {
+  app.use(
+    UPLOADS_ROUTE_PREFIX,
+    express.static(path.resolve(getStorageRoot()), {
+      fallthrough: false,
+      index: false,
+      maxAge: process.env.NODE_ENV === 'production' ? '30d' : 0
+    })
+  );
+}
+
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    storage: {
+      driver: getStorageDriver(),
+      localRoot: isLocalStorageEnabled() ? getStorageRoot() : null
+    }
   });
 });
 

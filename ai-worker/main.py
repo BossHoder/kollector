@@ -2,10 +2,12 @@ import io
 import json
 import logging
 import os
+import posixpath
 import re
 import sys
 import time
 import uuid
+from pathlib import Path
 from typing import Any
 
 import cloudinary
@@ -98,6 +100,18 @@ MODEL_REMOVE_BG = os.getenv("MODEL_REMOVE_BG", "briaai/RMBG-1.4")
 MODEL_REMOVE_BG_REVISION = os.getenv("MODEL_REMOVE_BG_REVISION", "")
 MODEL_VISION = os.getenv("MODEL_VISION", "vikhyatk/moondream2")
 MODEL_VISION_REVISION = os.getenv("MODEL_VISION_REVISION", "")
+DEFAULT_STORAGE_DRIVER = (
+    "cloudinary"
+    if all(
+        [
+            os.getenv("CLOUDINARY_CLOUD_NAME"),
+            os.getenv("CLOUDINARY_API_KEY"),
+            os.getenv("CLOUDINARY_API_SECRET"),
+        ]
+    )
+    else "local"
+)
+UPLOADS_ROUTE_PREFIX = "/uploads"
 
 UNKNOWN_MARKERS = {
     "",
@@ -241,12 +255,65 @@ def _slugify(value: str) -> str:
     return slug or "other"
 
 
+def _get_storage_root() -> Path:
+    return Path(os.getenv("STORAGE_ROOT", "./storage")).resolve()
+
+
+def _get_storage_public_base_url() -> str:
+    configured = os.getenv("STORAGE_PUBLIC_BASE_URL")
+    if configured:
+        return configured.rstrip("/")
+
+    return "http://localhost:3000"
+
+
+def _get_storage_internal_base_url() -> str:
+    return os.getenv("STORAGE_INTERNAL_BASE_URL", "").rstrip("/")
+
+
+def _get_storage_driver() -> str:
+    return os.getenv("STORAGE_DRIVER", DEFAULT_STORAGE_DRIVER).strip().lower() or "local"
+
+
+def _storage_configured() -> bool:
+    if _get_storage_driver() == "cloudinary":
+        return _cloudinary_configured()
+    return bool(_get_storage_public_base_url())
+
+
+def _sanitize_storage_relative_path(relative_path: str) -> str:
+    normalized = posixpath.normpath(str(relative_path).replace("\\", "/")).lstrip("/")
+    if not normalized or normalized == "." or normalized.startswith("../"):
+        raise RetryableServiceError("Invalid storage path")
+    return normalized
+
+
+def _ensure_storage_root() -> None:
+    _get_storage_root().mkdir(parents=True, exist_ok=True)
+
+
+def _build_storage_public_url(relative_path: str) -> str:
+    return f"{_get_storage_public_base_url()}{UPLOADS_ROUTE_PREFIX}/{_sanitize_storage_relative_path(relative_path)}"
+
+
+def _rewrite_download_url(image_url: str) -> str:
+    public_base = _get_storage_public_base_url()
+    internal_base = _get_storage_internal_base_url()
+
+    if internal_base and public_base and image_url.startswith(public_base):
+        return f"{internal_base}{image_url[len(public_base):]}"
+
+    return image_url
+
+
 def _require_cloudinary_config() -> None:
     if not _cloudinary_configured():
         raise RetryableServiceError("Cloudinary credentials are not configured")
 
 
-def _upload_processed_image(image_bytes: bytes, category: str, budget_ms: int) -> str:
+def _upload_processed_image_cloudinary(
+    image_bytes: bytes, category: str, budget_ms: int
+) -> str:
     start_monotonic = time.monotonic()
     _require_cloudinary_config()
 
@@ -271,6 +338,29 @@ def _upload_processed_image(image_bytes: bytes, category: str, budget_ms: int) -
     if not secure_url:
         raise RetryableServiceError("Cloudinary upload failed to return URL")
     return secure_url
+
+
+def _upload_processed_image_local(
+    image_bytes: bytes, category: str, budget_ms: int
+) -> str:
+    start_monotonic = time.monotonic()
+    _ensure_storage_root()
+
+    relative_path = _sanitize_storage_relative_path(
+        f"assets/processed/{_slugify(category)}/processed-{uuid.uuid4().hex}.png"
+    )
+    absolute_path = _get_storage_root() / Path(relative_path)
+    absolute_path.parent.mkdir(parents=True, exist_ok=True)
+    absolute_path.write_bytes(image_bytes)
+
+    _enforce_stage_budget(start_monotonic, budget_ms, "Upload")
+    return _build_storage_public_url(relative_path)
+
+
+def _upload_processed_image(image_bytes: bytes, category: str, budget_ms: int) -> str:
+    if _get_storage_driver() == "local":
+        return _upload_processed_image_local(image_bytes, category, budget_ms)
+    return _upload_processed_image_cloudinary(image_bytes, category, budget_ms)
 
 
 def _transformers_common_kwargs(revision: str) -> dict[str, Any]:
@@ -853,6 +943,11 @@ _configure_cloudinary()
 app = FastAPI(title="Klectr AI Processing Service", version="0.2.0")
 
 
+def warm_models() -> None:
+    _get_remove_bg_model()
+    _get_vision_model()
+
+
 @app.get("/health", response_model=HealthResponse)
 def health() -> HealthResponse:
     return HealthResponse(
@@ -867,6 +962,12 @@ def health() -> HealthResponse:
                 "loaded": _vision_model is not None,
             },
             "cloudinaryConfigured": _cloudinary_configured(),
+            "storage": {
+                "driver": _get_storage_driver(),
+                "configured": _storage_configured(),
+                "publicBaseUrl": _get_storage_public_base_url(),
+                "internalBaseUrl": _get_storage_internal_base_url() or None,
+            },
             "pythonSupported": _python_supported(),
         },
     )
@@ -901,7 +1002,10 @@ def analyze(
 
     try:
         download_budget = _stage_budget(remaining_ms(), DOWNLOAD_BUDGET_MS, "Download")
-        original_bytes = _download_image_bytes(str(request.image_url), download_budget)
+        original_bytes = _download_image_bytes(
+            _rewrite_download_url(str(request.image_url)),
+            download_budget,
+        )
 
         inference_budget = _stage_budget(
             remaining_ms(), INFERENCE_BUDGET_MS, "Inference"

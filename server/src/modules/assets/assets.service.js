@@ -1,6 +1,10 @@
 const Asset = require('../../models/Asset');
 const logger = require('../../config/logger');
-const { uploadImage } = require('../../config/cloudinary');
+const {
+  uploadImage,
+  deleteImage,
+  extractPublicIdFromUrl
+} = require('../../config/cloudinary');
 const { addToProcessingQueue } = require('./assets.queue');
 const { serializeUploadedAsset } = require('./upload.helpers');
 
@@ -10,12 +14,12 @@ const { serializeUploadedAsset } = require('./upload.helpers');
  */
 class AssetService {
   /**
-   * Upload image to Cloudinary
+   * Upload image to the configured storage backend
    * @param {Buffer} buffer - Image buffer
    * @param {Object} options - Upload options
    * @returns {Promise<{url: string, publicId: string}>}
    */
-  async uploadToCloudinary(buffer, options = {}) {
+  async uploadAssetImage(buffer, options = {}) {
     const result = await uploadImage(buffer, {
       folder: options.folder || 'assets/originals',
       ...options
@@ -42,8 +46,8 @@ class AssetService {
       fileSizeBytes,
     } = data;
 
-    // Upload image to Cloudinary first
-    const uploadResult = await this.uploadToCloudinary(imageBuffer, {
+    // Upload image to storage first so the worker receives a public URL.
+    const uploadResult = await this.uploadAssetImage(imageBuffer, {
       folder: 'assets/originals'
     });
 
@@ -297,16 +301,40 @@ class AssetService {
    */
   async deleteAsset(assetId, userId) {
     try {
-      const result = await Asset.deleteOne({
+      const asset = await Asset.findOne({
         _id: assetId,
         userId
       });
 
-      if (result.deletedCount === 0) {
+      if (!asset) {
         const error = new Error('Asset not found');
         error.statusCode = 404;
         error.code = 'NOT_FOUND';
         throw error;
+      }
+
+      const publicIdsToDelete = [
+        asset.images?.original?.publicId,
+        asset.images?.processed?.publicId,
+        asset.images?.thumbnail?.publicId,
+        extractPublicIdFromUrl(asset.images?.processed?.url)
+      ].filter(Boolean);
+
+      await Asset.deleteOne({
+        _id: assetId,
+        userId
+      });
+
+      for (const publicId of new Set(publicIdsToDelete)) {
+        try {
+          await deleteImage(publicId);
+        } catch (cleanupError) {
+          logger.warn('Asset file cleanup failed', {
+            assetId,
+            publicId,
+            error: cleanupError.message
+          });
+        }
       }
 
       logger.info('Asset deleted', { assetId, userId });

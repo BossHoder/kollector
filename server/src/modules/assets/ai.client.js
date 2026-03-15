@@ -13,7 +13,7 @@ const AI_SERVICE_TIMEOUT = 90000;
 
 /**
  * Call the AI service to analyze an image
- * @param {string} imageUrl - Cloudinary URL of the image
+ * @param {string} imageUrl - Public URL of the uploaded image
  * @param {string} category - Asset category for AI context
  * @returns {Promise<Object>} AI analysis result
  * @throws {Error} If AI service fails or times out

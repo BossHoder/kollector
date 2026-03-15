@@ -90,6 +90,8 @@ temp/
 # Uploads and media (nếu không dùng cloud storage)
 uploads/
 media/
+storage/
+.hf-cache/
 
 # Ignore .github, .specify, and .vscode folders
 .vscode/

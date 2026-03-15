@@ -33,6 +33,8 @@ htmlcov/
 *.caffemodel
 *.tflite
 .u2net/
+.hf-cache/
+storage/
 models/
 checkpoints/
 

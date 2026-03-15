@@ -6,6 +6,7 @@
 
 const { Worker } = require('bullmq');
 const { getConnection } = require('../config/redis');
+const { extractPublicIdFromUrl } = require('../config/cloudinary');
 const { QUEUE_NAME } = require('../modules/assets/assets.queue');
 const { callAnalyze } = require('../modules/assets/ai.client');
 const { emitAssetProcessed, buildSuccessPayload, buildFailurePayload } = require('../modules/assets/assets.events');
@@ -108,6 +109,7 @@ async function processJob(job) {
 
     asset.images.processed = {
       url: aiResult.processedImageUrl,
+      publicId: extractPublicIdFromUrl(aiResult.processedImageUrl),
       processedAt: new Date()
     };
 

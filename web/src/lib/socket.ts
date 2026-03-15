@@ -11,10 +11,28 @@ import { io, Socket } from 'socket.io-client';
 import { getAccessToken } from './auth';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const SOCKET_BASE_URL = import.meta.env.VITE_SOCKET_URL || '';
 
 export type SocketStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error';
 
 export type StatusChangeCallback = (status: SocketStatus) => void;
+
+function resolveSocketBaseUrl(): string {
+  if (SOCKET_BASE_URL) {
+    return SOCKET_BASE_URL;
+  }
+
+  if (!API_BASE_URL) {
+    return window.location.origin;
+  }
+
+  try {
+    const apiUrl = new URL(API_BASE_URL, window.location.origin);
+    return apiUrl.origin;
+  } catch {
+    return window.location.origin;
+  }
+}
 
 /**
  * Create a new socket connection with auth token
@@ -26,8 +44,9 @@ export const createSocket = (): Socket | null => {
     return null;
   }
 
-  return io(API_BASE_URL, {
+  return io(resolveSocketBaseUrl(), {
     auth: { token },
+    path: '/socket.io',
     reconnection: true,
     reconnectionAttempts: 5,
     reconnectionDelay: 1000,

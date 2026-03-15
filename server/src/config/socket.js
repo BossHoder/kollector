@@ -7,6 +7,7 @@
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
 const logger = require('./logger');
+const { parseAllowedOrigins } = require('./origins');
 
 /**
  * Socket.io server instance (singleton)
@@ -26,14 +27,15 @@ function initSocket(httpServer) {
 
   // In development, allow native/mobile clients unless explicitly overridden.
   const isDevelopment = (process.env.NODE_ENV || 'development') === 'development';
-  const corsOrigin = process.env.SOCKET_CORS_ORIGIN
-    || (isDevelopment ? '*' : process.env.CLIENT_URL)
-    || '*';
+  const corsOrigin = parseAllowedOrigins(
+    process.env.SOCKET_CORS_ORIGIN || process.env.CLIENT_URL,
+    isDevelopment ? '*' : ''
+  );
 
   io = new Server(httpServer, {
     cors: {
       origin: corsOrigin,
-      credentials: true
+      credentials: corsOrigin !== '*'
     }
   });
 

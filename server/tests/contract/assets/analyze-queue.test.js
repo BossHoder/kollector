@@ -26,7 +26,12 @@ jest.mock('../../../src/modules/assets/assets.queue', () => {
 
 // Mock Cloudinary
 jest.mock('../../../src/config/cloudinary', () => ({
-  uploadImage: mockUploadImage
+  uploadImage: mockUploadImage,
+  deleteImage: jest.fn(),
+  getStorageDriver: jest.fn().mockReturnValue('cloudinary'),
+  getStorageRoot: jest.fn().mockReturnValue('/tmp/kollector-test-uploads'),
+  isLocalStorageEnabled: jest.fn().mockReturnValue(false),
+  UPLOADS_ROUTE_PREFIX: '/uploads'
 }));
 
 // Mock Redis connection

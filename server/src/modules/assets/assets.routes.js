@@ -78,7 +78,7 @@ router.get('/categories', assetController.getCategories.bind(assetController));
 /**
  * POST /api/assets/analyze-queue
  * Submit asset for AI processing (multipart/form-data)
- * Creates draft asset, uploads to Cloudinary, enqueues AI job
+ * Creates draft asset, uploads to configured storage, enqueues AI job
  */
 router.post('/analyze-queue', 
   ...singleImage('image'),

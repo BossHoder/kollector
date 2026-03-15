@@ -35,6 +35,7 @@ def test_analyze_retryable_failure_returns_500(monkeypatch):
 
 
 def test_analyze_requires_cloudinary_configuration(monkeypatch):
+    monkeypatch.setenv('STORAGE_DRIVER', 'cloudinary')
     monkeypatch.delenv('CLOUDINARY_CLOUD_NAME', raising=False)
     monkeypatch.delenv('CLOUDINARY_API_KEY', raising=False)
     monkeypatch.delenv('CLOUDINARY_API_SECRET', raising=False)
