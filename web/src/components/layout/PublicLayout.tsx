@@ -8,8 +8,12 @@
  */
 
 import { Outlet, Link } from 'react-router-dom';
+import { ToastContainer } from '@/components/ui/Toast';
+import { useToast } from '@/contexts/ToastContext';
 
 export function PublicLayout() {
+  const { toasts, dismissToast } = useToast();
+
   return (
     <div className="min-h-screen flex flex-col bg-background-dark text-white antialiased relative overflow-x-hidden selection:bg-primary selection:text-background-dark">
       {/* Header - Logo Only */}
@@ -51,6 +55,7 @@ export function PublicLayout() {
 
       {/* Bottom Decoration */}
       <div className="fixed bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </div>
   );
 }

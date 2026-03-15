@@ -20,7 +20,7 @@ const maintenanceLogSchema = new mongoose.Schema({
 // --- Main Schema ---
 const assetSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  category: { type: String, enum: ['sneaker', 'lego', 'camera', 'other'], required: true, index: true },
+  category: { type: String, required: true, trim: true, index: true },
   status: { type: String, enum: ['draft', 'processing', 'partial', 'active', 'archived', 'failed'], default: 'draft', index: true },
 
   // --- IMAGES ---
@@ -30,6 +30,11 @@ const assetSchema = new mongoose.Schema({
     thumbnail: { url: String, publicId: String },
     card: { url: String, generatedAt: Date, expiresAt: Date } // Ảnh thẻ FIFA
   },
+
+  // --- FILE METADATA ---
+  originalFilename: { type: String, trim: true },
+  mimeType: { type: String, trim: true },
+  fileSizeBytes: { type: Number, min: 0 },
 
   // --- AI METADATA ---
   aiMetadata: {

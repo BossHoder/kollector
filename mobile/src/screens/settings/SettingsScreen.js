@@ -8,7 +8,8 @@
  */
 
 import React from 'react';
-import { StyleSheet, View, Text, SafeAreaView, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -16,7 +17,7 @@ import { colors, spacing, typography, borderRadius, touchTargetSize } from '../.
 
 export default function SettingsScreen() {
   const { user, logout } = useAuth();
-  const { connectionState } = useSocket();
+  const { connectionState, isFallbackActive, reconnectAttempts, isConnected } = useSocket();
   const toast = useToast();
 
   const handleLogout = async () => {
@@ -54,6 +55,16 @@ export default function SettingsScreen() {
             ]}>
               {connectionState === 'connected' ? 'Đã kết nối' : connectionState === 'disconnected' ? 'Mất kết nối' : connectionState === 'reconnecting' ? 'Đang kết nối lại' : connectionState}
             </Text>
+          </View>
+          <View style={[styles.row, styles.rowSecondary]}>
+            <Text style={styles.label}>Polling fallback</Text>
+            <Text style={[styles.value, isFallbackActive ? styles.reconnecting : styles.connected]}>
+              {isFallbackActive ? 'Đang bật (12s)' : 'Tắt'}
+            </Text>
+          </View>
+          <View style={[styles.row, styles.rowSecondary]}>
+            <Text style={styles.label}>Reconnect attempts</Text>
+            <Text style={styles.value}>{reconnectAttempts}</Text>
           </View>
         </View>
 
@@ -107,6 +118,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceDark,
     borderRadius: borderRadius.md,
     padding: spacing.lg,
+  },
+  rowSecondary: {
+    marginTop: spacing.sm,
   },
   label: {
     fontSize: typography.fontSize.base,

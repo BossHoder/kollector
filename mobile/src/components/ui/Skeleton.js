@@ -133,7 +133,7 @@ export function SkeletonList({ count = 6, style }) {
   return (
     <View style={[styles.list, style]} testID="skeleton-loader">
       {Array.from({ length: count }).map((_, index) => (
-        <SkeletonCard key={index} style={styles.listItem} />
+        <SkeletonCard key={`skeleton-${index}`} style={styles.listItem} />
       ))}
     </View>
   );

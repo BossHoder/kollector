@@ -124,6 +124,14 @@ export async function pickImageFromCamera() {
     return normalizePickerResult(result);
   } catch (error) {
     console.error('Error capturing image from camera:', error);
+    const message = String(error?.message || '');
+    const isAndroidIntentError = Platform.OS === 'android' && message.toLowerCase().includes('resolve activity');
+
+    if (isAndroidIntentError) {
+      Alert.alert('Camera Unavailable', 'Camera is unavailable on this device. Opening gallery instead.');
+      return pickImageFromGallery();
+    }
+
     Alert.alert('Error', 'Failed to capture image. Please try again.');
     return null;
   }

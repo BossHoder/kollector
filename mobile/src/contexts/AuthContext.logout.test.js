@@ -9,6 +9,8 @@ import { render, fireEvent, waitFor, act } from '@testing-library/react-native';
 import { View, Text, Button } from 'react-native';
 import { AuthProvider, useAuth } from './AuthContext';
 import * as tokenStore from '../services/tokenStore';
+import { socketService } from '../services/socketService';
+import * as pendingUploads from '../hooks/usePendingUploads';
 
 // Mock tokenStore
 jest.mock('../services/tokenStore', () => ({
@@ -25,6 +27,12 @@ jest.mock('../services/tokenStore', () => ({
 // Mock apiClient
 jest.mock('../services/apiClient', () => ({
   apiRequest: jest.fn(),
+}));
+
+jest.mock('../services/socketService', () => ({
+  socketService: {
+    disconnect: jest.fn(),
+  },
 }));
 
 // Mock navigation reset
@@ -58,6 +66,7 @@ describe('AuthContext logout', () => {
     tokenStore.hasStoredTokens.mockResolvedValue(false);
     tokenStore.getUserData.mockResolvedValue(null);
     tokenStore.clearAllTokens.mockResolvedValue(undefined);
+    jest.spyOn(pendingUploads, 'clearPendingUploadsStore').mockImplementation(() => {});
   });
 
   describe('clearAllTokens on logout', () => {
@@ -134,6 +143,31 @@ describe('AuthContext logout', () => {
 
       await waitFor(() => {
         expect(getByTestId('user-email').props.children).toBe('no-user');
+      });
+    });
+
+    it('should clear socket and pending upload state during logout', async () => {
+      tokenStore.getAccessToken.mockResolvedValue('test-token');
+      tokenStore.hasStoredTokens.mockResolvedValue(true);
+      tokenStore.getUserData.mockResolvedValue({ email: 'test@example.com' });
+
+      const { getByTestId } = render(
+        <AuthProvider>
+          <TestLogoutComponent />
+        </AuthProvider>
+      );
+
+      await waitFor(() => {
+        expect(getByTestId('auth-status')).toBeTruthy();
+      });
+
+      await act(async () => {
+        fireEvent.press(getByTestId('logout-button'));
+      });
+
+      await waitFor(() => {
+        expect(socketService.disconnect).toHaveBeenCalled();
+        expect(pendingUploads.clearPendingUploadsStore).toHaveBeenCalled();
       });
     });
   });

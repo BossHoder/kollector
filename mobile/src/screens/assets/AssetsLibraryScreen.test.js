@@ -19,6 +19,12 @@ import * as apiClient from '../../services/apiClient';
 // Mock dependencies
 jest.mock('../../contexts/AuthContext');
 jest.mock('../../services/apiClient');
+jest.mock('../../contexts/PendingUploadContext', () => ({
+  usePendingUploadContext: jest.fn(() => ({
+    pendingUploads: [],
+    retryPendingUpload: jest.fn(),
+  })),
+}));
 jest.mock('../../contexts/SocketContext', () => {
   const mockUseSocket = jest.fn(() => ({
     onAssetProcessed: jest.fn(() => () => {}),
@@ -156,25 +162,25 @@ describe('AssetsLibraryScreen', () => {
   });
 
   describe('Filtering', () => {
-    it('should render filter chips', async () => {
+    it('should render status and category dropdowns', async () => {
       render(<AssetsLibraryScreen />);
 
       await waitFor(() => {
-        expect(screen.getByTestId('filter-all')).toBeTruthy();
+        expect(screen.getByTestId('status-dropdown')).toBeTruthy();
+        expect(screen.getByTestId('category-dropdown')).toBeTruthy();
       });
     });
 
-    it('should have "All" filter selected by default', async () => {
+    it('should have "All" selected by default', async () => {
       render(<AssetsLibraryScreen />);
 
       await waitFor(() => {
-        const allFilter = screen.getByTestId('filter-all');
-        // Check if it has selected styling via accessibilityState
-        expect(allFilter.props.accessibilityState?.selected).toBeTruthy();
+        expect(screen.getByTestId('status-dropdown').props.accessibilityLabel).toContain('Tất cả');
+        expect(screen.getByTestId('category-dropdown').props.accessibilityLabel).toContain('Tất cả danh mục');
       });
     });
 
-    it('should refetch with status filter when filter chip pressed', async () => {
+    it('should refetch with status filter when dropdown option selected', async () => {
       render(<AssetsLibraryScreen />);
 
       await waitFor(() => {
@@ -183,9 +189,9 @@ describe('AssetsLibraryScreen', () => {
 
       // Clear mock to track next call
       apiClient.apiRequest.mockClear();
-      
-      const activeFilter = screen.getByTestId('filter-active');
-      fireEvent.press(activeFilter);
+
+      fireEvent.press(screen.getByTestId('status-dropdown'));
+      fireEvent.press(screen.getByTestId('filter-active'));
 
       await waitFor(() => {
         expect(apiClient.apiRequest).toHaveBeenCalledWith(
@@ -194,11 +200,38 @@ describe('AssetsLibraryScreen', () => {
       });
     });
 
-    it('should show "Processing" filter option', async () => {
+    it('should show "Processing" status option in dropdown', async () => {
       render(<AssetsLibraryScreen />);
 
       await waitFor(() => {
+        expect(screen.getByTestId('status-dropdown')).toBeTruthy();
+      });
+
+      fireEvent.press(screen.getByTestId('status-dropdown'));
+
+      await waitFor(() => {
         expect(screen.getByTestId('filter-processing')).toBeTruthy();
+      });
+    });
+
+    it('should refetch with combined status and category filters', async () => {
+      render(<AssetsLibraryScreen />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Jordan Air 1 High')).toBeTruthy();
+      });
+
+      apiClient.apiRequest.mockClear();
+
+      fireEvent.press(screen.getByTestId('status-dropdown'));
+      fireEvent.press(screen.getByTestId('filter-active'));
+
+      fireEvent.press(screen.getByTestId('category-dropdown'));
+      fireEvent.press(screen.getByTestId('category-filter-sneaker'));
+
+      await waitFor(() => {
+        const calls = apiClient.apiRequest.mock.calls.map((call) => call[0]);
+        expect(calls.some((url) => url.includes('status=active') && url.includes('category=sneaker'))).toBe(true);
       });
     });
   });

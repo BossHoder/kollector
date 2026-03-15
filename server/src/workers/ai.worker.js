@@ -23,6 +23,22 @@ const WORKER_CONCURRENCY = 5;
  */
 let worker = null;
 
+function hasMetadataValue(field) {
+  if (!field) {
+    return false;
+  }
+
+  if (typeof field === 'string') {
+    return field.trim().length > 0;
+  }
+
+  if (typeof field === 'object' && typeof field.value === 'string') {
+    return field.value.trim().length > 0;
+  }
+
+  return false;
+}
+
 /**
  * Process a single AI job
  * @param {Job} job - BullMQ job
@@ -69,21 +85,31 @@ async function processJob(job) {
     const aiResult = await callAnalyze(imageUrl, category);
     const duration = Date.now() - startTime;
 
+    if (!aiResult.processedImageUrl) {
+      const missingOutputError = new Error('AI service missing processed image URL');
+      missingOutputError.retryable = true;
+      throw missingOutputError;
+    }
+
+    const hasAnyMetadata = [
+      aiResult.brand,
+      aiResult.model,
+      aiResult.colorway
+    ].some(hasMetadataValue);
+
     // Update asset with AI results
-    asset.status = 'active';
+    asset.status = hasAnyMetadata ? 'active' : 'partial';
     asset.aiMetadata = {
-      brand: aiResult.brand,
-      model: aiResult.model,
-      colorway: aiResult.colorway,
+      brand: aiResult.brand || null,
+      model: aiResult.model || null,
+      colorway: aiResult.colorway || null,
       processedAt: new Date()
     };
-    
-    if (aiResult.processedImageUrl) {
-      asset.images.processed = {
-        url: aiResult.processedImageUrl,
-        processedAt: new Date()
-      };
-    }
+
+    asset.images.processed = {
+      url: aiResult.processedImageUrl,
+      processedAt: new Date()
+    };
 
     await asset.save();
 
@@ -99,7 +125,8 @@ async function processJob(job) {
     const successPayload = buildSuccessPayload(
       assetId,
       asset.aiMetadata,
-      aiResult.processedImageUrl
+      aiResult.processedImageUrl,
+      asset.status
     );
     emitAssetProcessed(userId, successPayload);
 
@@ -127,10 +154,35 @@ async function processJob(job) {
       throw error;
     }
 
-    // Non-retryable error - mark as failed immediately
-    const failureError = new Error(error.message);
-    failureError.unrecoverable = true;
-    throw failureError;
+    // Non-retryable error - persist failure immediately and avoid retries.
+    let discarded = false;
+
+    if (typeof job.discard === 'function') {
+      try {
+        await job.discard();
+        discarded = true;
+      } catch (discardError) {
+        logger.warn('Failed to discard non-retryable job, continuing with explicit failure path', {
+          jobId: job.id,
+          error: discardError.message
+        });
+      }
+    }
+
+    await handleFailure(job, error);
+
+    if (discarded) {
+      error.handledFailure = true;
+      throw error;
+    }
+
+    return {
+      success: false,
+      assetId,
+      failed: true,
+      retryable: false,
+      error: error.message
+    };
   }
 }
 
@@ -208,6 +260,10 @@ function startWorker() {
   });
 
   worker.on('failed', (job, error) => {
+    if (error?.handledFailure) {
+      return;
+    }
+
     // Only handle permanent failures (all retries exhausted)
     if (job.attemptsMade >= job.opts.attempts) {
       handleFailure(job, error);

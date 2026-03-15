@@ -38,7 +38,7 @@ describe('POST /api/assets/:id/retry', () => {
         userId: testUser._id,
         title: 'Failed Asset',
         status: 'failed',
-        category: 'sneakers',
+        category: 'sneaker',
         error: 'Previous analysis failed',
       });
 
@@ -58,7 +58,7 @@ describe('POST /api/assets/:id/retry', () => {
         userId: testUser._id,
         title: 'Partial Asset',
         status: 'partial',
-        category: 'sneakers',
+        category: 'sneaker',
       });
 
       const response = await request(app)
@@ -74,7 +74,7 @@ describe('POST /api/assets/:id/retry', () => {
         userId: testUser._id,
         title: 'Failed Asset',
         status: 'failed',
-        category: 'sneakers',
+        category: 'sneaker',
         error: 'Image quality too low',
       });
 
@@ -91,7 +91,7 @@ describe('POST /api/assets/:id/retry', () => {
         userId: testUser._id,
         title: 'Failed Asset',
         status: 'failed',
-        category: 'sneakers',
+        category: 'sneaker',
       });
 
       const response = await request(app)
@@ -110,7 +110,7 @@ describe('POST /api/assets/:id/retry', () => {
         userId: testUser._id,
         title: 'Active Asset',
         status: 'active',
-        category: 'sneakers',
+        category: 'sneaker',
       });
 
       const response = await request(app)
@@ -127,7 +127,7 @@ describe('POST /api/assets/:id/retry', () => {
         userId: testUser._id,
         title: 'Processing Asset',
         status: 'processing',
-        category: 'sneakers',
+        category: 'sneaker',
       });
 
       const response = await request(app)
@@ -143,7 +143,7 @@ describe('POST /api/assets/:id/retry', () => {
         userId: testUser._id,
         title: 'Draft Asset',
         status: 'draft',
-        category: 'sneakers',
+        category: 'sneaker',
       });
 
       const response = await request(app)
@@ -159,7 +159,7 @@ describe('POST /api/assets/:id/retry', () => {
         userId: testUser._id,
         title: 'Archived Asset',
         status: 'archived',
-        category: 'sneakers',
+        category: 'sneaker',
       });
 
       const response = await request(app)
@@ -189,7 +189,7 @@ describe('POST /api/assets/:id/retry', () => {
         userId: otherUser._id,
         title: 'Other User Asset',
         status: 'failed',
-        category: 'sneakers',
+        category: 'sneaker',
       });
 
       // Try to retry as original testUser
@@ -208,7 +208,7 @@ describe('POST /api/assets/:id/retry', () => {
         userId: testUser._id,
         title: 'Failed Asset',
         status: 'failed',
-        category: 'sneakers',
+        category: 'sneaker',
       });
 
       await request(app)
@@ -221,7 +221,7 @@ describe('POST /api/assets/:id/retry', () => {
         userId: testUser._id,
         title: 'Failed Asset',
         status: 'failed',
-        category: 'sneakers',
+        category: 'sneaker',
       });
 
       await request(app)

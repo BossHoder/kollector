@@ -11,6 +11,7 @@
 
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { listAssets } from '../api/assetsApi';
+import { usePendingUploadContext } from '../contexts/PendingUploadContext';
 
 // Debounce delay for search input
 const SEARCH_DEBOUNCE_MS = 300;
@@ -67,6 +68,7 @@ export function useInfiniteAssets({
   pageSize = 20,
   enabled = true,
 } = {}) {
+  const { pendingUploads } = usePendingUploadContext();
   const [assets, setAssets] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -99,7 +101,7 @@ export function useInfiniteAssets({
         limit: pageSize,
         cursor,
         status: status || undefined,
-        category: category || undefined,
+        category: category && category !== 'all' ? category : undefined,
         search: search || undefined,
       });
 
@@ -112,22 +114,26 @@ export function useInfiniteAssets({
         // First page or refresh
         setAssets(result.assets);
       } else {
-        // Append to existing
-        setAssets(prev => [...prev, ...result.assets]);
+        // Append to existing, deduplicating by id to guard against cursor drift
+        setAssets(prev => {
+          const existingIds = new Set(prev.map(a => a.id));
+          return [...prev, ...result.assets.filter(a => !existingIds.has(a.id))];
+        });
       }
 
       setNextCursor(result.pagination.nextCursor);
       setHasMore(result.pagination.hasMore);
       setError(null);
 
-      // Set isLoading to false in the same batch as other state updates
-      if (isInitial) {
+      // Always end initial skeleton once any first-page response is applied.
+      // This avoids a race where initial request becomes stale and a refresh wins.
+      if (isInitial || !cursor) {
         setIsLoading(false);
       }
     } catch (err) {
       if (mountedRef.current && fetchId === fetchIdRef.current) {
         setError(err);
-        if (isInitial) {
+        if (isInitial || !cursor) {
           setIsLoading(false);
         }
       }
@@ -216,7 +222,7 @@ export function useInfiniteAssets({
   }, []);
 
   return {
-    assets,
+    assets: [...pendingUploads, ...assets],
     isLoading,
     isLoadingMore,
     isRefreshing,

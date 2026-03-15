@@ -3,14 +3,14 @@
  * Source: assets.openapi.json
  */
 
-// Backend categories
-export type AssetCategory = 'sneaker' | 'lego' | 'camera' | 'other' | 'cards' | 'stamps' | 'coins' | 'toys' | 'art' | 'memorabilia' | 'collectible';
+export type AssetCategory = string;
 export type AssetStatus = 'draft' | 'processing' | 'partial' | 'active' | 'archived' | 'failed';
 
 export interface AssetImages {
   original?: {
     url: string;
     publicId?: string;
+    uploadedAt?: string;
   };
   processed?: {
     url: string;
@@ -77,12 +77,20 @@ export interface Asset {
   visualLayers?: VisualLayer[];
   createdAt?: string;
   updatedAt?: string;
+  details?: {
+    brand?: string;
+    model?: string;
+  };
   // Extended fields used by UI
   title?: string;
   imageUrl?: string;
   thumbnailUrl?: string;
+  originalImageUrl?: string;
+  processedImageUrl?: string;
   originalFilename?: string;
   fileSizeMB?: number;
+  fileSizeBytes?: number;
   mimeType?: string;
+  uploadedAt?: string;
   error?: string;
 }

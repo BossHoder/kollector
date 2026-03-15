@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://kollector/specs/011-mobile-ux-parity/contracts/category-aliases.schema.json",
+  "title": "Category Alias Map",
+  "description": "Client-side alias normalization map for canonical category contract.",
+  "type": "object",
+  "properties": {
+    "canonical": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["sneaker", "lego", "camera", "other"]
+      },
+      "uniqueItems": true,
+      "minItems": 4
+    },
+    "aliases": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["sneaker", "lego", "camera", "other"]
+      }
+    },
+    "fallbackPolicy": {
+      "type": "object",
+      "properties": {
+        "invalidFilter": {
+          "type": "string",
+          "const": "all"
+        },
+        "omitCategoryQueryWhenAll": {
+          "type": "boolean",
+          "const": true
+        }
+      },
+      "required": ["invalidFilter", "omitCategoryQueryWhenAll"]
+    }
+  },
+  "required": ["canonical", "aliases", "fallbackPolicy"],
+  "examples": [
+    {
+      "canonical": ["sneaker", "lego", "camera", "other"],
+      "aliases": {
+        "shoes": "sneaker",
+        "sneakers": "sneaker",
+        "photography": "camera",
+        "collectible": "other",
+        "art": "other",
+        "stamps": "other"
+      },
+      "fallbackPolicy": {
+        "invalidFilter": "all",
+        "omitCategoryQueryWhenAll": true
+      }
+    }
+  ]
+}

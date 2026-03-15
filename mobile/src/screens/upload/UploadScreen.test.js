@@ -16,11 +16,18 @@ import { useToast } from '../../contexts/ToastContext';
 import * as uploadApi from '../../api/uploadApi';
 import * as imagePicker from '../../services/imagePicker';
 
+const mockAddPendingUpload = jest.fn();
+
 // Mock dependencies
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(),
 }));
 jest.mock('../../contexts/ToastContext');
+jest.mock('../../contexts/PendingUploadContext', () => ({
+  usePendingUploadContext: jest.fn(() => ({
+    addPendingUpload: mockAddPendingUpload,
+  })),
+}));
 jest.mock('../../api/uploadApi');
 jest.mock('../../services/imagePicker');
 jest.mock('react-native-safe-area-context', () => ({
@@ -49,6 +56,7 @@ describe('UploadScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockAddPendingUpload.mockReset();
     
     useNavigation.mockReturnValue({
       navigate: mockNavigate,
@@ -206,6 +214,30 @@ describe('UploadScreen', () => {
 
       await waitFor(() => {
         expect(imagePicker.pickImageFromGallery).toHaveBeenCalledTimes(2);
+      });
+    });
+
+    it('should create failed placeholder when upload fails after camera selection', async () => {
+      uploadApi.uploadAsset.mockRejectedValue(new Error('Camera upload failed'));
+
+      render(<UploadScreen />);
+
+      fireEvent.press(screen.getByTestId('select-image-button'));
+      fireEvent.press(screen.getByTestId('source-camera'));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('selected-image')).toBeTruthy();
+      });
+
+      fireEvent.press(screen.getByText('Giày'));
+      fireEvent.press(screen.getByTestId('submit-button'));
+
+      await waitFor(() => {
+        expect(mockAddPendingUpload).toHaveBeenCalledWith(expect.objectContaining({
+          imageUri: mockValidImage.uri,
+          category: 'sneaker',
+          status: 'failed_upload',
+        }));
       });
     });
   });

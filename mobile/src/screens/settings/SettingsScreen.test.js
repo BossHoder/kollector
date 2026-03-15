@@ -41,6 +41,9 @@ describe('SettingsScreen', () => {
     
     useSocket.mockReturnValue({
       connectionState: 'connected',
+      isFallbackActive: false,
+      reconnectAttempts: 0,
+      isConnected: true,
     });
     
     useToast.mockReturnValue(mockToast);
@@ -100,11 +103,28 @@ describe('SettingsScreen', () => {
     it('should display reconnecting status', () => {
       useSocket.mockReturnValue({
         connectionState: 'reconnecting',
+        isFallbackActive: true,
+        reconnectAttempts: 2,
+        isConnected: false,
       });
 
       const { getByText } = render(<SettingsScreen />);
 
       expect(getByText('Đang kết nối lại')).toBeTruthy();
+    });
+
+    it('should render polling fallback and reconnect attempts', () => {
+      useSocket.mockReturnValue({
+        connectionState: 'disconnected',
+        isFallbackActive: true,
+        reconnectAttempts: 4,
+        isConnected: false,
+      });
+
+      const { getByText } = render(<SettingsScreen />);
+
+      expect(getByText('Đang bật (12s)')).toBeTruthy();
+      expect(getByText('4')).toBeTruthy();
     });
 
     it('should display Realtime Status label', () => {

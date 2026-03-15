@@ -81,7 +81,7 @@ class AuthService {
       const user = await User.findOne({ email: email.toLowerCase() }).select('+passwordHash');
       
       if (!user) {
-        const error = new Error('Invalid credentials');
+        const error = new Error('Sai tài khoản hoặc mật khẩu');
         error.statusCode = 401;
         error.code = 'INVALID_CREDENTIALS';
         throw error;
@@ -91,7 +91,7 @@ class AuthService {
       const isValidPassword = await user.comparePassword(password);
       
       if (!isValidPassword) {
-        const error = new Error('Invalid credentials');
+        const error = new Error('Sai tài khoản hoặc mật khẩu');
         error.statusCode = 401;
         error.code = 'INVALID_CREDENTIALS';
         throw error;
@@ -152,12 +152,6 @@ class AuthService {
 
       return { accessToken };
     } catch (error) {
-      if (error.name === 'TokenExpiredError') {
-        const err = new Error('Refresh token expired');
-        err.statusCode = 401;
-        err.code = 'TOKEN_EXPIRED';
-        throw err;
-      }
       if (error.name === 'JsonWebTokenError') {
         const err = new Error('Invalid refresh token');
         err.statusCode = 401;
@@ -169,7 +163,7 @@ class AuthService {
   }
 
   /**
-   * Generate JWT access token (15 minutes)
+   * Generate JWT access token without expiration
    * @param {object} user
    * @returns {string}
    */
@@ -184,13 +178,12 @@ class AuthService {
         userId: user._id.toString(),
         email: user.email
       },
-      jwtSecret,
-      { expiresIn: '15m' }
+      jwtSecret
     );
   }
 
   /**
-   * Generate JWT refresh token (7 days)
+   * Generate JWT refresh token without expiration
    * @param {object} user
    * @returns {string}
    */
@@ -205,8 +198,7 @@ class AuthService {
         userId: user._id.toString(),
         email: user.email
       },
-      jwtRefreshSecret,
-      { expiresIn: '7d' }
+      jwtRefreshSecret
     );
   }
 

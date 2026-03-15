@@ -1,9 +1,7 @@
 /**
  * ToastContext Provider
  *
- * Manages toast notifications with configurable duration
- * - Success: 3 seconds auto-dismiss
- * - Error: Persistent (requires manual dismiss)
+ * Manages toast notifications with configurable duration.
  */
 
 import {
@@ -22,22 +20,26 @@ export interface Toast {
   type: ToastType;
   message: string;
   persistent: boolean;
+  duration: number;
+}
+
+export interface ToastOptions {
+  persistent?: boolean;
+  duration?: number;
 }
 
 export interface ToastContextValue {
   toasts: Toast[];
-  showToast: (type: ToastType, message: string) => void;
-  showSuccess: (message: string) => void;
-  showError: (message: string) => void;
-  showInfo: (message: string) => void;
-  showWarning: (message: string) => void;
+  showToast: (type: ToastType, message: string, options?: ToastOptions) => void;
+  showSuccess: (message: string, options?: ToastOptions) => void;
+  showError: (message: string, options?: ToastOptions) => void;
+  showInfo: (message: string, options?: ToastOptions) => void;
+  showWarning: (message: string, options?: ToastOptions) => void;
   dismissToast: (id: string) => void;
   clearAllToasts: () => void;
 }
 
 const ToastContext = createContext<ToastContextValue | null>(null);
-
-/** Duration in ms for auto-dismiss toasts */
 const AUTO_DISMISS_DURATION = 3000;
 
 interface ToastProviderProps {
@@ -47,65 +49,53 @@ interface ToastProviderProps {
 export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
-  // Generate unique ID for toast
   const generateId = useCallback(() => {
     return `toast-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   }, []);
 
-  // Dismiss a specific toast
   const dismissToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
-  // Show a toast with specified type
   const showToast = useCallback(
-    (type: ToastType, message: string) => {
+    (type: ToastType, message: string, options: ToastOptions = {}) => {
       const id = generateId();
-
-      // Error toasts are persistent, others auto-dismiss
-      const persistent = type === 'error';
+      const persistent = Boolean(options.persistent);
+      const duration = options.duration ?? AUTO_DISMISS_DURATION;
 
       const newToast: Toast = {
         id,
         type,
         message,
         persistent,
+        duration,
       };
 
-      setToasts(prev => [...prev, newToast]);
-
-      // Auto-dismiss non-persistent toasts
-      if (!persistent) {
-        setTimeout(() => {
-          dismissToast(id);
-        }, AUTO_DISMISS_DURATION);
-      }
+      setToasts((prev) => [...prev, newToast]);
     },
-    [generateId, dismissToast]
+    [generateId]
   );
 
-  // Convenience methods
   const showSuccess = useCallback(
-    (message: string) => showToast('success', message),
+    (message: string, options?: ToastOptions) => showToast('success', message, options),
     [showToast]
   );
 
   const showError = useCallback(
-    (message: string) => showToast('error', message),
+    (message: string, options?: ToastOptions) => showToast('error', message, options),
     [showToast]
   );
 
   const showInfo = useCallback(
-    (message: string) => showToast('info', message),
+    (message: string, options?: ToastOptions) => showToast('info', message, options),
     [showToast]
   );
 
   const showWarning = useCallback(
-    (message: string) => showToast('warning', message),
+    (message: string, options?: ToastOptions) => showToast('warning', message, options),
     [showToast]
   );
 
-  // Clear all toasts
   const clearAllToasts = useCallback(() => {
     setToasts([]);
   }, []);
@@ -136,11 +126,6 @@ export function ToastProvider({ children }: ToastProviderProps) {
   return <ToastContext.Provider value={value}>{children}</ToastContext.Provider>;
 }
 
-/**
- * Hook to access toast context
- *
- * @throws If used outside ToastProvider
- */
 export function useToast(): ToastContextValue {
   const context = useContext(ToastContext);
 
@@ -151,4 +136,4 @@ export function useToast(): ToastContextValue {
   return context;
 }
 
-export { ToastContext };
+export { ToastContext, AUTO_DISMISS_DURATION };

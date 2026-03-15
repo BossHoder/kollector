@@ -38,7 +38,10 @@ export default function RootNavigator() {
   }
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      key={isAuthenticated ? 'authenticated-root' : 'unauthenticated-root'}
+      screenOptions={{ headerShown: false }}
+    >
       {isAuthenticated ? (
         <Stack.Screen name="App" component={AppStack} />
       ) : (

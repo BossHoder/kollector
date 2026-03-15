@@ -9,11 +9,13 @@ import { useEffect } from 'react';
 import { Link, useNavigate, useBlocker } from 'react-router-dom';
 import { UploadForm, type UploadFormData } from '@/components/forms/UploadForm';
 import { useUploadAsset } from '@/hooks/useUploadAsset';
+import { useAssetCategories } from '@/hooks/useAssetCategories';
 import { ApiError } from '@/lib/api-client';
 
 export function UploadPage() {
   const navigate = useNavigate();
   const uploadMutation = useUploadAsset();
+  const { data: categoryOptions = [], isLoading: isCategoryLoading } = useAssetCategories();
   const isUploading = uploadMutation.isPending;
 
   // Block in-app navigation during upload
@@ -39,6 +41,8 @@ export function UploadPage() {
       const result = await uploadMutation.mutateAsync({
         file: data.file,
         category: data.category,
+        assetName: data.assetName,
+        runAi: data.runAi,
       });
 
       // Redirect to asset detail page
@@ -115,6 +119,8 @@ export function UploadPage() {
       <div className="bg-surface-dark border border-border-dark rounded-xl p-6 sm:p-8">
         <UploadForm
           onSubmit={handleSubmit}
+          categoryOptions={categoryOptions}
+          isCategoryLoading={isCategoryLoading}
           isLoading={uploadMutation.isPending}
           error={errorMessage}
         />

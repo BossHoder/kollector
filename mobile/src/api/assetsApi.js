@@ -9,31 +9,16 @@
  */
 
 import { apiRequest } from '../services/apiClient';
+import { mapAsset, mapAssets } from '../utils/assetMapper';
 
-/**
- * Build query string from params object, filtering out undefined/null values
- */
 function buildQueryString(params) {
   const filtered = Object.entries(params)
     .filter(([, value]) => value !== undefined && value !== null && value !== '')
     .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`);
-  
+
   return filtered.length > 0 ? `?${filtered.join('&')}` : '';
 }
 
-/**
- * List assets with pagination and filtering
- *
- * @param {Object} options
- * @param {number} [options.limit=20] - Results per page
- * @param {string} [options.cursor] - Cursor for pagination (nextCursor from previous response)
- * @param {string} [options.status] - Filter by status (draft|processing|partial|active|archived|failed)
- * @param {string} [options.category] - Filter by category
- * @param {string} [options.search] - Search query
- * @param {string} [options.sortBy='createdAt'] - Sort field
- * @param {string} [options.sortOrder='desc'] - Sort order (asc|desc)
- * @returns {Promise<{assets: Array, pagination: Object}>}
- */
 export async function listAssets({
   limit = 20,
   cursor,
@@ -47,47 +32,40 @@ export async function listAssets({
     limit,
     cursor,
     status,
-    category,
+    category: category || undefined,
     search,
     sortBy,
     sortOrder,
   });
 
   const response = await apiRequest(`/assets${queryString}`);
-  console.log('[listAssets] apiRequest returned:', typeof response, response ? Object.keys(response) : 'null');
-  
+  const rawAssets = response.items || response.assets || response.data || [];
+  const assets = mapAssets(rawAssets);
+  const nextCursor = response.pagination?.nextCursor ?? response.nextCursor ?? null;
+  const hasMore = response.pagination?.hasMore ?? Boolean(nextCursor);
+  const total = response.pagination?.total ?? response.total ?? assets.length;
+  const resolvedLimit = response.pagination?.limit ?? response.limit ?? limit;
+
   return {
-    assets: response.assets || response.data || [],
+    assets,
     pagination: {
-      total: response.pagination?.total || response.total || 0,
-      limit: response.pagination?.limit || limit,
-      nextCursor: response.pagination?.nextCursor || response.nextCursor || null,
-      hasMore: response.pagination?.hasMore ?? (response.nextCursor != null),
+      total,
+      limit: resolvedLimit,
+      nextCursor,
+      hasMore,
     },
   };
 }
 
-/**
- * Get a single asset by ID
- *
- * @param {string} assetId - Asset ID
- * @returns {Promise<Object>} Asset object
- */
 export async function getAsset(assetId) {
   if (!assetId) {
     throw new Error('Asset ID is required');
   }
 
   const response = await apiRequest(`/assets/${assetId}`);
-  return response.asset || response;
+  return mapAsset(response.asset || response);
 }
 
-/**
- * Archive an asset
- *
- * @param {string} assetId - Asset ID
- * @returns {Promise<Object>} Updated asset
- */
 export async function archiveAsset(assetId) {
   if (!assetId) {
     throw new Error('Asset ID is required');
@@ -98,15 +76,9 @@ export async function archiveAsset(assetId) {
     body: { status: 'archived' },
   });
 
-  return response.asset || response;
+  return mapAsset(response.asset || response);
 }
 
-/**
- * Retry failed asset analysis
- *
- * @param {string} assetId - Asset ID
- * @returns {Promise<Object>} Updated asset with status=processing
- */
 export async function retryAsset(assetId) {
   if (!assetId) {
     throw new Error('Asset ID is required');
@@ -116,16 +88,9 @@ export async function retryAsset(assetId) {
     method: 'POST',
   });
 
-  return response.asset || response;
+  return mapAsset(response.asset || response);
 }
 
-/**
- * Update asset metadata
- *
- * @param {string} assetId - Asset ID
- * @param {Object} updates - Fields to update
- * @returns {Promise<Object>} Updated asset
- */
 export async function updateAsset(assetId, updates) {
   if (!assetId) {
     throw new Error('Asset ID is required');
@@ -136,7 +101,7 @@ export async function updateAsset(assetId, updates) {
     body: updates,
   });
 
-  return response.asset || response;
+  return mapAsset(response.asset || response);
 }
 
 export default {

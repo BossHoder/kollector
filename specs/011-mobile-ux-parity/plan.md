@@ -1,50 +1,98 @@
-# Implementation Plan: Mobile UX Parity (Web → Mobile)
+# Implementation Plan: Mobile UX Parity (Web -> Mobile)
 
-**Branch**: `011-mobile-ux-parity` | **Date**: 2026-02-10 | **Spec**: [spec.md](spec.md)
+**Branch**: `011-mobile-ux-parity` | **Date**: 2026-03-10 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/011-mobile-ux-parity/spec.md`
 
 ## Summary
 
-Deliver mobile UX parity with the existing web app by matching brand/design language,
-terminology, asset status semantics, and the asset information model—while using
-mobile-native layout and interaction patterns (bottom tabs, bottom sheets, thumb-zone CTAs).
-Implementation is primarily in the Expo React Native app, with small backend changes required
-to support Failed retry and to align asset status filtering with the Asset model.
+Deliver mobile parity for core MVP flows (library, upload, detail, realtime, settings) with contract-first alignment to backend and targeted fixes for current regressions: invalid category filters causing 400, camera upload failure handling, missing file metadata on detail, realtime unavailability, and mobile category filtering parity with web.
+
+Implementation strategy:
+- Standardize category handling via canonical server categories (`sneaker|lego|camera|other`) plus alias normalization at client boundary.
+- Preserve user intent on upload failures via local placeholder assets and retry path.
+- Make realtime resilient with Socket.io primary channel + 10-15s polling fallback while disconnected.
+- Ensure detail file info is available immediately from upload metadata while processing.
+- Keep web and mobile filter behavior semantically consistent without inventing backend contracts.
 
 ## Technical Context
 
-**Language/Version**: React Native (Expo) with React 19 (JavaScript/TypeScript)  
-**Primary Dependencies**: Expo SDK 54, socket.io-client v4, expo-camera, expo-image-picker, @shopify/react-native-skia  
-**Storage**: Client-side token storage (secure storage for refresh token; access token cached in memory / persistent as needed)  
-**Testing**: Jest + React Native Testing Library (mobile); existing Jest/Vitest suites in server/web  
-**Target Platform**: iOS 15+ and Android 10+ (API 29+)  
-**Project Type**: Mobile app + API contract amendments (Node.js modular monolith)  
-**Performance Goals**: Smooth library scrolling at 60fps; status updates reflected within 3s of server event emission; avoid UI thrash on burst events  
-**Constraints**: Contract-first with existing OpenAPI/JSON schemas; upload max 10 MB per image; mobile-first UX (no 1:1 web layout copy); accessibility baseline (labels, focus order, 44pt targets)  
-**Scale/Scope**: MVP screens only (Login, Register, Assets Library, Upload & Analyze, Asset Detail, Settings) + realtime updates
+**Language/Version**:
+- Mobile: JavaScript (React Native + Expo)
+- Web: TypeScript + React (Vite)
+- Server: Node.js (Express + Mongoose)
+
+**Primary Dependencies**:
+- Mobile: `expo-image-picker`, `socket.io-client`, React Navigation
+- Server: `express-validator`, Socket.io, BullMQ, Mongoose
+- Web: React Query, React Router
+
+**Storage**:
+- Server persistent storage: MongoDB (`Asset`, `User`, related models)
+- Queue/async boundary: Redis (BullMQ)
+- Client-side ephemeral state: in-memory React state for placeholder assets
+
+**Testing**:
+- Mobile unit/component tests (Jest) for API wrappers, asset mapping, socket handling, upload flow
+- Server contract/integration tests for assets list filter validation and retry/upload contracts
+- Web regression tests for filter normalization and image toggle empty-src handling
+
+**Target Platform**:
+- iOS 15+
+- Android 10+ (API 29+)
+- Web modern browsers (existing Vite target)
+
+**Project Type**: Multi-app monorepo (server + web + mobile)
+
+**Performance Goals**:
+- Mobile library scroll remains smooth (target 60fps on representative devices)
+- Realtime updates appear <=3s when socket connected
+- Fallback freshness <=15s during socket outage
+
+**Constraints**:
+- Contract-first with existing backend endpoints/events
+- No synchronous AI/image heavy work in request handlers (queue boundary preserved)
+- Upload file max 10 MB
+- No schema hallucination beyond defined Asset fields
+
+**Scale/Scope**:
+- MVP parity across 5 core user stories
+- Single feature branch touching mobile, web, and server interfaces
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-The following gates derive from the KLECTR Constitution:
+### Pre-Research Gate Review
 
-| Gate | Status | Notes |
-|------|--------|-------|
-| Modular Monolith | ✅ PASS | Backend changes (if any) remain inside `server/src/modules/assets/` with controllers/services/routes separation |
-| Queue-First | ✅ PASS | Upload triggers queue processing via existing `/api/assets/analyze-queue`; mobile never runs AI synchronously |
-| Test-First | ✅ PASS | Plan includes mobile tests for API client refresh, status mapping, and socket handlers before UI integration |
-| Schema Fidelity | ✅ PASS | Asset data follows `server/src/models/Asset.js`; no new persisted fields introduced |
-| Observability & Events | ✅ PASS | Reuse Socket.io `asset_processed` event; backend emits structured logs already include request IDs |
+1. Modular Monolith Discipline: PASS
+- Changes remain within existing server modules (`assets`, auth, socket integration), no microservice sprawl.
 
-### FE-Specific Gates (Mobile)
+2. Async Queue Boundaries: PASS
+- Upload/retry continue to use analyze queue; no synchronous AI inference introduced.
 
-| Gate | Status | Notes |
-|------|--------|-------|
-| UI Fidelity | ✅ PASS | Mobile preserves Stitch semantics, tokens, and labels; layout adapts for mobile as an allowed responsive/platform adaptation |
-| Contract-First | ✅ PASS (with amendments) | Mobile uses existing OpenAPI/JSON schemas; required gaps are documented as explicit contract amendments (retry endpoint + status filter validation) |
-| FE Test-First | ✅ PASS | Mobile will add tests for API client, auth refresh, status mapping, and Socket.io event handling before screen wiring |
-| MVP Scope | ✅ PASS | Only the MVP screens and realtime are implemented; maintenance/NFC/social/card-gen/dashboard are deferred |
+3. Test-First: PASS (planned)
+- Explicit tests planned first for category normalization, upload failure placeholder behavior, metadata hydration, socket fallback/polling behavior.
+
+4. Data Schema Fidelity: PASS
+- Canonical categories and statuses align with `Asset` schema.
+- File metadata fields surfaced from existing/contracted response fields; no undocumented persistence shape required.
+
+5. Observability, Versioning, Simplicity: PASS
+- Realtime fallback and category normalization are additive; no breaking endpoint replacement.
+
+6. FE UI Fidelity (Stitch): PASS
+- Scope is behavior parity/fixes, not redesign.
+
+7. Contract-First FE Integration: PASS with amendments documented
+- Contract updates captured under `specs/011-mobile-ux-parity/contracts/`.
+
+### Post-Design Gate Review
+
+1. Tests defined before implementation: PASS
+2. Queue/event contracts explicit: PASS
+3. Schema and enum fidelity maintained: PASS
+4. FE contract alignment preserved (with explicit amendments): PASS
+5. Any violations requiring complexity exception: NONE
 
 ## Project Structure
 
@@ -52,52 +100,53 @@ The following gates derive from the KLECTR Constitution:
 
 ```text
 specs/011-mobile-ux-parity/
-├── spec.md              # Feature spec (already complete)
-├── plan.md              # This file
-├── research.md          # Phase 0: decisions + rationale
-├── data-model.md        # Phase 1: entities + validation + status semantics
-├── quickstart.md        # Phase 1: how to run mobile + server locally
-├── contracts/           # Phase 1: proposed contract amendments for this feature
-│   ├── assets.retry.openapi.json
-│   └── assets.status-filter.openapi.patch.json
-└── tasks.md             # Phase 2: implementation tasks (/speckit.tasks)
+|-- plan.md
+|-- research.md
+|-- data-model.md
+|-- quickstart.md
+|-- contracts/
+|   |-- assets.mobile-parity.openapi.json
+|   |-- category-aliases.schema.json
+|   |-- assets.retry.openapi.json
+|   `-- assets.status-filter.openapi.patch.json
+`-- tasks.md
 ```
 
 ### Source Code (repository root)
 
 ```text
-mobile/
-├── App.js
-├── package.json
-└── src/
-    ├── api/
-    ├── components/
-    ├── config/
-    ├── contexts/
-    ├── hooks/
-    ├── navigation/
-    ├── screens/
-    ├── services/
-    ├── styles/
-    ├── types/
-    └── utils/
-
 server/
-└── src/
-    ├── modules/
-    │   ├── auth/
-    │   └── assets/        # add retry route + align status filtering validation
-    └── config/socket.js
+|-- src/
+|   |-- models/
+|   |-- modules/
+|   |-- middleware/
+|   `-- config/
+`-- tests/
+    |-- contract/
+    |-- integration/
+    `-- unit/
 
 web/
-└── src/
-    ├── index.css          # design tokens source
-    └── lib/status-display.ts  # status display mapping reference
+|-- src/
+|   |-- components/
+|   |-- hooks/
+|   |-- pages/
+|   `-- types/
+`-- tests/
+
+mobile/
+|-- src/
+|   |-- api/
+|   |-- screens/
+|   |-- hooks/
+|   |-- contexts/
+|   `-- services/
+`-- __mocks__/
 ```
 
-**Structure Decision**: Implement mobile feature in `mobile/src/` using contexts/hooks/services layered similarly to web.
-Backend changes (if required) stay within the assets module and are contract-driven.
+**Structure Decision**:
+Use existing monorepo layout and implement behavior parity through coordinated changes across `mobile/src`, `web/src`, and server `assets` module contracts. No new top-level projects are needed.
 
 ## Complexity Tracking
 
-No Constitution violations require justification.
+No constitution violations requiring justification.

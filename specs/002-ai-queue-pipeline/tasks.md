@@ -194,8 +194,10 @@ Write tests FIRST; they MUST fail before implementation.
 - [x] T063 [P] Update server/README.md with queue pipeline documentation (setup, env vars, endpoints)
 - [x] T064 [P] Add graceful shutdown for worker in server/src/app.js (worker.close(), queue.close() on SIGTERM)
 - [x] T065 [P] Add graceful shutdown for Socket.io in server/src/app.js (io.close() on SIGTERM)
-- [x] T066 Verify all tests pass: `npm test` in server/
-- [x] T067 Manual end-to-end test per quickstart.md instructions
+- [ ] T066 Verify all tests pass: `npm test` in server/
+- [ ] T067 Manual end-to-end test per quickstart.md instructions
+
+> Status note (2026-03-14): The 7 spec 002 suites pass, but full `server` `npm test` is still red in unrelated/non-complete areas. See `follow-up.md` for open compliance work and current validation notes.
 
 ---
 

@@ -5,6 +5,7 @@
 
 import type { User } from './user';
 import type { Asset, AssetCategory, AssetStatus } from './asset';
+import type { AssetCategoryOption } from '@/hooks/useAssetCategories';
 
 // Auth API types
 export interface LoginRequest {
@@ -56,10 +57,16 @@ export interface AnalyzeQueueResponse {
   success: true;
   data: {
     assetId: string;
-    jobId: string;
-    status: 'processing';
+    jobId: string | null;
+    status: AssetStatus;
     message: string;
+    asset: Asset;
   };
+}
+
+export interface AssetCategoriesResponse {
+  success: true;
+  data: AssetCategoryOption[];
 }
 
 // Error response types

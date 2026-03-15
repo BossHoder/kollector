@@ -8,11 +8,13 @@
 import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/useToast';
 import { RegisterForm, type RegisterFormData } from '@/components/forms/RegisterForm';
 
 export function RegisterPage() {
   const navigate = useNavigate();
   const { isAuthenticated, isLoading, error, register } = useAuth();
+  const { showError } = useToast();
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -20,6 +22,12 @@ export function RegisterPage() {
       navigate('/app', { replace: true });
     }
   }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (error) {
+      showError(error);
+    }
+  }, [error, showError]);
 
   const handleSubmit = async (data: RegisterFormData) => {
     try {
@@ -50,7 +58,7 @@ export function RegisterPage() {
         <RegisterForm
           onSubmit={handleSubmit}
           isLoading={isLoading}
-          error={error}
+          error={null}
         />
 
         {/* Login Link */}

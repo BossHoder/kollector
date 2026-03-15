@@ -17,6 +17,15 @@ const mockUser: User = {
 // Mock tokens
 const mockAccessToken = 'mock-access-token';
 const mockRefreshToken = 'mock-refresh-token';
+const mockCategories = [
+  { value: 'cards', label: 'Thẻ' },
+  { value: 'stamps', label: 'Tem' },
+  { value: 'coins', label: 'Tiền xu' },
+  { value: 'toys', label: 'Đồ chơi' },
+  { value: 'art', label: 'Nghệ thuật' },
+  { value: 'memorabilia', label: 'Kỷ vật' },
+  { value: 'other', label: 'Khác', allowCustomValue: true },
+];
 
 // Mock assets data
 const mockAssets: Asset[] = [
@@ -90,7 +99,7 @@ export const handlers = [
         success: false,
         error: {
           code: 'UNAUTHORIZED',
-          message: 'Invalid credentials',
+          message: 'Sai tài khoản hoặc mật khẩu',
         },
       },
       { status: 401 }
@@ -155,6 +164,13 @@ export const handlers = [
     });
   }),
 
+  http.get(`${API_BASE}/assets/categories`, () => {
+    return HttpResponse.json({
+      success: true,
+      data: mockCategories,
+    });
+  }),
+
   // Assets handlers
   http.get(`${API_BASE}/assets`, ({ request }) => {
     const url = new URL(request.url);
@@ -207,6 +223,24 @@ export const handlers = [
           jobId: 'job-123',
           status: 'processing',
           message: 'Asset queued for analysis',
+          asset: {
+            id: 'new-asset-id',
+            _id: 'new-asset-id',
+            userId: mockUser.id,
+            category: 'cards',
+            status: 'processing',
+            originalFilename: 'new-asset.jpg',
+            fileSizeBytes: 1024 * 1024,
+            mimeType: 'image/jpeg',
+            images: {
+              original: {
+                url: 'https://example.com/new-asset.jpg',
+                uploadedAt: new Date().toISOString(),
+              },
+            },
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          },
         },
       },
       { status: 202 }

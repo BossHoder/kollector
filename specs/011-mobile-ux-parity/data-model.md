@@ -1,109 +1,160 @@
-# Data Model: Mobile UX Parity (Web → Mobile)
+# Data Model: Mobile UX Parity (Web -> Mobile)
 
-**Feature**: [spec.md](spec.md)  
-**Contracts**: see existing backend specs + this feature’s proposed amendments in [contracts/](contracts/)  
-**Date**: 2026-02-10
+**Feature**: [spec.md](spec.md)
+**Contracts**: [contracts/](contracts/)
+**Date**: 2026-03-10
 
 ## Entities
 
-### User
+### 1) User
 
-Represents an authenticated account.
+Represents an authenticated account owner.
 
-**Core fields (conceptual)**
-- `id`: unique identifier
-- `email`: unique email address
+Core fields:
+- `id: string`
+- `email: string`
 
-**Client session state (not persisted to MongoDB)**
-- `accessToken`: short-lived JWT
-- `refreshToken`: long-lived refresh token (mobile stores securely)
+Client session fields (non-persistent in MongoDB):
+- `accessToken: string`
+- `refreshToken: string`
+- `connectionState: connected|connecting|reconnecting|disconnected`
 
-### Asset
+### 2) CategoryCanonical
 
-Core collectible item shown in the library and detail screens.
+Canonical server-aligned category domain.
 
-**Identity & ownership**
-- `id`
-- `userId`
+Fields:
+- `key: 'sneaker' | 'lego' | 'camera' | 'other'`
+- `labelVi: string`
+- `labelEn?: string`
 
-**Classification**
-- `category`: `sneaker | lego | camera | other`
+### 3) CategoryAliasMap
 
-**Lifecycle status**
-- Backend enum (source of truth, per Mongoose): `draft | processing | partial | active | archived | failed`
-- UI display labels (parity requirement):
-  - `draft` → Draft
-  - `processing` → Processing
-  - `active` → Ready
-  - `failed` → Failed
-  - `partial` → Partial
-  - `archived` → Archived
+Compatibility mapping for legacy/client terms.
 
-**Images** (matches backend schema shape)
-- `images.original.url` (required)
-- `images.processed.url` (optional)
-- `images.thumbnail.url` (optional)
+Fields:
+- `alias: string`
+- `canonical: CategoryCanonical.key`
+- `source: web|mobile|legacy`
 
-**AI Analysis**
-- `aiMetadata.brand`: `{ value, confidence }`
-- `aiMetadata.model`: `{ value, confidence }`
-- `aiMetadata.colorway`: `{ value, confidence }` (optional)
-- `aiMetadata.processedAt` (optional)
+Examples:
+- `shoes -> sneaker`
+- `photography -> camera`
+- `collectible -> other`
 
-**Condition**
-- `condition.health`: number 0–100
-- `condition.conditionNotes` (if exposed via `aiMetadata.conditionNotes` or other backend fields)
+### 4) Asset (Server-backed)
 
-**Metadata**
-- `createdAt`, `updatedAt`
-- `details.*` optional manual fields (brand/model/colorway/sku/serialNumber/description/tags)
+Primary persisted collectible entity.
 
-## Validation Rules (MVP)
+Identity and ownership:
+- `id: string`
+- `userId: string`
 
-### Upload image
-- File size MUST be `<= 10 MB` (client-side pre-check; server-side enforcement recommended)
-- Source MUST be camera or photo library
+Classification and lifecycle:
+- `category: CategoryCanonical.key`
+- `status: 'draft' | 'processing' | 'partial' | 'active' | 'archived' | 'failed'`
 
-### Upload category
-- Category MUST be selected before submission
-- Category MUST be one of `sneaker | lego | camera | other`
+Images:
+- `images.original.url: string`
+- `images.processed.url?: string`
+- `images.thumbnail.url?: string`
 
-### Asset status rendering
-- UI MUST render state-specific sections based on backend status:
-  - `processing`: show overlay; disable/dim non-interactive sections
-  - `failed`: show error + Retry CTA
-  - `partial`: show Partial pill + short explanation
-  - `active`: show AI analysis + condition + metadata
+File metadata (required for immediate detail display):
+- `originalFilename?: string`
+- `fileSizeMB?: number`
+- `mimeType?: string`
+- `uploadedAt?: string (ISO)`
+
+AI metadata:
+- `aiMetadata.brand?: { value: string, confidence: number }`
+- `aiMetadata.model?: { value: string, confidence: number }`
+- `aiMetadata.colorway?: { value: string, confidence: number }`
+- `aiMetadata.error?: string`
+- `aiMetadata.processedAt?: string`
+
+Timestamps:
+- `createdAt: string`
+- `updatedAt: string`
+
+### 5) LocalUploadDraft (Client-only)
+
+Represents local placeholder records when upload flow fails after user intent is established.
+
+Fields:
+- `localId: string`
+- `userId: string`
+- `imageUri: string`
+- `category: CategoryCanonical.key`
+- `status: 'pending_upload' | 'failed_upload'`
+- `errorMessage?: string`
+- `retryCount: number`
+- `createdAt: string`
+- `updatedAt: string`
+
+Sync fields:
+- `serverAssetId?: string`
+- `syncState: local_only | syncing | synced`
+
+## Relationships
+
+- `User 1..* Asset`
+- `User 1..* LocalUploadDraft`
+- `Asset 1..1 CategoryCanonical`
+- `CategoryAliasMap *..1 CategoryCanonical`
+
+## Validation Rules
+
+### Category validation
+- Incoming category from UI must be normalized through `CategoryAliasMap`.
+- If no mapping exists, use filter fallback behavior:
+  - list filters: omit `category` query (All)
+  - upload category selection: block submit until canonical category selected
+
+### Upload validation
+- File type must be image MIME supported by app (`jpeg`, `png`, `webp`, `heic`, `heif`).
+- File size must be `<= 10 MB`.
+- Submit requires both image and canonical category.
+
+### Status rendering validation
+- UI label mapping:
+  - `active -> Ready`
+  - `processing -> Processing`
+  - `failed -> Failed`
+  - `partial -> Partial`
+  - `archived -> Archived`
+  - `draft -> Draft`
+
+### Metadata rendering validation
+- Detail screen must display file metadata from upload payload even while `status=processing`.
+- Missing metadata should render explicit placeholder (`-`) but must not suppress available fields.
 
 ## State Transitions
 
-Primary transitions (simplified):
-- `draft` → `processing` (after submit to analyze-queue)
-- `processing` → `active` (successful processing)
-- `processing` → `failed` (processing failure)
-- `processing` → `partial` (partial completion)
-- `active|failed|partial|draft` → `archived` (archive action)
+### Server asset lifecycle
+- `draft -> processing` (submit analyze queue)
+- `processing -> active` (AI success)
+- `processing -> partial` (AI partial)
+- `processing -> failed` (AI failure)
+- `active|partial|failed|draft -> archived` (archive action)
 
-## Realtime Event Model
+### Client local upload lifecycle
+- `pending_upload -> syncing` (retry/submit starts)
+- `syncing -> synced` (server returns asset id; draft replaced by server asset)
+- `syncing -> failed_upload` (request/network/camera-related failure)
+- `failed_upload -> syncing` (manual retry)
 
-### Socket event: `asset_processed`
+## Realtime + Polling Consistency Model
 
-- Transport: Socket.io to room `user:<userId>`
-- Emitted by backend when processing completes
+Event:
+- Socket event `asset_processed` updates asset status and metadata.
 
-**Payload (success)**
-- `assetId`: string
-- `status`: `active`
-- `aiMetadata`: object (brand/model/colorway)
-- `processedImageUrl`: string (optional depending on backend)
-- `timestamp`: ISO string
+Fallback:
+- If socket disconnected, poll list/detail every 10-15s.
+- When socket reconnects, stop fallback polling.
 
-**Payload (failure)**
-- `assetId`: string
-- `status`: `failed`
-- `error`: string
-- `timestamp`: ISO string
+Merge rule:
+- For same asset, apply update with newest `updatedAt`/event `timestamp`.
+- Prefer socket event when timestamps are equal.
 
-Client requirements:
-- Apply updates to both library list and asset detail without manual refresh
-- Debounce/merge burst updates to avoid UI thrash
+Dedup rule:
+- Ignore duplicate events with same `(assetId, timestamp, status)`.

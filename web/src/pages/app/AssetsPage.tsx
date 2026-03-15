@@ -7,14 +7,16 @@
 
 import { useState } from 'react';
 import { useAssets } from '@/hooks/useAssets';
+import { useAssetCategories } from '@/hooks/useAssetCategories';
 import { AssetGrid } from '@/components/assets/AssetGrid';
 import { AssetFilters } from '@/components/assets/AssetFilters';
-import type { AssetCategory, AssetStatus } from '@/types/asset';
+import type { AssetStatus } from '@/types/asset';
 
 export function AssetsPage() {
-  const [category, setCategory] = useState<AssetCategory | undefined>();
+  const [category, setCategory] = useState<string | undefined>();
   const [status, setStatus] = useState<AssetStatus | undefined>();
   const [page, setPage] = useState(1);
+  const { data: categoryOptions = [] } = useAssetCategories();
 
   const { data, isLoading, isError, error } = useAssets({
     category,
@@ -23,7 +25,7 @@ export function AssetsPage() {
     limit: 12,
   });
 
-  const handleCategoryChange = (newCategory: AssetCategory | undefined) => {
+  const handleCategoryChange = (newCategory: string | undefined) => {
     setCategory(newCategory);
     setPage(1); // Reset to first page when filter changes
   };
@@ -97,6 +99,7 @@ export function AssetsPage() {
         <AssetFilters
           category={category}
           status={status}
+          categoryOptions={categoryOptions}
           onCategoryChange={handleCategoryChange}
           onStatusChange={handleStatusChange}
           onClearFilters={handleClearFilters}
@@ -104,7 +107,7 @@ export function AssetsPage() {
       </div>
 
       {/* Assets Grid */}
-      <AssetGrid assets={assets} isLoading={isLoading} />
+      <AssetGrid assets={assets} categoryOptions={categoryOptions} isLoading={isLoading} />
 
       {/* Pagination */}
       {!isLoading && totalPages > 1 && (

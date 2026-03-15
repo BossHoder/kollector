@@ -214,6 +214,42 @@ describe('apiClient', () => {
       // setAccessToken should be called only once (single refresh)
       expect(tokenStore.setAccessToken).toHaveBeenCalledTimes(1);
     });
+
+    it('should retry failed assets-list request after refresh and resolve payload', async () => {
+      global.fetch
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 401,
+          headers: { get: () => 'application/json' },
+          json: () => Promise.resolve({ message: 'Unauthorized' }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          headers: { get: () => 'application/json' },
+          json: () => Promise.resolve({ accessToken: mockNewAccessToken }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          headers: { get: () => 'application/json' },
+          json: () => Promise.resolve({
+            assets: [{ id: 'asset-1' }],
+            pagination: { hasMore: false, nextCursor: null, limit: 20 },
+          }),
+        });
+
+      tokenStore.getAccessToken
+        .mockResolvedValueOnce(mockAccessToken)
+        .mockResolvedValueOnce(mockAccessToken)
+        .mockResolvedValueOnce(mockNewAccessToken);
+
+      const result = await apiRequest('/assets?status=active');
+
+      expect(result.assets).toHaveLength(1);
+      expect(tokenStore.setAccessToken).toHaveBeenCalledWith(mockNewAccessToken);
+      expect(global.fetch).toHaveBeenCalledTimes(3);
+    });
   });
 
   describe('publicApiRequest', () => {

@@ -6,6 +6,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { ToastProvider } from './src/contexts/ToastContext';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { SocketProvider } from './src/contexts/SocketContext';
+import { PendingUploadProvider } from './src/contexts/PendingUploadContext';
 
 // Navigation
 import RootNavigator from './src/navigation/RootNavigator';
@@ -20,15 +21,17 @@ export default function App() {
     <SafeAreaProvider>
       <ToastProvider>
         <AuthProvider>
-          <SocketProvider>
-            <NavigationContainer>
-              <OfflineBanner />
-              <ReconnectingBanner />
-              <RootNavigator />
-              <ToastHost />
-              <StatusBar style="light" />
-            </NavigationContainer>
-          </SocketProvider>
+          <PendingUploadProvider>
+            <SocketProvider>
+              <NavigationContainer>
+                <OfflineBanner />
+                <ReconnectingBanner />
+                <RootNavigator />
+                <ToastHost />
+                <StatusBar style="light" />
+              </NavigationContainer>
+            </SocketProvider>
+          </PendingUploadProvider>
         </AuthProvider>
       </ToastProvider>
     </SafeAreaProvider>

@@ -9,9 +9,14 @@
 
 import { io } from 'socket.io-client';
 import { getAccessToken } from './tokenStore';
+import { Platform } from 'react-native';
 
 // Socket.io server URL
-const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || 'http://localhost:4000';
+const defaultSocketHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
+const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || `http://${defaultSocketHost}:3000`;
+const SOCKET_TRANSPORTS = Platform.OS === 'android'
+  ? ['polling']
+  : ['websocket', 'polling'];
 
 /**
  * @typedef {'connected' | 'disconnected' | 'connecting' | 'reconnecting'} ConnectionState
@@ -69,7 +74,7 @@ class SocketService {
       auth: {
         token,
       },
-      transports: ['websocket'],
+      transports: SOCKET_TRANSPORTS,
       reconnection: true,
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: 1000,

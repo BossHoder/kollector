@@ -1,265 +1,272 @@
 ---
-
 description: "Task list for feature implementation"
 ---
 
-# Tasks: Mobile UX Parity (Web → Mobile)
+# Tasks: Mobile UX Parity (Web -> Mobile)
 
-**Input**: Design documents from `/specs/011-mobile-ux-parity/`
+**Input**: Design documents from /specs/011-mobile-ux-parity/
+**Prerequisites**: plan.md (required), spec.md (required), research.md, data-model.md, contracts/, quickstart.md
 
-**Prerequisites**: [plan.md](plan.md) (required), [spec.md](spec.md) (required), [research.md](research.md), [data-model.md](data-model.md), [contracts/](contracts/)
-
-**Tests**: Tests are MANDATORY per Constitution principle III (Test-First). Write tests FIRST; they MUST fail before implementation.
-
-**Organization**: Tasks are grouped by user story to enable independent implementation and testing of each story.
+**Tests**: Included and required by this feature because spec marks testing mandatory and constitution enforces test-first workflow.
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-**Purpose**: Project initialization and basic structure for the Expo mobile app and shared utilities.
+**Purpose**: Prepare shared constants/contracts and test harness for parity implementation.
 
-- [X] T001 Create mobile feature folder skeleton in mobile/src/{api,components,config,contexts,hooks,navigation,screens,services,styles,types,utils}
-- [X] T002 [P] Add mobile TypeScript config (if adopting TS) in mobile/tsconfig.json and align imports/paths (SKIPPED - using JS)
-- [X] T003 [P] Add React Navigation dependencies in mobile/package.json and install (bottom tabs + native stack)
-- [X] T004 [P] Add secure token storage dependency for mobile in mobile/package.json (e.g., Expo SecureStore) and install
-- [X] T005 [P] Add mobile test tooling (Jest + React Native Testing Library) and config in mobile/jest.config.js and mobile/package.json scripts
-- [X] T006 Update mobile/App.js to mount providers + navigation root (temporary placeholder screens ok)
+- [X] T001 Add canonical category/alias fixture for all clients in specs/011-mobile-ux-parity/contracts/category-aliases.schema.json
+- [X] T002 [P] Add mobile parity API contract examples for upload metadata and retry in specs/011-mobile-ux-parity/contracts/assets.mobile-parity.openapi.json
+- [X] T003 [P] Add task-scope verification checklist for the five reported regressions in specs/011-mobile-ux-parity/quickstart.md
+- [X] T004 Add cross-app parity implementation note in MASTER_PLAN.md
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Core infrastructure that MUST be complete before ANY user story can be implemented.
+**Purpose**: Build shared foundations that all user stories depend on.
 
-- [X] T007 Implement design tokens/theme module in mobile/src/styles/tokens.ts (mirror semantics from web/src/index.css)
-- [X] T008 [P] Implement status mapping utility in mobile/src/utils/statusDisplay.ts (match label semantics from web/src/lib/status-display.ts)
-- [X] T009 [P] Implement Toast system in mobile/src/contexts/ToastContext.tsx + mobile/src/components/ui/ToastHost.tsx (success/info auto-dismiss; errors persist)
-- [X] T010 [P] Implement network connectivity tracking and OfflineBanner in mobile/src/hooks/useNetworkStatus.ts + mobile/src/components/ui/OfflineBanner.tsx
-- [X] T011 Implement API client wrapper with 401 refresh queue in mobile/src/services/apiClient.ts (send X-Client-Platform: mobile; refresh returns accessToken only)
-- [X] T012 Implement secure token persistence helpers in mobile/src/services/tokenStore.ts (access token + refresh token; clear on logout)
-- [X] T013 Implement AuthContext in mobile/src/contexts/AuthContext.tsx (login/register/logout + silent refresh integration)
-- [X] T014 Implement SocketService in mobile/src/services/socketService.ts (socket.io-client; handshake.auth.token)
-- [X] T015 Implement SocketContext in mobile/src/contexts/SocketContext.tsx (connection state + reconnecting banner)
-- [X] T016 Implement navigation scaffold (Auth stack + Tabs + detail stack) in mobile/src/navigation/{RootNavigator.tsx,TabsNavigator.tsx,AuthStack.tsx,AppStack.tsx}
+**CRITICAL**: No user story implementation starts before this phase completes.
 
-- [X] T017 [P] Add contract test coverage for status filter enums in server/tests/contract/assets/assets-status-filter.test.js (GET /api/assets?status=failed|partial should not 400)
-- [X] T018 Align status validation enums to Asset model in server/src/modules/assets/assets.routes.js (listAssetsValidation + create/update status enums include draft|processing|partial|active|archived|failed)
-- [X] T019 [P] Amend OpenAPI contract enum for status filter in specs/001-foundation-backend-setup/contracts/assets.openapi.json (include partial + failed)
+- [X] T005 Create canonical category constants and alias map for mobile in mobile/src/config/categories.js
+- [X] T006 [P] Create canonical category constants and alias map for web in web/src/lib/categories.ts
+- [X] T007 [P] Implement category normalization utility with fallback-to-all behavior in mobile/src/utils/categoryNormalizer.js
+- [X] T008 [P] Implement category normalization utility with fallback-to-all behavior in web/src/lib/categoryNormalizer.ts
+- [X] T009 Align server category query validation and error message with canonical contract in server/src/modules/assets/assets.routes.js
+- [X] T010 [P] Add server contract test for category query enum and 400 behavior in server/tests/contract/assets/get.test.js
+- [X] T011 Add category normalization to mobile assets query builder in mobile/src/api/assetsApi.js
+- [X] T012 [P] Add category normalization to web assets query builder in web/src/hooks/useAssets.ts
+- [X] T013 Implement socket-disconnect polling fallback coordinator hook in mobile/src/hooks/useRealtimeFallback.js
+- [X] T014 [P] Add fallback coordinator unit tests for connect/disconnect transitions in mobile/src/hooks/useRealtimeFallback.test.js
+- [X] T015 Fix empty image source rendering branch in web image toggle component in web/src/components/assets/ImageToggle.tsx
+- [X] T016 [P] Add web regression test for empty image source warning prevention in web/tests/unit/components/ImageToggle.test.tsx
 
-**Checkpoint**: Foundation ready — US1–US5 work can begin.
+**Checkpoint**: Foundation complete. User story phases can now proceed.
 
 ---
 
-## Phase 3: User Story 1 - Login → Assets Library (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Login and Browse Assets Library (Priority: P1) MVP
 
-**Goal**: User logs in and lands on Assets Library with skeleton loading, correct status pills, filters, infinite scroll, and automatic token refresh on expiry.
+**Goal**: Logged-in users can browse library, filter by status/category, and avoid category-related 400 loops.
 
-**Independent Test**: With a mocked API (and/or a test backend user), user can log in, see a loading skeleton, then see asset cards with correct status pills; filters and infinite scroll work; 401 triggers refresh and retries.
+**Independent Test**: Login and browse library; apply status/category filters including invalid alias inputs; verify cards render and requests do not loop on 400.
 
-### Tests for User Story 1 (MANDATORY, write first) ⚠️
+### Tests for User Story 1
 
-- [X] T020 [P] [US1] Unit test status mapping in mobile/src/utils/statusDisplay.test.ts (active→Ready, colors consistent)
-- [X] T021 [P] [US1] Unit test apiClient 401 refresh queue in mobile/src/services/apiClient.test.ts (single refresh, queued retries)
-- [X] T022 [P] [US1] Unit test AuthContext flows in mobile/src/contexts/AuthContext.test.tsx (login/logout + token persistence)
-- [X] T023 [P] [US1] Component test LoginScreen form validation in mobile/src/screens/auth/LoginScreen.test.tsx
-- [X] T024 [P] [US1] Component test Library skeleton→list rendering in mobile/src/screens/assets/AssetsLibraryScreen.test.tsx (mock loading then data)
+- [X] T017 [P] [US1] Add mobile library filter behavior test for status+category combinations in mobile/src/screens/assets/AssetsLibraryScreen.test.js
+- [X] T018 [P] [US1] Add mobile category normalization unit tests including fallback-to-all in mobile/src/utils/categoryNormalizer.test.js
+- [X] T019 [P] [US1] Add web assets filter regression test for canonicalized category query in web/tests/integration/assets-filter.integration.test.ts
+- [X] T020 [P] [US1] Add mobile auth refresh retry test for failed assets list request in mobile/src/services/apiClient.test.js
 
 ### Implementation for User Story 1
 
-- [X] T025 [P] [US1] Implement StatusPill component in mobile/src/components/ui/StatusPill.tsx (uses statusDisplay mapping)
-- [X] T026 [P] [US1] Implement Skeleton components for cards/list in mobile/src/components/ui/Skeleton.tsx
-- [X] T027 [P] [US1] Implement Input/Button primitives with accessible labels in mobile/src/components/ui/{Button.tsx,Input.tsx}
-- [X] T028 [US1] Implement LoginScreen in mobile/src/screens/auth/LoginScreen.tsx (calls AuthContext.login; error toast persists)
-- [X] T029 [US1] Implement RegisterScreen in mobile/src/screens/auth/RegisterScreen.tsx (calls AuthContext.register)
-- [X] T030 [P] [US1] Implement assets API wrapper (list) in mobile/src/api/assetsApi.ts (cursor pagination; limit/category/status)
-- [X] T031 [P] [US1] Implement assets list hook with infinite scroll in mobile/src/hooks/useInfiniteAssets.ts (cursor nextCursor; debounced search)
-- [X] T032 [US1] Implement AssetsLibraryScreen in mobile/src/screens/assets/AssetsLibraryScreen.tsx (grid/list; skeleton; status pills; load-more)
-- [X] T033 [US1] Implement Filters bottom sheet + active chips in mobile/src/components/assets/AssetFiltersSheet.tsx and integrate into AssetsLibraryScreen
-- [X] T034 [US1] Add token-expiry handling: when 401 occurs, refresh automatically and retry in mobile/src/services/apiClient.ts
+- [X] T021 [US1] Add category filter state and UI binding in mobile library screen in mobile/src/screens/assets/AssetsLibraryScreen.js
+- [X] T022 [US1] Pass normalized category values through infinite list hook in mobile/src/hooks/useInfiniteAssets.js
+- [X] T023 [US1] Add category chips/bottom-sheet selection component for mobile library in mobile/src/components/assets/AssetCategoryFilter.js
+- [X] T024 [US1] Wire category filter controls into mobile assets screen header in mobile/src/screens/assets/AssetsLibraryScreen.js
+- [X] T025 [US1] Align web asset category type to canonical+alias strategy in web/src/types/asset.ts
+- [X] T026 [US1] Improve invalid-category API error parsing and client reset behavior in web/src/lib/error-messages.ts
 
-**Checkpoint**: US1 is independently demoable.
+**Checkpoint**: US1 is independently functional and testable.
 
 ---
 
-## Phase 4: User Story 2 - Upload & Analyze (Priority: P2)
+## Phase 4: User Story 2 - Upload and Analyze an Asset (Priority: P2)
 
-**Goal**: User selects image (camera/gallery) + category, Submit becomes enabled, submit uploads multipart, then navigates to Asset Detail in Processing state; oversized/invalid file shows error.
+**Goal**: Upload flow supports camera/gallery, and preserves user intent with local placeholder assets on camera/upload failure.
 
-**Independent Test**: From Upload tab, user can pick an image, choose a category, submit successfully, and see Processing detail without crash; invalid file triggers clear error.
+**Independent Test**: Pick image from camera/gallery; simulate camera intent failure and upload failure; confirm placeholder entry appears and Retry Upload works.
 
-### Tests for User Story 2 (MANDATORY, write first) ⚠️
+### Tests for User Story 2
 
-- [X] T035 [P] [US2] Unit test upload validation (type/size <=10MB) in mobile/src/utils/uploadValidation.test.ts
-- [X] T036 [P] [US2] Component test Submit enabled rules in mobile/src/screens/upload/UploadScreen.test.tsx
-- [X] T037 [P] [US2] Component test upload-abandon confirm behavior in mobile/src/screens/upload/UploadScreen.navigation.test.tsx
+- [X] T027 [P] [US2] Add camera failure fallback test in upload screen in mobile/src/screens/upload/UploadScreen.test.js
+- [X] T028 [P] [US2] Add local placeholder lifecycle tests in mobile pending upload hook in mobile/src/hooks/usePendingUploads.test.js
+- [X] T029 [P] [US2] Add upload API metadata mapping test in mobile/src/api/uploadApi.test.js
+- [X] T030 [P] [US2] Add retry upload from placeholder integration test in mobile/src/screens/upload/UploadScreen.retry.test.js
 
 ### Implementation for User Story 2
 
-- [X] T038 [P] [US2] Implement upload validation utility in mobile/src/utils/uploadValidation.ts (size <= 10MB; accepted image mime types)
-- [X] T039 [P] [US2] Implement camera/gallery picker wrapper in mobile/src/services/imagePicker.ts (expo-camera + expo-image-picker)
-- [X] T040 [P] [US2] Implement Upload API wrapper in mobile/src/api/uploadApi.ts (POST /api/assets/analyze-queue multipart)
-- [X] T041 [US2] Implement UploadScreen UI in mobile/src/screens/upload/UploadScreen.tsx (bottom-sheet camera/gallery; category select; thumb-zone Submit)
-- [X] T042 [US2] Implement navigation to AssetDetail on successful submit in mobile/src/navigation/AppStack.tsx (route params include assetId)
-- [X] T043 [US2] Add confirm-on-leave logic during active upload in mobile/src/screens/upload/UploadScreen.tsx
+- [X] T031 [US2] Create pending upload context/store for local placeholder assets in mobile/src/contexts/PendingUploadContext.js
+- [X] T032 [US2] Create pending upload state hook with retry transitions in mobile/src/hooks/usePendingUploads.js
+- [X] T033 [US2] Handle Android camera intent-resolution failures and gallery fallback in mobile/src/services/imagePicker.js
+- [X] T034 [US2] Create local placeholder on post-selection camera/upload failure in mobile/src/screens/upload/UploadScreen.js
+- [X] T035 [US2] Add Retry Upload action and transition handling in mobile/src/screens/upload/UploadScreen.js
+- [X] T036 [US2] Map filename/size/mime/uploadedAt from upload response in mobile/src/api/uploadApi.js
+- [X] T037 [US2] Merge pending upload placeholders into library datasource in mobile/src/hooks/useInfiniteAssets.js
+- [X] T038 [US2] Render pending/failed upload card states and actions in mobile/src/components/assets/AssetCard.js
 
-**Checkpoint**: US2 is independently demoable.
+**Checkpoint**: US2 is independently functional and testable.
 
 ---
 
-## Phase 5: User Story 3 - Asset Detail + Toggle (Priority: P3)
+## Phase 5: User Story 3 - View Asset Detail with Status-Based Rendering (Priority: P3)
 
-**Goal**: Asset Detail renders per status (Ready/Processing/Failed/Partial/Archived), supports Processed/Original toggle, shows AI analysis + condition + metadata, supports Retry on failed, and Archive.
+**Goal**: Detail screen renders correctly by status and shows file metadata immediately while processing.
 
-**Independent Test**: With mocked assets in each status, the detail UI renders correctly; toggle swaps image; retry triggers processing; archive updates status.
+**Independent Test**: Open detail in processing/failed/partial/active states; verify overlays/messages/retry/archive/image toggle and immediate file metadata.
 
-### Tests for User Story 3 (MANDATORY, write first) ⚠️
+### Tests for User Story 3
 
-- [X] T044 [P] [US3] Component test status-based rendering in mobile/src/screens/assets/AssetDetailScreen.test.tsx (ready/processing/failed/partial)
-- [X] T045 [P] [US3] Component test Processed/Original toggle swaps image in mobile/src/components/assets/ImageToggle.test.tsx
-- [X] T046 [P] [US3] Contract test stub for retry endpoint in server/tests/contract/assets/retry.test.js (expected 202 + status=processing)
+- [X] T039 [P] [US3] Add detail-screen metadata-visible-during-processing test in mobile/src/screens/assets/AssetDetailScreen.test.js
+- [X] T040 [P] [US3] Add status rendering matrix tests for active/processing/failed/partial/archived in mobile/src/screens/assets/AssetDetailScreen.states.test.js
+- [X] T041 [P] [US3] Add mobile image toggle source selection test in mobile/src/components/assets/ImageToggle.test.js
+- [X] T042 [P] [US3] Add server retry endpoint contract test for failed/partial transitions in server/tests/contract/assets/retry.test.js
 
 ### Implementation for User Story 3
 
-- [X] T047 [P] [US3] Implement asset detail API wrapper in mobile/src/api/assetsApi.ts (GET /api/assets/:id)
-- [X] T048 [P] [US3] Implement AssetDetail data hook in mobile/src/hooks/useAsset.ts (polling optional; realtime in US4)
-- [X] T049 [P] [US3] Implement ImageToggle component in mobile/src/components/assets/ImageToggle.tsx (processed/original)
-- [X] T050 [P] [US3] Implement ProcessingOverlay component in mobile/src/components/assets/ProcessingOverlay.tsx
-- [X] T051 [US3] Implement AssetDetailScreen in mobile/src/screens/assets/AssetDetailScreen.tsx (cards/accordions; status-specific UI)
-- [X] T052 [US3] Implement Archive action (API PATCH) in mobile/src/api/assetsApi.ts and wire confirmation in AssetDetailScreen
-- [X] T053 [US3] Implement Retry action in mobile/src/api/assetsApi.ts calling POST /api/assets/:id/retry and wire to Failed state CTA
+- [X] T043 [US3] Expand asset detail adapter to include file metadata fields in mobile/src/api/assetsApi.js
+- [X] T044 [US3] Render immediate file info section for processing assets in mobile/src/screens/assets/AssetDetailScreen.js
+- [X] T045 [US3] Add file metadata formatting helpers with safe fallback values in mobile/src/utils/assetMetadata.js
+- [X] T046 [US3] Align retry action and status transition handling in detail screen in mobile/src/screens/assets/AssetDetailScreen.js
+- [X] T047 [US3] Ensure archive and retry update local detail cache consistently in mobile/src/hooks/useAsset.js
+- [X] T048 [US3] Align web detail metadata labels/format with parity decisions in web/src/pages/app/AssetDetailPage.tsx
 
-### Backend amendments required for US3
-
-- [X] T054 [US3] Add POST /api/assets/:id/retry route validation in server/src/modules/assets/assets.routes.js
-- [X] T055 [US3] Implement retry controller method in server/src/modules/assets/assets.controller.js
-- [X] T056 [US3] Implement retry service logic in server/src/modules/assets/assets.service.js (enqueue job; set status=processing; reject non-retryable states with 409)
-
-**Checkpoint**: US3 is independently demoable.
+**Checkpoint**: US3 is independently functional and testable.
 
 ---
 
-## Phase 6: User Story 4 - Realtime (Priority: P4)
+## Phase 6: User Story 4 - Realtime Updates (Priority: P4)
 
-**Goal**: Library and Detail update automatically from socket events; reconnecting banner appears on disconnect and auto-reconnects; debounced/merged updates prevent UI thrash.
+**Goal**: Realtime updates remain reliable with reconnect UX and automatic polling fallback.
 
-**Independent Test**: With a simulated `asset_processed` event, the UI updates without manual refresh; disconnect shows reconnecting banner and recovers.
+**Independent Test**: Simulate socket disconnect while on library/detail; verify reconnect banner, polling fallback every 10-15s, auto-stop on reconnect, and update deduplication.
 
-### Tests for User Story 4 (MANDATORY, write first) ⚠️
+### Tests for User Story 4
 
-- [X] T057 [P] [US4] Unit test socket event handler updates asset cache in mobile/src/services/socketService.test.ts
-- [X] T058 [P] [US4] Component test reconnecting banner behavior in mobile/src/components/ui/ReconnectingBanner.test.tsx
-- [X] T059 [P] [US4] Unit test burst-event debounce/merge in mobile/src/utils/realtimeMerge.test.ts
+- [X] T049 [P] [US4] Add socket-to-polling failover unit tests in mobile/src/contexts/SocketContext.test.js
+- [X] T050 [P] [US4] Add reconnecting banner and manual reconnect interaction test in mobile/src/components/ui/ReconnectingBanner.test.js
+- [X] T051 [P] [US4] Add polling fallback freshness integration test in mobile/src/screens/assets/AssetsLibraryScreen.realtime.test.js
+- [X] T052 [P] [US4] Add duplicate event merge/dedup test in mobile/src/utils/realtimeMerge.test.js
 
 ### Implementation for User Story 4
 
-- [X] T060 [P] [US4] Implement ReconnectingBanner UI in mobile/src/components/ui/ReconnectingBanner.tsx
-- [X] T061 [US4] Wire SocketContext to show reconnecting banner and expose connection state in mobile/src/contexts/SocketContext.tsx
-- [X] T062 [P] [US4] Implement asset update merge/debounce helper in mobile/src/utils/realtimeMerge.ts
-- [X] T063 [US4] On `asset_processed`, update AssetsLibraryScreen state/list in mobile/src/screens/assets/AssetsLibraryScreen.tsx
-- [X] T064 [US4] On `asset_processed`, update AssetDetailScreen state in mobile/src/screens/assets/AssetDetailScreen.tsx
-- [X] T065 [US4] Implement manual reconnect control (after threshold) in mobile/src/contexts/SocketContext.tsx and surface in Settings
+- [X] T053 [US4] Integrate fallback coordinator into socket lifecycle in mobile/src/contexts/SocketContext.js
+- [X] T054 [US4] Enable library polling fallback while realtime is disconnected in mobile/src/screens/assets/AssetsLibraryScreen.js
+- [X] T055 [US4] Enable detail polling fallback while realtime is disconnected in mobile/src/screens/assets/AssetDetailScreen.js
+- [X] T056 [US4] Stop fallback polling and flush missed refresh on reconnect in mobile/src/hooks/useRealtimeFallback.js
+- [X] T057 [US4] Wire manual reconnect action to socket service force reconnect in mobile/src/components/ui/ReconnectingBanner.js
 
-**Checkpoint**: US4 is independently demoable.
+**Checkpoint**: US4 is independently functional and testable.
 
 ---
 
-## Phase 7: User Story 5 - Settings & Logout (Priority: P5)
+## Phase 7: User Story 5 - Settings and Logout (Priority: P5)
 
-**Goal**: Settings shows user email + realtime connection state, and logout clears session and returns to login.
+**Goal**: Settings shows user and connection status; logout clears session and new local states.
 
-**Independent Test**: Navigate to Settings, verify email + connection status, and logout to return to Login with cleared tokens.
+**Independent Test**: Open settings and verify email + connection state; logout clears auth/socket/pending uploads and returns to login.
 
-### Tests for User Story 5 (MANDATORY, write first) ⚠️
+### Tests for User Story 5
 
-- [X] T066 [P] [US5] Component test Settings shows email + socket state in mobile/src/screens/settings/SettingsScreen.test.tsx
-- [X] T067 [P] [US5] Component test Logout clears tokens and resets nav in mobile/src/contexts/AuthContext.logout.test.tsx
+- [X] T058 [P] [US5] Add settings screen connection-state rendering test in mobile/src/screens/settings/SettingsScreen.test.js
+- [X] T059 [P] [US5] Add logout cleanup flow test for auth/socket/pending uploads in mobile/src/contexts/AuthContext.logout.test.js
 
 ### Implementation for User Story 5
 
-- [X] T068 [US5] Implement SettingsScreen in mobile/src/screens/settings/SettingsScreen.tsx (email + socket state)
-- [X] T069 [US5] Wire Logout button to AuthContext.logout and reset navigation in mobile/src/navigation/RootNavigator.tsx
+- [X] T060 [US5] Show detailed realtime/fallback connection state in settings screen in mobile/src/screens/settings/SettingsScreen.js
+- [X] T061 [US5] Clear pending uploads and socket lifecycle state during logout in mobile/src/contexts/AuthContext.js
+- [X] T062 [US5] Ensure logout navigation reset remains stable with new contexts in mobile/src/navigation/RootNavigator.js
 
-**Checkpoint**: US5 is independently demoable.
-
----
-
-## Phase 8: Polish & Cross-Cutting Concerns
-
-- [X] T070 [P] Add accessibility audit pass (labels, focus order, 44pt targets) across mobile/src/screens/**
-- [X] T071 Reduce toast spam on offline→online and reconnect transitions in mobile/src/contexts/ToastContext.tsx
-- [X] T072 Performance pass: memoize card renders + optimize FlatList props in mobile/src/screens/assets/AssetsLibraryScreen.tsx
-- [X] T073 [P] Update documentation links and commands in specs/011-mobile-ux-parity/quickstart.md to match actual scripts
-- [X] T074 Run quickstart verification checklist end-to-end on device/emulator (record any gaps as follow-up tasks)
+**Checkpoint**: US5 is independently functional and testable.
 
 ---
 
-## Dependencies & Execution Order
+## Phase 8: Polish and Cross-Cutting Concerns
 
-### User Story Completion Order
+**Purpose**: Final hardening across stories.
 
-- Phase 1 → Phase 2 (blocking)
-- Then implement stories in priority order: **US1 → US2 → US3 → US4 → US5**
-
-### Story Dependencies
-
-- **US1** depends on Phase 2 only.
-- **US2** depends on US1 (authenticated user + API client).
-- **US3** depends on US1 (auth) and minimal assets API wrappers.
-- **US4** depends on US1 (auth token for socket) and should integrate with US1/US3.
-- **US5** depends on US1 (auth state) and US4 (socket state display).
+- [X] T063 [P] Add accessibility label and 44pt tap-target audit fixes across mobile feature screens in mobile/src/screens/
+- [X] T064 [P] Add category/status contract drift tests across server/web/mobile in server/tests/contract/assets/contracts-alignment.test.js
+- [X] T065 Run full quickstart regression script and record evidence in specs/011-mobile-ux-parity/quickstart.md
+- [X] T066 Optimize mobile assets list rerender/memoization for smooth scroll in mobile/src/screens/assets/AssetsLibraryScreen.js
+- [X] T067 Update feature completion summary and rollout notes in MASTER_PLAN.md
 
 ---
 
-## Dependency Graph (User Stories)
+## Dependencies and Execution Order
 
-```mermaid
-graph TD
-  F[Phase 2: Foundational] --> US1[US1 Login + Library]
-  US1 --> US2[US2 Upload & Analyze]
-  US1 --> US3[US3 Asset Detail]
-  US1 --> US4[US4 Realtime]
-  US3 --> US4
-  US1 --> US5[US5 Settings + Logout]
-  US4 --> US5
+### Phase Dependencies
+
+- Setup (Phase 1): No dependencies.
+- Foundational (Phase 2): Depends on Setup and blocks all story phases.
+- User Story phases (Phase 3-7): Depend on Foundational completion.
+- Polish (Phase 8): Depends on desired story completion.
+
+### User Story Dependencies
+
+- US1 (P1): Starts after Phase 2; no dependency on other stories.
+- US2 (P2): Starts after Phase 2; integrates with US1 library but remains independently testable.
+- US3 (P3): Starts after Phase 2; relies on upload/detail contract shape.
+- US4 (P4): Starts after Phase 2; integrates with US1 and US3 data flows.
+- US5 (P5): Starts after Phase 2; integrates with auth and connection state.
+
+### Dependency Graph
+
+```text
+Phase1 -> Phase2 -> {US1, US2, US3, US4, US5} -> Phase8
+US3 depends on outputs from US2 contract mapping
+US4 depends on US1/US3 hooks and realtime handlers
+US5 depends on auth + socket + pending upload contexts
 ```
 
 ---
 
-## Parallel Execution Examples (per Story)
+## Parallel Execution Examples
 
-### US1 Parallel Examples
+### US1 parallel set
 
-- [P] T022 (StatusPill) + T023 (Skeleton) + T024 (UI primitives) can be done in parallel.
-- [P] T027 (assets API wrapper) + T028 (infinite hook) can be done in parallel.
+```text
+T017 + T018 + T019 + T020
+T022 + T023 + T025
+```
 
-### US3 Parallel Examples
+### US2 parallel set
 
-- [P] T046 (ImageToggle) + T047 (ProcessingOverlay) can be done in parallel.
-- Backend: [P] T051 (route) can be done alongside mobile T044/T048 as long as contract is fixed.
+```text
+T027 + T028 + T029 + T030
+T032 + T033 + T036 + T038
+```
 
-### US4 Parallel Examples
+### US3 parallel set
 
-- [P] T057 (banner UI) + T059 (merge helper) can be done in parallel.
+```text
+T039 + T040 + T041 + T042
+T045 + T047 + T048
+```
+
+### US4 parallel set
+
+```text
+T049 + T050 + T051 + T052
+T054 + T055 + T057
+```
+
+### US5 parallel set
+
+```text
+T058 + T059
+```
 
 ---
 
 ## Implementation Strategy
 
-### MVP First
+### MVP First (US1)
 
-1) Complete Phase 1 + Phase 2
-2) Complete US1 (Login → Library) and stop to validate independently
+1. Complete Phase 1 and Phase 2.
+2. Complete US1.
+3. Validate independent US1 criteria before expanding scope.
 
 ### Incremental Delivery
 
-- Add US2, validate upload flow end-to-end
-- Add US3, validate detail states and retry/archive
-- Add US4, validate realtime update + reconnect UX
-- Add US5, validate settings + logout
+1. Deliver US1 (auth + library + stable filters).
+2. Deliver US2 (upload resilience + placeholders).
+3. Deliver US3 (detail completeness + immediate metadata).
+4. Deliver US4 (realtime resilience + polling fallback).
+5. Deliver US5 (settings/logout parity).
+6. Finish with Phase 8 polish.
 
----
+### Notes
 
-## Notes
-
-- All tasks follow the required checklist format: `- [ ] T### [P?] [US#?] Description with file path`.
-- `[P]` indicates safe parallel work on different files without ordering dependencies.
-- Contract amendments are explicitly captured in `specs/011-mobile-ux-parity/contracts/`.
+- All tasks use required checklist format.
+- [P] marks parallelizable work on separate files.
+- [US#] tags are applied only to user story tasks.
+- Tests are listed first within each user story to support test-first execution.

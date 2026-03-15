@@ -1,11 +1,13 @@
 const assetService = require('./assets.service');
 const { getQueueMetrics } = require('./assets.queue');
 const logger = require('../../config/logger');
-
-/**
- * Valid categories for analyze-queue endpoint
- */
-const VALID_CATEGORIES = ['sneaker', 'lego', 'camera', 'other'];
+const { getAssetCategoryOptions } = require('./categories.catalog');
+const {
+  ANALYZE_QUEUE_CATEGORIES,
+  buildAssetFilename,
+  normalizeAnalyzeQueueCategory,
+  normalizeOptionalText,
+} = require('./upload.helpers');
 
 /**
  * Asset Controller
@@ -19,7 +21,8 @@ class AssetController {
   async analyzeQueue(req, res, next) {
     try {
       const userId = req.user.id;
-      const { category } = req.body;
+      const category = normalizeAnalyzeQueueCategory(req.body.category);
+      const assetName = normalizeOptionalText(req.body.assetName);
       const file = req.file;
 
       // Validate image file is present
@@ -41,43 +44,35 @@ class AssetController {
 
       // Validate category
       if (!category) {
+        const rawCategory = String(req.body.category ?? '').trim();
+        const isMissingCategory = rawCategory.length === 0;
+
         return res.status(400).json({
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Category is required',
+            message: isMissingCategory ? 'Category is required' : 'Invalid category',
             details: [
               {
                 field: 'category',
-                message: 'Category is required'
+                message: isMissingCategory
+                  ? 'Category is required'
+                  : `Must be one of: ${ANALYZE_QUEUE_CATEGORIES.join(', ')}`
               }
             ]
           }
         });
       }
 
-      if (!VALID_CATEGORIES.includes(category)) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid category',
-            details: [
-              {
-                field: 'category',
-                message: `Must be one of: ${VALID_CATEGORIES.join(', ')}`
-              }
-            ]
-          }
-        });
-      }
+      const originalFilename = buildAssetFilename(assetName, file.originalname, file.mimetype);
 
       // Create asset and enqueue job
       const result = await assetService.createAssetAndEnqueue(userId, {
         category,
         imageBuffer: file.buffer,
         imageMimetype: file.mimetype,
-        originalFilename: file.originalname
+        originalFilename,
+        fileSizeBytes: file.size,
       });
 
       logger.info('Asset submitted for AI processing', {
@@ -93,8 +88,9 @@ class AssetController {
         data: {
           assetId: result.assetId,
           jobId: result.jobId,
-          status: 'processing',
-          message: 'Asset queued for AI analysis'
+          status: result.asset.status,
+          message: 'Asset queued for AI analysis',
+          asset: result.asset,
         }
       });
     } catch (error) {
@@ -241,6 +237,17 @@ class AssetController {
       res.status(200).json({
         success: true,
         data: metrics
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getCategories(req, res, next) {
+    try {
+      res.status(200).json({
+        success: true,
+        data: getAssetCategoryOptions(),
       });
     } catch (error) {
       next(error);
