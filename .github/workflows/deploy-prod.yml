@@ -73,11 +73,27 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: test
-    if: ${{ secrets.PROD_SSH_HOST != '' && secrets.PROD_SSH_USER != '' && secrets.PROD_SSH_KEY != '' }}
+    env:
+      PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
+      PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
+      PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
     steps:
+      - name: Check deploy secrets
+        id: deploy_gate
+        shell: bash
+        run: |
+          if [[ -n "${PROD_SSH_HOST}" && -n "${PROD_SSH_USER}" && -n "${PROD_SSH_KEY}" ]]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Production deploy secrets are missing. Skipping deploy job."
+          fi
+
       - uses: actions/checkout@v4
+        if: ${{ steps.deploy_gate.outputs.ready == 'true' }}
 
       - name: Create release archive
+        if: ${{ steps.deploy_gate.outputs.ready == 'true' }}
         run: |
           tar \
             --exclude=.git \
@@ -89,6 +105,7 @@ jobs:
             -czf kollector-release.tgz .
 
       - name: Upload release archive
+        if: ${{ steps.deploy_gate.outputs.ready == 'true' }}
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.PROD_SSH_HOST }}
@@ -98,6 +115,7 @@ jobs:
           target: /tmp
 
       - name: Deploy on Oracle VM
+        if: ${{ steps.deploy_gate.outputs.ready == 'true' }}
         uses: appleboy/ssh-action@v1.2.0
         env:
           APP_ROOT: ${{ vars.PROD_APP_ROOT }}
