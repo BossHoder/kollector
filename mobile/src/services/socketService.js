@@ -9,12 +9,12 @@
 
 import { io } from 'socket.io-client';
 import { getAccessToken } from './tokenStore';
-import { Platform } from 'react-native';
+import {
+  SHOULD_LIMIT_ANDROID_SOCKET_TRANSPORTS,
+  SOCKET_URL,
+} from '../config/runtime';
 
-// Socket.io server URL
-const defaultSocketHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-const SOCKET_URL = process.env.EXPO_PUBLIC_SOCKET_URL || `http://${defaultSocketHost}:3000`;
-const SOCKET_TRANSPORTS = Platform.OS === 'android'
+const SOCKET_TRANSPORTS = SHOULD_LIMIT_ANDROID_SOCKET_TRANSPORTS
   ? ['polling']
   : ['websocket', 'polling'];
 

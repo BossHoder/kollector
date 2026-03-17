@@ -14,11 +14,7 @@ import {
   getRefreshToken,
   clearAllTokens,
 } from './tokenStore';
-import { Platform } from 'react-native';
-
-// API base URL - prefer env, otherwise choose a sane platform default.
-const defaultApiHost = Platform.OS === 'android' ? '10.0.2.2' : 'localhost';
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || `http://${defaultApiHost}:3000/api`;
+import { API_BASE_URL } from '../config/runtime';
 
 /**
  * Refresh state management
