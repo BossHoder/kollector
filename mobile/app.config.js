@@ -3,7 +3,7 @@ const { version } = require('./package.json');
 const DEFAULT_EXPO_OWNER = 'theanhdola';
 const DEFAULT_EXPO_PROJECT_ID = 'ae00bd17-3de2-440e-80b6-18d5cb6d0f0c';
 
-const APP_VARIANT = process.env.APP_VARIANT || 'development';
+const APP_VARIANT = process.env.APP_VARIANT || 'production';
 const EXPO_OWNER = process.env.EXPO_OWNER || DEFAULT_EXPO_OWNER;
 const EXPO_PROJECT_ID = process.env.EXPO_PROJECT_ID || DEFAULT_EXPO_PROJECT_ID;
 const EXPO_ANDROID_PACKAGE = process.env.EXPO_ANDROID_PACKAGE || 'com.thetr.kollector';
