@@ -67,6 +67,7 @@ jobs:
       - name: Check Expo token
         id: expo_gate
         shell: bash
+        working-directory: .
         run: |
           if [[ -n "${EXPO_TOKEN}" ]]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
