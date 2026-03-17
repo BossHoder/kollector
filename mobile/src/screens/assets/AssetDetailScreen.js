@@ -34,7 +34,7 @@ import { useToast } from '../../contexts/ToastContext';
 import StatusPill from '../../components/ui/StatusPill';
 import ImageToggle from '../../components/assets/ImageToggle';
 import ProcessingOverlay from '../../components/assets/ProcessingOverlay';
-import { normalizeMetadata } from '../../utils/assetMetadata';
+import { normalizeMetadata, getDisplayText } from '../../utils/assetMetadata';
 import { useRealtimeFallback } from '../../hooks/useRealtimeFallback';
 
 /**
@@ -53,10 +53,11 @@ function Card({ title, children, style }) {
  * Info row for metadata
  */
 function InfoRow({ label, value }) {
+  const displayValue = getDisplayText(value) || '-';
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value || '-'}</Text>
+      <Text style={styles.infoValue}>{displayValue}</Text>
     </View>
   );
 }
@@ -280,6 +281,17 @@ export default function AssetDetailScreen() {
   const hasAnalysis = Object.keys(analysis).length > 0;
   const condition = asset.condition || analysis.condition;
   const fileMetadata = normalizeMetadata(asset);
+  const assetTitle = getDisplayText(asset.title) || 'Asset detail';
+  const errorMessage = getDisplayText(asset.error) || getDisplayText(asset.aiMetadata?.error);
+  const brandValue = getDisplayText(analysis.brand) || getDisplayText(analysis.details?.brand);
+  const modelValue = getDisplayText(analysis.model) || getDisplayText(analysis.details?.model);
+  const colorwayValue = getDisplayText(analysis.colorway) || getDisplayText(analysis.details?.colorway);
+  const yearValue = getDisplayText(analysis.year);
+  const rarityValue = getDisplayText(analysis.rarity);
+  const authenticityValue = getDisplayText(analysis.authenticity);
+  const estimatedValue = typeof analysis.estimatedValue === 'number'
+    ? `$${analysis.estimatedValue.toLocaleString()}`
+    : getDisplayText(analysis.estimatedValue);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -294,7 +306,7 @@ export default function AssetDetailScreen() {
           <Text style={styles.backText}>← Quay lại</Text>
         </TouchableOpacity>
         <Text style={styles.title} numberOfLines={1}>
-          {asset.title || 'Chi tiết tài sản'}
+          {assetTitle}
         </Text>
         <View style={styles.statusPillContainer}>
           <StatusPill status={status} />
@@ -331,10 +343,10 @@ export default function AssetDetailScreen() {
         </View>
 
         {/* Error message for failed */}
-        {isFailed && (asset.error || asset.aiMetadata?.error) && (
+        {isFailed && errorMessage && (
           <Card style={styles.errorCard}>
             <Text style={styles.errorCardTitle}>Phân tích thất bại</Text>
-            <Text style={styles.errorCardMessage}>{asset.error || asset.aiMetadata?.error}</Text>
+            <Text style={styles.errorCardMessage}>{errorMessage}</Text>
           </Card>
         )}
 
@@ -358,31 +370,29 @@ export default function AssetDetailScreen() {
         {/* AI Analysis (if available) */}
         {hasAnalysis && !isProcessing && (
           <Card title="Phân tích AI">
-            {(analysis.brand || analysis.details?.brand) && (
-              <InfoRow label="Thương hiệu" value={analysis.brand || analysis.details?.brand} />
+            {brandValue && (
+              <InfoRow label="Thương hiệu" value={brandValue} />
             )}
-            {(analysis.model || analysis.details?.model) && (
-              <InfoRow label="Mẫu" value={analysis.model || analysis.details?.model} />
+            {modelValue && (
+              <InfoRow label="Mẫu" value={modelValue} />
             )}
-            {(analysis.colorway || analysis.details?.colorway) && (
-              <InfoRow label="Phối màu" value={analysis.colorway || analysis.details?.colorway} />
+            {colorwayValue && (
+              <InfoRow label="Phối màu" value={colorwayValue} />
             )}
-            {analysis.year && (
-              <InfoRow label="Năm" value={analysis.year} />
+            {yearValue && (
+              <InfoRow label="Năm" value={yearValue} />
             )}
-            {analysis.estimatedValue && (
+            {estimatedValue && (
               <InfoRow
                 label="Giá trị ước tính"
-                value={typeof analysis.estimatedValue === 'string'
-                  ? analysis.estimatedValue
-                  : `$${analysis.estimatedValue.toLocaleString()}`}
+                value={estimatedValue}
               />
             )}
-            {analysis.rarity && (
-              <InfoRow label="Độ hiếm" value={analysis.rarity} />
+            {rarityValue && (
+              <InfoRow label="Độ hiếm" value={rarityValue} />
             )}
-            {analysis.authenticity && (
-              <InfoRow label="Xác thực" value={analysis.authenticity} />
+            {authenticityValue && (
+              <InfoRow label="Xác thực" value={authenticityValue} />
             )}
           </Card>
         )}
