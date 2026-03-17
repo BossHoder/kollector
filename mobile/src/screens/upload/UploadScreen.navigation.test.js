@@ -16,11 +16,18 @@ import { useToast } from '../../contexts/ToastContext';
 import * as uploadApi from '../../api/uploadApi';
 import * as imagePicker from '../../services/imagePicker';
 
+const mockAddPendingUpload = jest.fn();
+
 // Mock dependencies
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(),
 }));
 jest.mock('../../contexts/ToastContext');
+jest.mock('../../contexts/PendingUploadContext', () => ({
+  usePendingUploadContext: jest.fn(() => ({
+    addPendingUpload: mockAddPendingUpload,
+  })),
+}));
 jest.mock('../../api/uploadApi');
 jest.mock('../../services/imagePicker');
 jest.mock('react-native-safe-area-context', () => ({
@@ -54,6 +61,7 @@ describe('UploadScreen Navigation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     beforeRemoveCallback = null;
+    mockAddPendingUpload.mockReset();
     
     useNavigation.mockReturnValue({
       navigate: mockNavigate,
@@ -140,7 +148,8 @@ describe('UploadScreen Navigation', () => {
       // Select category
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Giày'));
+      fireEvent.press(screen.getByText(/giày/i));
+      fireEvent.changeText(screen.getByTestId('asset-name-input'), 'Jordan 1');
 
       // Start upload
       const submitButton = screen.getByTestId('submit-button');
@@ -189,7 +198,8 @@ describe('UploadScreen Navigation', () => {
 
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Giày'));
+      fireEvent.press(screen.getByText(/giày/i));
+      fireEvent.changeText(screen.getByTestId('asset-name-input'), 'Jordan 1');
 
       const submitButton = screen.getByTestId('submit-button');
       fireEvent.press(submitButton);
@@ -207,7 +217,7 @@ describe('UploadScreen Navigation', () => {
       // Get the confirm callback from Alert.alert
       const alertCall = Alert.alert.mock.calls[0];
       const buttons = alertCall[2];
-      const leaveButton = buttons.find(b => b.text.toLowerCase().includes('leave') || b.text.toLowerCase().includes('discard') || b.text.toLowerCase().includes('yes'));
+      const leaveButton = buttons.find((b) => /rời/i.test(b.text));
 
       // Press "Leave" button
       if (leaveButton && leaveButton.onPress) {
@@ -239,7 +249,8 @@ describe('UploadScreen Navigation', () => {
 
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Giày'));
+      fireEvent.press(screen.getByText(/giày/i));
+      fireEvent.changeText(screen.getByTestId('asset-name-input'), 'Jordan 1');
 
       const submitButton = screen.getByTestId('submit-button');
       fireEvent.press(submitButton);
@@ -257,7 +268,7 @@ describe('UploadScreen Navigation', () => {
       // Get the stay callback from Alert.alert
       const alertCall = Alert.alert.mock.calls[0];
       const buttons = alertCall[2];
-      const stayButton = buttons.find(b => b.text.toLowerCase().includes('stay') || b.text.toLowerCase().includes('cancel') || b.text.toLowerCase().includes('no'));
+      const stayButton = buttons.find((b) => /tiếp tục/i.test(b.text));
 
       // Press "Stay" button
       if (stayButton && stayButton.onPress) {
@@ -288,7 +299,8 @@ describe('UploadScreen Navigation', () => {
 
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Giày'));
+      fireEvent.press(screen.getByText(/giày/i));
+      fireEvent.changeText(screen.getByTestId('asset-name-input'), 'Jordan 1');
 
       const submitButton = screen.getByTestId('submit-button');
       fireEvent.press(submitButton);

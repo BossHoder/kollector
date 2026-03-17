@@ -15,10 +15,14 @@ import AssetsLibraryScreen from './AssetsLibraryScreen';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import * as apiClient from '../../services/apiClient';
+import { useAssetCategories } from '../../hooks/useAssetCategories';
 
 // Mock dependencies
 jest.mock('../../contexts/AuthContext');
 jest.mock('../../services/apiClient');
+jest.mock('../../hooks/useAssetCategories', () => ({
+  useAssetCategories: jest.fn(),
+}));
 jest.mock('../../contexts/PendingUploadContext', () => ({
   usePendingUploadContext: jest.fn(() => ({
     pendingUploads: [],
@@ -83,6 +87,18 @@ describe('AssetsLibraryScreen', () => {
     
     useNavigation.mockReturnValue({
       navigate: mockNavigate,
+    });
+
+    useAssetCategories.mockReturnValue({
+      categories: [
+        { value: 'sneaker', label: 'Giày Sneaker' },
+        { value: 'lego', label: 'LEGO' },
+        { value: 'camera', label: 'Máy Ảnh' },
+        { value: 'other', label: 'Khác', allowCustomValue: true },
+      ],
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
     });
 
     // Default: successful API response
@@ -340,8 +356,8 @@ describe('AssetsLibraryScreen', () => {
     });
   });
 
-  describe('Infinite scroll', () => {
-    it('should load more when reaching end of list', async () => {
+  describe('Pagination', () => {
+    it('should load more when moving to the next page', async () => {
       apiClient.apiRequest
         .mockResolvedValueOnce({
           assets: mockAssets,
@@ -360,9 +376,7 @@ describe('AssetsLibraryScreen', () => {
         expect(screen.getByText('Jordan Air 1 High')).toBeTruthy();
       });
 
-      // Trigger end reached
-      const list = screen.getByTestId('assets-list');
-      fireEvent(list, 'onEndReached');
+      fireEvent.press(screen.getByLabelText('Trang sau'));
 
       await waitFor(() => {
         expect(apiClient.apiRequest).toHaveBeenCalledTimes(2);

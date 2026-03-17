@@ -27,6 +27,13 @@ jest.mock('@react-navigation/native', () => ({
 describe('LoginScreen', () => {
   const mockLogin = jest.fn();
   const mockNavigate = jest.fn();
+  const mockToast = {
+    success: jest.fn(),
+    error: jest.fn(),
+    info: jest.fn(),
+    warning: jest.fn(),
+    showToast: jest.fn(),
+  };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -36,13 +43,7 @@ describe('LoginScreen', () => {
       isLoading: false,
     });
     
-    useToast.mockReturnValue({
-      success: jest.fn(),
-      error: jest.fn(),
-      info: jest.fn(),
-      warning: jest.fn(),
-      showToast: jest.fn(),
-    });
+    useToast.mockReturnValue(mockToast);
     
     useNavigation.mockReturnValue({
       navigate: mockNavigate,
@@ -59,7 +60,7 @@ describe('LoginScreen', () => {
     it('should render password input', () => {
       render(<LoginScreen />);
       
-      expect(screen.getByPlaceholderText(/•••/)).toBeTruthy();
+      expect(screen.getByLabelText(/^Mật khẩu$/i)).toBeTruthy();
     });
 
     it('should render login button', () => {
@@ -79,7 +80,7 @@ describe('LoginScreen', () => {
     it('should show error for empty email', async () => {
       render(<LoginScreen />);
       
-      const passwordInput = screen.getByPlaceholderText(/•••/);
+      const passwordInput = screen.getByLabelText(/^Mật khẩu$/i);
       fireEvent.changeText(passwordInput, 'password123');
       
       const submitButton = screen.getByTestId('login-button');
@@ -96,7 +97,7 @@ describe('LoginScreen', () => {
       render(<LoginScreen />);
       
       const emailInput = screen.getByPlaceholderText(/email/i);
-      const passwordInput = screen.getByPlaceholderText(/•••/);
+      const passwordInput = screen.getByLabelText(/^Mật khẩu$/i);
       
       fireEvent.changeText(emailInput, 'invalid-email');
       fireEvent.changeText(passwordInput, 'password123');
@@ -147,7 +148,7 @@ describe('LoginScreen', () => {
       render(<LoginScreen />);
       
       const emailInput = screen.getByPlaceholderText(/email/i);
-      const passwordInput = screen.getByPlaceholderText(/•••/);
+      const passwordInput = screen.getByLabelText(/^Mật khẩu$/i);
       
       fireEvent.changeText(emailInput, 'test@example.com');
       fireEvent.changeText(passwordInput, 'password123');
@@ -180,14 +181,14 @@ describe('LoginScreen', () => {
              submitButton.props.disabled).toBeTruthy();
     });
 
-    it('should display API error message on login failure', async () => {
-      const apiError = new Error('Thông tin đăng nhập không hợp lệ');
+    it('should forward API error message to toast on login failure', async () => {
+      const apiError = new Error('ThÃ´ng tin Ä‘Äƒng nháº­p khÃ´ng há»£p lá»‡');
       mockLogin.mockRejectedValue(apiError);
       
       render(<LoginScreen />);
       
       const emailInput = screen.getByPlaceholderText(/email/i);
-      const passwordInput = screen.getByPlaceholderText(/•••/);
+      const passwordInput = screen.getByLabelText(/^Mật khẩu$/i);
       
       fireEvent.changeText(emailInput, 'test@example.com');
       fireEvent.changeText(passwordInput, 'wrongpassword');
@@ -196,7 +197,7 @@ describe('LoginScreen', () => {
       fireEvent.press(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/đăng nhập không hợp lệ/i)).toBeTruthy();
+        expect(mockToast.error).toHaveBeenCalledWith(apiError.message);
       });
     });
   });
@@ -217,7 +218,7 @@ describe('LoginScreen', () => {
       render(<LoginScreen />);
       
       const emailInput = screen.getByPlaceholderText(/email/i);
-      const passwordInput = screen.getByPlaceholderText('••••••••');
+      const passwordInput = screen.getByLabelText(/^Mật khẩu$/i);
       
       expect(emailInput.props.accessibilityLabel || emailInput.props.accessible).toBeTruthy();
       expect(passwordInput.props.accessibilityLabel || passwordInput.props.accessible).toBeTruthy();
@@ -226,7 +227,7 @@ describe('LoginScreen', () => {
     it('should mask password input', () => {
       render(<LoginScreen />);
       
-      const passwordInput = screen.getByPlaceholderText('••••••••');
+      const passwordInput = screen.getByLabelText(/^Mật khẩu$/i);
       expect(passwordInput.props.secureTextEntry).toBe(true);
     });
 

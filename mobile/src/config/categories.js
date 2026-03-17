@@ -29,3 +29,9 @@ export const CATEGORY_ALIASES = {
 };
 
 export const CATEGORY_FALLBACK = 'all';
+
+export const DEFAULT_CATEGORY_OPTIONS = CANONICAL_CATEGORIES.map((value) => ({
+  value,
+  label: CATEGORY_LABELS[value] || value,
+  allowCustomValue: value === 'other',
+}));

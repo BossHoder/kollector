@@ -117,14 +117,14 @@ describe('UploadScreen', () => {
       // Select category
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Giày'));
+      fireEvent.press(screen.getByText(/giày/i));
 
       // Submit should still be disabled (no image)
       const submitButton = screen.getByTestId('submit-button');
       expect(submitButton.props.accessibilityState?.disabled || submitButton.props.disabled).toBeTruthy();
     });
 
-    it('should enable submit when both image AND category are selected', async () => {
+    it('should enable submit when image, asset name, and category are selected', async () => {
       render(<UploadScreen />);
       
       // Select image
@@ -139,11 +139,12 @@ describe('UploadScreen', () => {
       // Select category
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Giày'));
+      fireEvent.press(screen.getByText(/giày/i));
+      fireEvent.changeText(screen.getByTestId('asset-name-input'), 'Jordan 1');
 
       await waitFor(() => {
         const submitButton = screen.getByTestId('submit-button');
-        expect(submitButton.props.accessibilityState?.disabled).toBeFalsy();
+        expect(submitButton.props.accessibilityState?.disabled || submitButton.props.disabled).toBeFalsy();
       });
     });
   });
@@ -229,7 +230,8 @@ describe('UploadScreen', () => {
         expect(screen.getByTestId('selected-image')).toBeTruthy();
       });
 
-      fireEvent.press(screen.getByText('Giày'));
+      fireEvent.press(screen.getByText(/giày/i));
+      fireEvent.changeText(screen.getByTestId('asset-name-input'), 'Canon AE-1');
       fireEvent.press(screen.getByTestId('submit-button'));
 
       await waitFor(() => {
@@ -296,7 +298,8 @@ describe('UploadScreen', () => {
       // Select category
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Giày'));
+      fireEvent.press(screen.getByText(/giày/i));
+      fireEvent.changeText(screen.getByTestId('asset-name-input'), 'Jordan 1');
 
       // Submit
       const submitButton = screen.getByTestId('submit-button');
@@ -326,7 +329,8 @@ describe('UploadScreen', () => {
 
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Giày'));
+      fireEvent.press(screen.getByText(/giày/i));
+      fireEvent.changeText(screen.getByTestId('asset-name-input'), 'Jordan 1');
 
       // Submit
       const submitButton = screen.getByTestId('submit-button');
@@ -352,7 +356,8 @@ describe('UploadScreen', () => {
 
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Giày'));
+      fireEvent.press(screen.getByText(/giày/i));
+      fireEvent.changeText(screen.getByTestId('asset-name-input'), 'Jordan 1');
 
       // Submit
       const submitButton = screen.getByTestId('submit-button');
@@ -377,7 +382,8 @@ describe('UploadScreen', () => {
 
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Giày'));
+      fireEvent.press(screen.getByText(/giày/i));
+      fireEvent.changeText(screen.getByTestId('asset-name-input'), 'Jordan 1');
 
       // Submit
       const submitButton = screen.getByTestId('submit-button');
@@ -404,7 +410,8 @@ describe('UploadScreen', () => {
 
       const categorySelector = screen.getByTestId('category-selector');
       fireEvent.press(categorySelector);
-      fireEvent.press(screen.getByText('Giày'));
+      fireEvent.press(screen.getByText(/giày/i));
+      fireEvent.changeText(screen.getByTestId('asset-name-input'), 'Jordan 1');
 
       // Submit
       const submitButton = screen.getByTestId('submit-button');

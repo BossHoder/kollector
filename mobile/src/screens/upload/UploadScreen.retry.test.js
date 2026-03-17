@@ -68,7 +68,8 @@ describe('UploadScreen retry from placeholder', () => {
       expect(screen.getByTestId('selected-image')).toBeTruthy();
     });
 
-    fireEvent.press(screen.getByText('Giày'));
+    fireEvent.press(screen.getByText(/giày/i));
+    fireEvent.changeText(screen.getByTestId('asset-name-input'), 'Retry Asset');
     fireEvent.press(screen.getByTestId('submit-button'));
 
     await waitFor(() => {
