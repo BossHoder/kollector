@@ -1,8 +1,11 @@
 const { version } = require('./package.json');
 
+const DEFAULT_EXPO_OWNER = 'theanhdola';
+const DEFAULT_EXPO_PROJECT_ID = 'ae00bd17-3de2-440e-80b6-18d5cb6d0f0c';
+
 const APP_VARIANT = process.env.APP_VARIANT || 'development';
-const EXPO_OWNER = process.env.EXPO_OWNER || '';
-const EXPO_PROJECT_ID = process.env.EXPO_PROJECT_ID || '';
+const EXPO_OWNER = process.env.EXPO_OWNER || DEFAULT_EXPO_OWNER;
+const EXPO_PROJECT_ID = process.env.EXPO_PROJECT_ID || DEFAULT_EXPO_PROJECT_ID;
 const EXPO_ANDROID_PACKAGE = process.env.EXPO_ANDROID_PACKAGE || 'com.thetr.kollector';
 const EXPO_IOS_BUNDLE_IDENTIFIER = process.env.EXPO_IOS_BUNDLE_IDENTIFIER || 'com.thetr.kollector';
 const EXPO_PUBLIC_API_URL = trimTrailingSlash(process.env.EXPO_PUBLIC_API_URL || '');
