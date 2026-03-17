@@ -9,7 +9,7 @@ PREVIOUS_RELEASE=""
 
 read_env_value() {
   local key="$1"
-  grep -E "^${key}=" "${ENV_FILE}" | tail -n 1 | cut -d'=' -f2-
+  awk -v key="${key}" 'index($0, key "=") == 1 { print substr($0, length(key) + 2) }' "${ENV_FILE}" | tail -n 1
 }
 
 if [ ! -f "${ENV_FILE}" ]; then
