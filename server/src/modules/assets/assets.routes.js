@@ -57,6 +57,22 @@ const assetIdValidation = [
     .withMessage('Invalid asset ID')
 ];
 
+const maintainAssetValidation = [
+  param('assetId')
+    .isMongoId()
+    .withMessage('Invalid asset ID'),
+  body('version')
+    .isInt({ min: 1 })
+    .withMessage('Version must be a positive integer'),
+  body('cleanedPercentage')
+    .isFloat({ min: 80, max: 100 })
+    .withMessage('cleanedPercentage must be between 80 and 100'),
+  body('durationMs')
+    .optional()
+    .isInt({ min: 2000 })
+    .withMessage('durationMs must be at least 2000'),
+];
+
 /**
  * Validation rules for list query parameters
  */
@@ -123,6 +139,12 @@ router.patch('/:id', updateAssetValidation, validate, assetController.updateAsse
  * Delete an asset
  */
 router.delete('/:id', assetIdValidation, validate, assetController.deleteAsset.bind(assetController));
+
+/**
+ * POST /api/assets/:assetId/maintain
+ * Submit an asset maintenance action
+ */
+router.post('/:assetId/maintain', maintainAssetValidation, validate, assetController.maintainAsset.bind(assetController));
 
 /**
  * POST /api/assets/:id/retry

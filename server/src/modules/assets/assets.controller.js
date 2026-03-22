@@ -1,4 +1,5 @@
 const assetService = require('./assets.service');
+const gamificationService = require('../gamification/gamification.service');
 const { getQueueMetrics } = require('./assets.queue');
 const logger = require('../../config/logger');
 const { getAssetCategoryOptions } = require('./categories.catalog');
@@ -288,6 +289,28 @@ class AssetController {
           error: error.message || 'Asset not found'
         });
       }
+      next(error);
+    }
+  }
+
+  async maintainAsset(req, res, next) {
+    try {
+      const result = await gamificationService.maintainAsset({
+        assetId: req.params.assetId,
+        userId: req.user.id,
+        version: req.body.version,
+        cleanedPercentage: req.body.cleanedPercentage,
+        durationMs: req.body.durationMs,
+      });
+
+      logger.info('Asset maintenance request completed', {
+        requestId: req.id,
+        assetId: req.params.assetId,
+        userId: req.user.id,
+      });
+
+      res.status(200).json(result);
+    } catch (error) {
       next(error);
     }
   }
