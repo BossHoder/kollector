@@ -27,6 +27,10 @@ const userSchema = new mongoose.Schema({
         avgCollectionHealth: { type: Number, default: 100, min: 0, max: 100 },
         maintenanceStreak: { type: Number, default: 0 },
         lastMaintenanceDate: { type: Date, default: null },
+        badges: {
+            type: [{ type: String, enum: ['FIRST_CLEAN', '7_DAY_STREAK', 'PRISTINE_COLLECTION'] }],
+            default: []
+        },
         stats: {
             totalItemsOwned: { type: Number, default: 0 },
             totalCleaningsDone: { type: Number, default: 0 },

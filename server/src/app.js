@@ -21,10 +21,12 @@ const { errorHandler, notFoundHandler } = require('./middleware/error.middleware
 const { initSocket, closeSocket } = require('./config/socket');
 const { closeQueue } = require('./modules/assets/assets.queue');
 const { closeConnection: closeRedis } = require('./config/redis');
+const { registeredOpenApiContracts } = require('./contracts/openapi');
 
 const app = express();
 const server = http.createServer(app);
 const PORT = process.env.PORT || 3000;
+app.locals.openApiContracts = registeredOpenApiContracts;
 
 // Request ID middleware (for logging and tracing)
 app.use((req, res, next) => {
@@ -92,6 +94,7 @@ app.use(errorHandler);
 
 // Worker instance (initialized on server start)
 let worker = null;
+let decayScheduler = null;
 
 // Start server
 async function startServer() {
@@ -104,7 +107,9 @@ async function startServer() {
     
     // Initialize AI worker (import here to avoid circular deps)
     const { startWorker } = require('./workers/ai.worker');
+    const { startDecayScheduler } = require('./workers/cron.decay');
     worker = startWorker();
+    decayScheduler = startDecayScheduler();
     
     server.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
@@ -126,6 +131,12 @@ async function gracefulShutdown(signal) {
     if (worker) {
       await worker.close();
       logger.info('AI worker closed');
+    }
+
+    if (decayScheduler) {
+      decayScheduler.stop();
+      decayScheduler = null;
+      logger.info('Decay scheduler stopped');
     }
     
     // Close Socket.io connections
