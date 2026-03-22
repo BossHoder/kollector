@@ -268,8 +268,8 @@ describe('AI Processing Pipeline', () => {
     });
   });
 
-  describe('Partial Status Handling', () => {
-    it('should mark asset partial when processed image exists but metadata is empty', async () => {
+  describe('Metadata-optional Success Handling', () => {
+    it('should mark asset active when processed image exists even if metadata is empty', async () => {
       callAnalyze.mockResolvedValueOnce({
         brand: null,
         model: null,
@@ -281,7 +281,13 @@ describe('AI Processing Pipeline', () => {
       await processJob(job);
 
       const updatedAsset = await Asset.findById(testAsset._id);
-      expect(updatedAsset.status).toBe('partial');
+      expect(updatedAsset.status).toBe('active');
+      expect(updatedAsset.aiMetadata.brand?.value ?? null).toBeNull();
+      expect(updatedAsset.aiMetadata.brand?.confidence ?? null).toBeNull();
+      expect(updatedAsset.aiMetadata.model?.value ?? null).toBeNull();
+      expect(updatedAsset.aiMetadata.model?.confidence ?? null).toBeNull();
+      expect(updatedAsset.aiMetadata.colorway?.value ?? null).toBeNull();
+      expect(updatedAsset.aiMetadata.colorway?.confidence ?? null).toBeNull();
       expect(updatedAsset.images.processed.url).toBe('https://res.cloudinary.com/test/processed-only.jpg');
     });
   });

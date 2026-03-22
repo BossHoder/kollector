@@ -22,8 +22,8 @@ Relevant fields (already defined in `server/src/models/Asset.js`):
 ### Asset status transitions (existing)
 
 - `draft → processing`: when the asset is enqueued for AI processing
-- `processing → active`: background removal succeeds and at least one of brand/model/colorway is present
-- `processing → partial`: background removal succeeds and all of brand/model/colorway are unknown/empty
+- `processing → active`: background removal succeeds and a processed image URL is returned; metadata remains best-effort and may be partially or entirely empty
+- `processing → partial`: legacy/backward-compatible state only; no longer produced by the current success path
 - `processing → failed`: only for terminal failures where processing truly cannot complete
 
 ## New Contract Entities (AI service)

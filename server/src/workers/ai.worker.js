@@ -24,22 +24,6 @@ const WORKER_CONCURRENCY = 5;
  */
 let worker = null;
 
-function hasMetadataValue(field) {
-  if (!field) {
-    return false;
-  }
-
-  if (typeof field === 'string') {
-    return field.trim().length > 0;
-  }
-
-  if (typeof field === 'object' && typeof field.value === 'string') {
-    return field.value.trim().length > 0;
-  }
-
-  return false;
-}
-
 /**
  * Process a single AI job
  * @param {Job} job - BullMQ job
@@ -92,14 +76,8 @@ async function processJob(job) {
       throw missingOutputError;
     }
 
-    const hasAnyMetadata = [
-      aiResult.brand,
-      aiResult.model,
-      aiResult.colorway
-    ].some(hasMetadataValue);
-
     // Update asset with AI results
-    asset.status = hasAnyMetadata ? 'active' : 'partial';
+    asset.status = 'active';
     asset.aiMetadata = {
       brand: aiResult.brand || null,
       model: aiResult.model || null,

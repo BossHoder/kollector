@@ -101,7 +101,7 @@ describe('AI Worker', () => {
     }));
   });
 
-  it('returns partial when processed image exists but metadata is empty', async () => {
+  it('returns active when processed image exists even if metadata is empty', async () => {
     const asset = createAsset();
     Asset.findById.mockResolvedValue(asset);
     callAnalyze.mockResolvedValue({
@@ -114,7 +114,10 @@ describe('AI Worker', () => {
     const result = await processJob(createJob());
 
     expect(result.success).toBe(true);
-    expect(asset.status).toBe('partial');
+    expect(asset.status).toBe('active');
+    expect(asset.aiMetadata.brand).toBeNull();
+    expect(asset.aiMetadata.model).toBeNull();
+    expect(asset.aiMetadata.colorway).toBeNull();
     expect(asset.images.processed.url).toBe('https://res.cloudinary.com/test/image/upload/processed.png');
   });
 
