@@ -1,0 +1,96 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Gamification Core API",
+    "version": "1.0.0",
+    "description": "Endpoints mapping Plan.docx maintenance interactions."
+  },
+  "paths": {
+    "/api/assets/{assetId}/maintain": {
+      "post": {
+        "summary": "Submit a continuous rubbing maintenance action.",
+        "tags": ["Assets", "Gamification"],
+        "security": [
+          { "bearerAuth": [] }
+        ],
+        "parameters": [
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["version", "cleanedPercentage"],
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "description": "Document version for optimistic locking."
+                  },
+                  "cleanedPercentage": {
+                    "type": "number",
+                    "minimum": 80,
+                    "maximum": 100,
+                    "description": "Percentage representing the mask cleared by 2-second user interaction."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Maintenance successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "previousHealth": { "type": "number" },
+                    "newHealth": { "type": "number" },
+                    "xpAwarded": { "type": "integer" },
+                    "streakDays": { "type": "integer" },
+                    "badgesUnlocked": {
+                      "type": "array",
+                      "items": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request (e.g., cleanedPercentage < 80, health already >= 80, duration heuristic failed)"
+          },
+          "403": {
+            "description": "Forbidden (User does not own the asset)"
+          },
+          "404": {
+            "description": "Not Found (Asset missing or status is not 'active')"
+          },
+          "409": {
+            "description": "Conflict (Optimistic lock failed via version mismatch)"
+          },
+          "429": {
+            "description": "Too Many Requests (Asset already maintained today)"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
