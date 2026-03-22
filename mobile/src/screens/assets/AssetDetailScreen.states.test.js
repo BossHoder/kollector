@@ -18,6 +18,16 @@ jest.mock('../../contexts/SocketContext', () => ({
 }));
 
 jest.mock('../../api/assetsApi');
+jest.mock('../../api/gamification', () => ({
+  queueAssetMaintenance: jest.fn(),
+}));
+jest.mock('../../components/AssetMaintenanceRubMask', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return function MockAssetMaintenanceRubMask() {
+    return <View testID="mock-maintenance-mask" />;
+  };
+});
 
 const baseAsset = {
   id: 'asset-1',

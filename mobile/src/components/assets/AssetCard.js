@@ -3,14 +3,22 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StatusPill } from '../ui/StatusPill';
 import { colors, spacing, borderRadius, typography } from '../../styles/tokens';
 
+function getPreviewImageUri(asset) {
+  return asset.processedImageUrl
+    || asset.images?.processed?.url
+    || asset.thumbnailUrl
+    || asset.primaryImage?.url
+    || asset.originalImageUrl
+    || asset.images?.original?.url
+    || asset.imageUri
+    || asset.imageUrl
+    || null;
+}
+
 export default function AssetCard({ asset, onPress, onRetryPending, compact = false }) {
   const isPendingUpload = asset.status === 'pending_upload';
   const isFailedUpload = asset.status === 'failed_upload';
-  // Support both server shape { images: { original, processed } } and local pending uploads
-  const imageUri = asset.primaryImage?.url
-    || asset.images?.processed?.url
-    || asset.images?.original?.url
-    || asset.imageUri;
+  const imageUri = getPreviewImageUri(asset);
 
   return (
     <TouchableOpacity
@@ -22,7 +30,12 @@ export default function AssetCard({ asset, onPress, onRetryPending, compact = fa
     >
       <View style={styles.imageContainer}>
         {imageUri ? (
-          <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
+          <Image
+            source={{ uri: imageUri }}
+            style={styles.image}
+            resizeMode="cover"
+            testID="asset-card-image"
+          />
         ) : (
           <View style={[styles.image, styles.placeholder]}>
             {!compact && <Text style={styles.placeholderText}>Không có ảnh</Text>}
@@ -120,3 +133,5 @@ const styles = StyleSheet.create({
     fontSize: typography.fontSizes.sm,
   },
 });
+
+export { getPreviewImageUri };

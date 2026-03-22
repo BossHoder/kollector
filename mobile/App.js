@@ -15,6 +15,7 @@ import RootNavigator from './src/navigation/RootNavigator';
 import ToastHost from './src/components/ui/ToastHost';
 import OfflineBanner from './src/components/ui/OfflineBanner';
 import ReconnectingBanner from './src/components/ui/ReconnectingBanner';
+import GamificationQueueBridge from './src/components/GamificationQueueBridge';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
               <NavigationContainer>
                 <OfflineBanner />
                 <ReconnectingBanner />
+                <GamificationQueueBridge />
                 <RootNavigator />
                 <ToastHost />
                 <StatusBar style="light" />

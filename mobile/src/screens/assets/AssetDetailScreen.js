@@ -6,54 +6,50 @@
  * - Processed/Original image toggle
  * - AI Analysis card (when available)
  * - Condition meter (when available)
+ * - Maintenance interaction for eligible active assets
  * - Metadata card
  * - Actions: Archive (for active), Retry (for failed)
  * - Realtime updates via socket
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
-  StyleSheet,
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  RefreshControl,
   ActivityIndicator,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { colors, spacing, typography, borderRadius, touchTargetSize } from '../../styles/tokens';
-import { coerceBool } from '../../utils/coerceBool';
-import { useAsset } from '../../hooks/useAsset';
-import { useSocket } from '../../contexts/SocketContext';
 import { archiveAsset, retryAsset } from '../../api/assetsApi';
-import { getStatusDisplay } from '../../utils/statusDisplay';
-import { useToast } from '../../contexts/ToastContext';
-import StatusPill from '../../components/ui/StatusPill';
+import { queueAssetMaintenance } from '../../api/gamification';
+import AssetMaintenanceRubMask from '../../components/AssetMaintenanceRubMask';
 import ImageToggle from '../../components/assets/ImageToggle';
 import ProcessingOverlay from '../../components/assets/ProcessingOverlay';
-import { normalizeMetadata, getDisplayText } from '../../utils/assetMetadata';
+import StatusPill from '../../components/ui/StatusPill';
+import { useSocket } from '../../contexts/SocketContext';
+import { useToast } from '../../contexts/ToastContext';
+import { useAsset } from '../../hooks/useAsset';
 import { useRealtimeFallback } from '../../hooks/useRealtimeFallback';
+import { borderRadius, colors, spacing, touchTargetSize, typography } from '../../styles/tokens';
+import { normalizeMetadata, getDisplayText } from '../../utils/assetMetadata';
+import { coerceBool } from '../../utils/coerceBool';
 
-/**
- * Card component for sections
- */
 function Card({ title, children, style }) {
   return (
     <View style={[styles.card, style]}>
-      {title && <Text style={styles.cardTitle}>{title}</Text>}
+      {title ? <Text style={styles.cardTitle}>{title}</Text> : null}
       {children}
     </View>
   );
 }
 
-/**
- * Info row for metadata
- */
 function InfoRow({ label, value }) {
   const displayValue = getDisplayText(value) || '-';
+
   return (
     <View style={styles.infoRow}>
       <Text style={styles.infoLabel}>{label}</Text>
@@ -62,9 +58,6 @@ function InfoRow({ label, value }) {
   );
 }
 
-/**
- * Condition meter component
- */
 function ConditionMeter({ condition }) {
   const conditionMap = {
     mint: { label: 'Tuyệt vời', width: 100, color: colors.success },
@@ -75,16 +68,21 @@ function ConditionMeter({ condition }) {
     poor: { label: 'Kém', width: 20, color: colors.error },
   };
 
-  // condition can be a string grade (from AI) or an object { health: 0-100 } (from server model)
   let config;
+
   if (condition && typeof condition === 'object') {
     const health = condition.health ?? 60;
-    const grade =
-      health >= 90 ? 'mint' :
-      health >= 75 ? 'excellent' :
-      health >= 60 ? 'very-good' :
-      health >= 40 ? 'good' :
-      health >= 20 ? 'fair' : 'poor';
+    const grade = health >= 90
+      ? 'mint'
+      : health >= 75
+        ? 'excellent'
+        : health >= 60
+          ? 'very-good'
+          : health >= 40
+            ? 'good'
+            : health >= 20
+              ? 'fair'
+              : 'poor';
     config = { ...conditionMap[grade], width: health };
   } else {
     config = conditionMap[typeof condition === 'string' ? condition.toLowerCase() : ''] || conditionMap.good;
@@ -113,22 +111,24 @@ function ConditionMeter({ condition }) {
 export default function AssetDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { assetId, fromUpload } = route.params || {};
+  const { assetId } = route.params || {};
   const { onAssetProcessed, isConnected } = useSocket();
+  const toast = useToast();
   let insets = { top: 0, right: 0, bottom: 0, left: 0 };
+
   try {
     insets = useSafeAreaInsets();
   } catch {
-    // Tests may render without SafeAreaProvider; fall back to zero insets.
+    // Tests may render without SafeAreaProvider.
   }
 
   const [showProcessed, setShowProcessed] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [maintenanceResetKey, setMaintenanceResetKey] = useState(0);
 
-  // Determine poll interval based on status
   const { asset, isLoading, error, refetch, updateAsset } = useAsset(assetId, {
     enabled: Boolean(assetId),
-    pollInterval: 0, // Realtime handled via socket
+    pollInterval: 0,
   });
 
   useRealtimeFallback({
@@ -137,15 +137,13 @@ export default function AssetDetailScreen() {
     onReconnect: refetch,
   });
 
-  // Subscribe to realtime asset_processed events for this asset
   useEffect(() => {
     const unsubscribe = onAssetProcessed((payload) => {
-      // Only update if this event is for our asset
       if (payload.assetId === assetId) {
         updateAsset({
           status: payload.status,
           aiMetadata: payload.aiMetadata,
-          aiAnalysis: payload.aiMetadata, // alias
+          aiAnalysis: payload.aiMetadata,
           processedImageUrl: payload.processedImageUrl,
           error: payload.error || null,
         });
@@ -155,10 +153,6 @@ export default function AssetDetailScreen() {
     return unsubscribe;
   }, [assetId, onAssetProcessed, updateAsset]);
 
-  // Get toast methods
-  const toast = useToast();
-
-  // Handle archive action
   const handleArchive = useCallback(async () => {
     try {
       setActionLoading(true);
@@ -169,14 +163,13 @@ export default function AssetDetailScreen() {
         status: updated?.status || 'archived',
       }));
       toast.success('Tài sản đã lưu trữ');
-    } catch (err) {
+    } catch {
       toast.error('Không thể lưu trữ tài sản');
     } finally {
       setActionLoading(false);
     }
-  }, [assetId, updateAsset, toast]);
+  }, [assetId, toast, updateAsset]);
 
-  // Handle retry action
   const handleRetry = useCallback(async () => {
     try {
       setActionLoading(true);
@@ -188,14 +181,83 @@ export default function AssetDetailScreen() {
         error: null,
       }));
       toast.success('Phân tích đã được khởi động lại');
-    } catch (err) {
+    } catch {
       toast.error('Không thể thử lại phân tích');
     } finally {
       setActionLoading(false);
     }
-  }, [assetId, updateAsset, toast]);
+  }, [assetId, toast, updateAsset]);
 
-  // Loading state
+  const handleMaintenance = useCallback(async ({ cleanedPercentage, durationMs }) => {
+    if (!asset) {
+      return;
+    }
+
+    try {
+      const { flushPromise } = await queueAssetMaintenance({
+        asset,
+        cleanedPercentage,
+        durationMs,
+        onOptimisticUpdate: (optimisticState) => {
+          updateAsset((prev) => {
+            if (!prev) {
+              return prev;
+            }
+
+            return {
+              ...prev,
+              condition: {
+                ...(prev.condition || {}),
+                ...(optimisticState.condition || {}),
+              },
+              visualLayers: optimisticState.visualLayers,
+              version: optimisticState.version,
+            };
+          });
+        },
+        onRollback: ({ snapshot, error: rollbackError }) => {
+          updateAsset((prev) => {
+            if (!prev) {
+              return prev;
+            }
+
+            return {
+              ...prev,
+              condition: snapshot.condition,
+              visualLayers: snapshot.visualLayers,
+              version: snapshot.version,
+            };
+          });
+          setMaintenanceResetKey((value) => value + 1);
+          toast.error(getDisplayText(rollbackError?.message) || 'Đồng bộ bảo trì thất bại, đã khôi phục trạng thái trước đó.');
+        },
+        onSuccess: (_response, resolvedState) => {
+          updateAsset((prev) => {
+            if (!prev) {
+              return prev;
+            }
+
+            return {
+              ...prev,
+              condition: {
+                ...(prev.condition || {}),
+                ...(resolvedState.condition || {}),
+              },
+              visualLayers: resolvedState.visualLayers,
+              version: resolvedState.version,
+            };
+          });
+        },
+      });
+
+      void flushPromise.catch(() => {});
+    } catch (maintenanceError) {
+      toast.error(getDisplayText(maintenanceError?.message) || 'Không thể xếp hàng bảo trì.');
+      setMaintenanceResetKey((value) => value + 1);
+      await refetch();
+    }
+  }, [asset, refetch, toast, updateAsset]);
+
   if (isLoading && !asset) {
     return (
       <SafeAreaView style={styles.container}>
@@ -217,7 +279,6 @@ export default function AssetDetailScreen() {
     );
   }
 
-  // Error state
   if (error && !asset) {
     return (
       <SafeAreaView style={styles.container}>
@@ -264,22 +325,21 @@ export default function AssetDetailScreen() {
   }
 
   const status = asset.status || 'draft';
-  const statusDisplay = getStatusDisplay(status);
   const isProcessing = status === 'processing';
   const isFailed = status === 'failed';
   const isPartial = status === 'partial';
-  const isArchived = status === 'archived';
   const canArchive = ['active', 'partial', 'failed'].includes(status);
   const canRetry = isFailed || isPartial;
 
-  // Images - support multiple data shapes from API
   const processedImageUrl = asset.processedImageUrl || asset.processedImage?.url || asset.imageUrl;
   const originalImageUrl = asset.originalImageUrl || asset.primaryImage?.url || asset.imageUrl;
 
-  // AI Analysis data
   const analysis = asset.aiMetadata || asset.aiAnalysis || asset.analysis || {};
   const hasAnalysis = Object.keys(analysis).length > 0;
   const condition = asset.condition || analysis.condition;
+  const maintenanceHealth = Number(condition?.health ?? 100);
+  const canMaintain = status === 'active' && maintenanceHealth < 80;
+  const maintenanceDisabled = status !== 'active';
   const fileMetadata = normalizeMetadata(asset);
   const assetTitle = getDisplayText(asset.title) || 'Asset detail';
   const errorMessage = getDisplayText(asset.error) || getDisplayText(asset.aiMetadata?.error);
@@ -295,7 +355,6 @@ export default function AssetDetailScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -316,18 +375,17 @@ export default function AssetDetailScreen() {
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: spacing.xxxl + insets.bottom }]}
-        refreshControl={
+        refreshControl={(
           <RefreshControl
             refreshing={coerceBool(isLoading)}
             onRefresh={refetch}
             tintColor={colors.primary}
           />
-        }
+        )}
         showsVerticalScrollIndicator={false}
       >
-        {/* Image Section */}
         <View style={styles.imageSection}>
-          {!isProcessing && (
+          {!isProcessing ? (
             <ImageToggle
               processedUri={processedImageUrl}
               originalUri={originalImageUrl}
@@ -336,68 +394,64 @@ export default function AssetDetailScreen() {
               disabled={isProcessing}
               testID="image-toggle"
             />
-          )}
-          {isProcessing && (
+          ) : (
             <ProcessingOverlay visible message="Đang phân tích ảnh..." testID="processing-overlay" />
           )}
         </View>
 
-        {/* Error message for failed */}
-        {isFailed && errorMessage && (
+        {isFailed && errorMessage ? (
           <Card style={styles.errorCard}>
             <Text style={styles.errorCardTitle}>Phân tích thất bại</Text>
             <Text style={styles.errorCardMessage}>{errorMessage}</Text>
           </Card>
-        )}
+        ) : null}
 
-        {/* Partial warning */}
-        {isPartial && (
+        {isPartial ? (
           <Card style={styles.warningCard}>
             <Text style={styles.warningCardTitle}>Phân tích một phần</Text>
             <Text style={styles.warningCardMessage}>
               Một số dữ liệu phân tích có thể không đầy đủ. Bạn có thể thử lại để có kết quả đầy đủ.
             </Text>
           </Card>
-        )}
+        ) : null}
 
-        {/* Condition (if available) */}
-        {condition && !isProcessing && (
+        {condition && !isProcessing ? (
           <Card title="Tình trạng">
             <ConditionMeter condition={condition} />
           </Card>
-        )}
+        ) : null}
 
-        {/* AI Analysis (if available) */}
-        {hasAnalysis && !isProcessing && (
-          <Card title="Phân tích AI">
-            {brandValue && (
-              <InfoRow label="Thương hiệu" value={brandValue} />
-            )}
-            {modelValue && (
-              <InfoRow label="Mẫu" value={modelValue} />
-            )}
-            {colorwayValue && (
-              <InfoRow label="Phối màu" value={colorwayValue} />
-            )}
-            {yearValue && (
-              <InfoRow label="Năm" value={yearValue} />
-            )}
-            {estimatedValue && (
-              <InfoRow
-                label="Giá trị ước tính"
-                value={estimatedValue}
+        {!isProcessing ? (
+          <Card title="Maintenance">
+            {canMaintain ? (
+              <AssetMaintenanceRubMask
+                currentHealth={maintenanceHealth}
+                onMaintain={handleMaintenance}
+                resetKey={maintenanceResetKey}
+                visualLayers={asset.visualLayers || []}
               />
-            )}
-            {rarityValue && (
-              <InfoRow label="Độ hiếm" value={rarityValue} />
-            )}
-            {authenticityValue && (
-              <InfoRow label="Xác thực" value={authenticityValue} />
+            ) : (
+              <Text style={styles.maintenanceHint} testID="maintenance-disabled-message">
+                {maintenanceDisabled
+                  ? 'Maintenance is disabled until this asset becomes active.'
+                  : 'This asset is already above 80 health and does not need maintenance yet.'}
+              </Text>
             )}
           </Card>
-        )}
+        ) : null}
 
-        {/* Metadata */}
+        {hasAnalysis && !isProcessing ? (
+          <Card title="Phân tích AI">
+            {brandValue ? <InfoRow label="Thương hiệu" value={brandValue} /> : null}
+            {modelValue ? <InfoRow label="Mẫu" value={modelValue} /> : null}
+            {colorwayValue ? <InfoRow label="Phối màu" value={colorwayValue} /> : null}
+            {yearValue ? <InfoRow label="Năm" value={yearValue} /> : null}
+            {estimatedValue ? <InfoRow label="Giá trị ước tính" value={estimatedValue} /> : null}
+            {rarityValue ? <InfoRow label="Độ hiếm" value={rarityValue} /> : null}
+            {authenticityValue ? <InfoRow label="Xác thực" value={authenticityValue} /> : null}
+          </Card>
+        ) : null}
+
         <Card title="Chi tiết">
           <InfoRow label="Tên file" value={fileMetadata.originalFilename} />
           <InfoRow label="Kích thước" value={fileMetadata.fileSizeMB} />
@@ -406,26 +460,21 @@ export default function AssetDetailScreen() {
           <InfoRow label="Danh mục" value={asset.category} />
           <InfoRow
             label="Ngày tạo"
-            value={
-              asset.createdAt
-                ? new Date(asset.createdAt).toLocaleDateString('vi-VN')
-                : '-'
-            }
+            value={asset.createdAt ? new Date(asset.createdAt).toLocaleDateString('vi-VN') : '-'}
           />
-          {asset.updatedAt && (
+          {asset.updatedAt ? (
             <InfoRow
               label="Cập nhật"
               value={new Date(asset.updatedAt).toLocaleDateString('vi-VN')}
             />
-          )}
-          {asset.tags && asset.tags.length > 0 && (
+          ) : null}
+          {asset.tags && asset.tags.length > 0 ? (
             <InfoRow label="Nhãn" value={asset.tags.join(', ')} />
-          )}
+          ) : null}
         </Card>
 
-        {/* Actions */}
         <View style={styles.actionsContainer}>
-          {canRetry && (
+          {canRetry ? (
             <TouchableOpacity
               style={[styles.actionButton, styles.retryActionButton]}
               onPress={handleRetry}
@@ -440,9 +489,9 @@ export default function AssetDetailScreen() {
                 <Text style={styles.retryActionText}>Thử lại phân tích</Text>
               )}
             </TouchableOpacity>
-          )}
+          ) : null}
 
-          {canArchive && (
+          {canArchive ? (
             <TouchableOpacity
               style={[
                 styles.actionButton,
@@ -464,10 +513,9 @@ export default function AssetDetailScreen() {
                 Lưu trữ
               </Text>
             </TouchableOpacity>
-          )}
+          ) : null}
         </View>
 
-        {/* Spacer at bottom */}
         <View style={[styles.bottomSpacer, { height: spacing.xxl + insets.bottom }]} />
       </ScrollView>
     </SafeAreaView>
@@ -626,6 +674,11 @@ const styles = StyleSheet.create({
   warningCardMessage: {
     fontSize: typography.fontSize.sm,
     color: colors.textSecondary,
+  },
+  maintenanceHint: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
   },
   actionsContainer: {
     marginTop: spacing.lg,
