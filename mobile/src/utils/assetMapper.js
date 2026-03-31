@@ -22,12 +22,19 @@ export function mapAsset(rawAsset = {}) {
     rawAsset.imageUrl ||
     rawAsset.images?.original?.url ||
     null;
+  const enhancedImageUrl =
+    rawAsset.enhancedImageUrl ||
+    rawAsset.images?.enhanced?.url ||
+    null;
   const processedImageUrl =
     rawAsset.processedImageUrl ||
     rawAsset.images?.processed?.url ||
+    null;
+  const thumbnailUrl =
     rawAsset.thumbnailUrl ||
     rawAsset.images?.thumbnail?.url ||
-    null;
+    processedImageUrl ||
+    originalImageUrl;
   const fileSizeMB = typeof rawAsset.fileSizeMB === 'number'
     ? rawAsset.fileSizeMB
     : typeof rawAsset.fileSizeBytes === 'number'
@@ -46,11 +53,15 @@ export function mapAsset(rawAsset = {}) {
     title: deriveTitle(rawAsset),
     imageUrl: originalImageUrl,
     originalImageUrl,
-    thumbnailUrl: processedImageUrl || originalImageUrl,
+    thumbnailUrl,
     processedImageUrl,
+    enhancedImageUrl,
+    detailImageUrl: enhancedImageUrl || processedImageUrl || originalImageUrl,
     primaryImage: rawAsset.primaryImage || (originalImageUrl ? { url: originalImageUrl } : null),
     fileSizeMB,
     uploadedAt,
+    enhancement: rawAsset.enhancement || { status: 'idle', attemptCount: 0 },
+    presentation: rawAsset.presentation || { themeOverrideId: null },
   };
 }
 

@@ -91,6 +91,16 @@ export async function retryAsset(assetId) {
   return mapAsset(response.asset || response);
 }
 
+export async function triggerEnhancement(assetId) {
+  if (!assetId) {
+    throw new Error('Asset ID is required');
+  }
+
+  return apiRequest(`/assets/${assetId}/enhance-image`, {
+    method: 'POST',
+  });
+}
+
 export async function updateAsset(assetId, updates) {
   if (!assetId) {
     throw new Error('Asset ID is required');
@@ -109,5 +119,6 @@ export default {
   getAsset,
   archiveAsset,
   retryAsset,
+  triggerEnhancement,
   updateAsset,
 };

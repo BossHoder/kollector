@@ -131,6 +131,47 @@ class AuthController {
       next(error);
     }
   }
+
+  async getMe(req, res, next) {
+    try {
+      const user = await authService.getMe(req.user.id);
+
+      logger.info('Profile retrieved', {
+        requestId: req.id,
+        userId: req.user.id,
+      });
+
+      res.status(200).json(user);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async patchMe(req, res, next) {
+    try {
+      const user = await authService.patchMe(req.user.id, req.body);
+
+      logger.info('Profile updated', {
+        requestId: req.id,
+        userId: req.user.id,
+      });
+
+      res.status(200).json(user);
+    } catch (error) {
+      if (error.code === 'INVALID_THEME_PRESET') {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: error.code,
+            field: error.field,
+            message: error.message,
+          },
+        });
+      }
+
+      next(error);
+    }
+  }
 }
 
 module.exports = new AuthController();

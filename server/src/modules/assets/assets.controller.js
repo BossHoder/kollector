@@ -1,6 +1,7 @@
 const assetService = require('./assets.service');
 const gamificationService = require('../gamification/gamification.service');
 const { getQueueMetrics } = require('./assets.queue');
+const { getEnhancementQueueMetrics } = require('./assets.enhancement.queue');
 const logger = require('../../config/logger');
 const { getAssetCategoryOptions } = require('./categories.catalog');
 const {
@@ -8,6 +9,14 @@ const {
   normalizeAnalyzeQueueCategory,
   normalizeOptionalText,
 } = require('./upload.helpers');
+
+const enhancementAckMetrics = {
+  accepted: 0,
+  conflicts: 0,
+  failures: 0,
+  lastAckDurationMs: 0,
+  lastAcceptedAt: null,
+};
 
 /**
  * Asset Controller
@@ -187,6 +196,16 @@ class AssetController {
 
       res.status(200).json(asset);
     } catch (error) {
+      if (error.code === 'INVALID_THEME_PRESET') {
+        return res.status(400).json({
+          success: false,
+          error: {
+            code: error.code,
+            field: error.field,
+            message: error.message,
+          },
+        });
+      }
       next(error);
     }
   }
@@ -222,7 +241,10 @@ class AssetController {
    */
   async getQueueStatus(req, res, next) {
     try {
-      const metrics = await getQueueMetrics();
+      const [metrics, enhancementMetrics] = await Promise.all([
+        getQueueMetrics(),
+        getEnhancementQueueMetrics(),
+      ]);
 
       logger.info('Queue status requested', {
         requestId: req.id,
@@ -231,7 +253,14 @@ class AssetController {
 
       res.status(200).json({
         success: true,
-        data: metrics
+        data: {
+          ...metrics,
+          aiProcessing: metrics,
+          assetEnhancement: enhancementMetrics,
+          enhancementAck: {
+            ...enhancementAckMetrics,
+          },
+        }
       });
     } catch (error) {
       next(error);
@@ -313,6 +342,65 @@ class AssetController {
     } catch (error) {
       next(error);
     }
+  }
+
+  async queueEnhancement(req, res, next) {
+    const startedAt = Date.now();
+
+    try {
+      const userId = req.user.id;
+      const assetId = req.params.id;
+      const result = await assetService.queueEnhancement(assetId, userId);
+
+      enhancementAckMetrics.accepted += 1;
+      enhancementAckMetrics.lastAckDurationMs = Date.now() - startedAt;
+      enhancementAckMetrics.lastAcceptedAt = new Date().toISOString();
+
+      logger.info('Asset enhancement accepted', {
+        requestId: req.id,
+        assetId,
+        jobId: result.jobId,
+        userId,
+        ackDurationMs: enhancementAckMetrics.lastAckDurationMs,
+      });
+
+      res.status(202).json({
+        success: true,
+        data: {
+          assetId: result.assetId,
+          jobId: result.jobId,
+          status: result.status,
+        },
+      });
+    } catch (error) {
+      if (error.code === 'ENHANCEMENT_ALREADY_ACTIVE') {
+        enhancementAckMetrics.conflicts += 1;
+        return res.status(409).json({
+          success: false,
+          error: {
+            code: error.code,
+            message: error.message,
+          },
+        });
+      }
+
+      if (error.code === 'NOT_FOUND') {
+        return res.status(404).json({
+          success: false,
+          error: {
+            code: error.code,
+            message: error.message,
+          },
+        });
+      }
+
+      enhancementAckMetrics.failures += 1;
+      next(error);
+    }
+  }
+
+  getEnhancementAckMetrics() {
+    return { ...enhancementAckMetrics };
   }
 }
 

@@ -20,6 +20,7 @@ const {
 const { errorHandler, notFoundHandler } = require('./middleware/error.middleware');
 const { initSocket, closeSocket } = require('./config/socket');
 const { closeQueue } = require('./modules/assets/assets.queue');
+const { closeEnhancementQueue } = require('./modules/assets/assets.enhancement.queue');
 const { closeConnection: closeRedis } = require('./config/redis');
 const { registeredOpenApiContracts } = require('./contracts/openapi');
 
@@ -94,6 +95,7 @@ app.use(errorHandler);
 
 // Worker instance (initialized on server start)
 let worker = null;
+let enhancementWorker = null;
 let decayScheduler = null;
 
 // Start server
@@ -107,14 +109,16 @@ async function startServer() {
     
     // Initialize AI worker (import here to avoid circular deps)
     const { startWorker } = require('./workers/ai.worker');
+    const { startEnhancementWorker } = require('./workers/asset-enhancement.worker');
     const { startDecayScheduler } = require('./workers/cron.decay');
     worker = startWorker();
+    enhancementWorker = startEnhancementWorker();
     decayScheduler = startDecayScheduler();
     
     server.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
       logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
-      logger.info('Socket.io and AI worker initialized');
+      logger.info('Socket.io, AI worker, and enhancement worker initialized');
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
@@ -133,6 +137,11 @@ async function gracefulShutdown(signal) {
       logger.info('AI worker closed');
     }
 
+    if (enhancementWorker) {
+      await enhancementWorker.close();
+      logger.info('Asset enhancement worker closed');
+    }
+
     if (decayScheduler) {
       decayScheduler.stop();
       decayScheduler = null;
@@ -144,6 +153,7 @@ async function gracefulShutdown(signal) {
     
     // Close queue
     await closeQueue();
+    await closeEnhancementQueue();
     
     // Close Redis connection
     await closeRedis();

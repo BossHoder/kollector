@@ -67,7 +67,10 @@ async function processJob(job) {
 
   try {
     // Call AI service
-    const aiResult = await callAnalyze(imageUrl, category);
+    const aiResult = await callAnalyze(imageUrl, category, {
+      assetId,
+      jobId: String(job.id),
+    });
     const duration = Date.now() - startTime;
 
     if (!aiResult.processedImageUrl) {

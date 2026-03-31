@@ -11,24 +11,21 @@ const logger = require('../../config/logger');
  */
 const AI_SERVICE_TIMEOUT = 90000;
 
-/**
- * Call the AI service to analyze an image
- * @param {string} imageUrl - Public URL of the uploaded image
- * @param {string} category - Asset category for AI context
- * @returns {Promise<Object>} AI analysis result
- * @throws {Error} If AI service fails or times out
- */
-async function callAnalyze(imageUrl, category) {
+async function callAIService(endpointPath, payload, options = {}) {
   const aiServiceUrl = process.env.AI_SERVICE_URL;
-  
+
   if (!aiServiceUrl) {
     throw new Error('AI_SERVICE_URL environment variable is required');
   }
 
-  const endpoint = `${aiServiceUrl}/analyze`;
+  const endpoint = `${aiServiceUrl}${endpointPath}`;
   const startTime = Date.now();
 
-  logger.info('Calling AI service', { endpoint, category });
+  logger.info('Calling AI service', {
+    endpoint,
+    assetId: options.assetId,
+    jobId: options.jobId,
+  });
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), AI_SERVICE_TIMEOUT);
@@ -37,12 +34,12 @@ async function callAnalyze(imageUrl, category) {
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...(options.requestId ? { 'X-Request-Id': options.requestId } : {}),
+        ...(options.assetId ? { 'X-Asset-Id': options.assetId } : {}),
+        ...(options.jobId ? { 'X-Job-Id': options.jobId } : {}),
       },
-      body: JSON.stringify({
-        image_url: imageUrl,
-        category
-      }),
+      body: JSON.stringify(payload),
       signal: controller.signal
     });
 
@@ -67,11 +64,10 @@ async function callAnalyze(imageUrl, category) {
     
     logger.info('AI service response received', {
       duration,
-      hasBrand: !!result.brand,
-      hasModel: !!result.model
+      endpoint: endpointPath,
     });
 
-    return parseAIResponse(result);
+    return result;
   } catch (error) {
     clearTimeout(timeoutId);
     const duration = Date.now() - startTime;
@@ -96,6 +92,39 @@ async function callAnalyze(imageUrl, category) {
 
     throw error;
   }
+}
+
+/**
+ * Call the AI service to analyze an image
+ * @param {string} imageUrl - Public URL of the uploaded image
+ * @param {string} category - Asset category for AI context
+ * @returns {Promise<Object>} AI analysis result
+ * @throws {Error} If AI service fails or times out
+ */
+async function callAnalyze(imageUrl, category, options = {}) {
+  const result = await callAIService(
+    '/analyze',
+    {
+      image_url: imageUrl,
+      category,
+    },
+    options
+  );
+
+  return parseAIResponse(result);
+}
+
+async function callEnhanceImage({ imageUrl, options: enhancementOptions, assetId, jobId }) {
+  const result = await callAIService(
+    '/enhance-image',
+    {
+      image_url: imageUrl,
+      options: enhancementOptions,
+    },
+    { assetId, jobId }
+  );
+
+  return parseEnhancementResponse(result);
 }
 
 /**
@@ -134,8 +163,20 @@ function parseAIResponse(response) {
   };
 }
 
+function parseEnhancementResponse(response) {
+  return {
+    enhancedImageUrl:
+      response.enhanced_image_url ?? response.enhancedImageUrl ?? null,
+    width: response.width ?? null,
+    height: response.height ?? null,
+  };
+}
+
 module.exports = {
   callAnalyze,
+  callAIService,
+  callEnhanceImage,
   parseAIResponse,
+  parseEnhancementResponse,
   AI_SERVICE_TIMEOUT
 };

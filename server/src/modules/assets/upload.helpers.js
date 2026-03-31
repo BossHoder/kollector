@@ -1,4 +1,5 @@
 const path = require('path');
+const { serializeAsset } = require('./asset.serializer');
 
 const MIME_EXTENSION_MAP = {
   'image/jpeg': '.jpg',
@@ -108,15 +109,7 @@ function normalizeOptionalText(value) {
 }
 
 function serializeUploadedAsset(asset) {
-  const object = typeof asset.toObject === 'function' ? asset.toObject() : asset;
-  const uploadedAt = object.images?.original?.uploadedAt || object.createdAt || null;
-
-  return {
-    ...object,
-    id: object.id ? String(object.id) : String(object._id),
-    uploadedAt,
-    title: object.title || path.parse(object.originalFilename || '').name || null,
-  };
+  return serializeAsset(asset);
 }
 
 module.exports = {

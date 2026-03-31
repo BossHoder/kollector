@@ -6,11 +6,12 @@ import {
   View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Canvas, Path, Rect } from '@shopify/react-native-skia';
 import { useToast } from '../contexts/ToastContext';
 import { borderRadius, colors, spacing, typography } from '../styles/tokens';
 
 const GRID_COLUMNS = 6;
-const GRID_ROWS = 4;
+const GRID_ROWS = 6; // slightly taller to match most images
 const TOTAL_CELLS = GRID_COLUMNS * GRID_ROWS;
 const MIN_DURATION_MS = 2000;
 const MIN_DIRECTION_CHANGES = 4;
@@ -31,12 +32,14 @@ export default function AssetMaintenanceRubMask({
   const [cleanedPercentage, setCleanedPercentage] = useState(0);
   const [directionChanges, setDirectionChanges] = useState(0);
   const [layout, setLayout] = useState({ width: 0, height: 0 });
+  const [pathStr, setPathStr] = useState('');
 
   const visitedCellsRef = useRef(new Set());
   const startedAtRef = useRef(null);
   const previousXRef = useRef(null);
   const lastDirectionRef = useRef(null);
   const successTriggeredRef = useRef(false);
+  const currentPathRef = useRef('');
 
   const resetProgress = () => {
     visitedCellsRef.current = new Set();
@@ -44,8 +47,10 @@ export default function AssetMaintenanceRubMask({
     previousXRef.current = null;
     lastDirectionRef.current = null;
     successTriggeredRef.current = false;
+    currentPathRef.current = '';
     setCleanedPercentage(0);
     setDirectionChanges(0);
+    setPathStr('');
   };
 
   useEffect(() => {
@@ -59,9 +64,9 @@ export default function AssetMaintenanceRubMask({
 
     const durationMs = Date.now() - startedAtRef.current;
     if (
-      cleanedPercentage >= 80
-      && durationMs >= MIN_DURATION_MS
-      && directionChanges >= MIN_DIRECTION_CHANGES
+      cleanedPercentage >= 80 &&
+      durationMs >= MIN_DURATION_MS &&
+      directionChanges >= MIN_DIRECTION_CHANGES
     ) {
       successTriggeredRef.current = true;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
@@ -70,17 +75,22 @@ export default function AssetMaintenanceRubMask({
         cleanedPercentage,
         durationMs,
       });
+      // Optionally hide the overlay after success
+      setPathStr('');
     }
   };
 
   const panResponder = useMemo(() => PanResponder.create({
     onStartShouldSetPanResponder: () => !disabled,
     onMoveShouldSetPanResponder: () => !disabled,
-    onPanResponderGrant: () => {
+    onPanResponderGrant: (event) => {
       startedAtRef.current = Date.now();
       previousXRef.current = null;
       lastDirectionRef.current = null;
       successTriggeredRef.current = false;
+      const x = event.nativeEvent.locationX;
+      const y = event.nativeEvent.locationY;
+      currentPathRef.current += ` M ${x} ${y}`;
     },
     onPanResponderMove: (event) => {
       if (disabled || !layout.width || !layout.height) {
@@ -89,8 +99,20 @@ export default function AssetMaintenanceRubMask({
 
       const locationX = Number(event.nativeEvent.locationX || 0);
       const locationY = Number(event.nativeEvent.locationY || 0);
-      const column = Math.min(GRID_COLUMNS - 1, Math.max(0, Math.floor((locationX / layout.width) * GRID_COLUMNS)));
-      const row = Math.min(GRID_ROWS - 1, Math.max(0, Math.floor((locationY / layout.height) * GRID_ROWS)));
+      
+      currentPathRef.current += ` L ${locationX} ${locationY}`;
+      
+      // Throttle Skia path updates to reduce re-renders but keep path smooth
+      setPathStr(currentPathRef.current);
+
+      const column = Math.min(
+        GRID_COLUMNS - 1,
+        Math.max(0, Math.floor((locationX / layout.width) * GRID_COLUMNS))
+      );
+      const row = Math.min(
+        GRID_ROWS - 1,
+        Math.max(0, Math.floor((locationY / layout.height) * GRID_ROWS))
+      );
       const cellKey = `${column}-${row}`;
 
       if (!visitedCellsRef.current.has(cellKey)) {
@@ -115,11 +137,12 @@ export default function AssetMaintenanceRubMask({
     onPanResponderRelease: () => {
       maybeCompleteMaintenance();
       if (!successTriggeredRef.current) {
-        resetProgress();
+        // user paused, we can just let them continue drawing on next touch without resetting
+        // resetProgress(); 
       }
     },
     onPanResponderTerminate: () => {
-      resetProgress();
+      // do not reset on terminate, just wait
     },
   }), [cleanedPercentage, directionChanges, disabled, layout.height, layout.width, onMaintain]);
 
@@ -127,99 +150,77 @@ export default function AssetMaintenanceRubMask({
     maybeCompleteMaintenance();
   }, [cleanedPercentage, directionChanges]);
 
-  return (
-    <View style={styles.container} testID={testID}>
-      <Text style={styles.title}>Dust Maintenance</Text>
-      <Text style={styles.subtitle}>
-        Rub back and forth for 2 seconds and clear at least 80% of the dust mask.
-      </Text>
+  if (disabled || currentHealth >= 100 || successTriggeredRef.current) {
+    return null;
+  }
 
-      <View
-        style={[styles.scrubArea, disabled && styles.scrubAreaDisabled]}
-        onLayout={(event) => {
-          const { width, height } = event.nativeEvent.layout;
-          setLayout({ width, height });
-        }}
-        {...panResponder.panHandlers}
-      >
-        <View
-          style={[
-            styles.dustOverlay,
-            {
-              opacity: Math.max(0.15, 1 - (cleanedPercentage / 100)),
-            },
-          ]}
-        />
-        <Text style={styles.scrubLabel}>
-          {disabled ? 'Maintenance unavailable' : `${cleanedPercentage}% cleaned`}
+  // Opacity of dust layer depends on how low the health is.
+  // Health 100 -> 0% opacity, Health 0 -> 90% opacity
+  const dustOpacity = Math.min(0.9, Math.max(0.1, (100 - currentHealth) / 100));
+  
+  // Decide dust color based on visual layers
+  const hasYellowing = visualLayers.includes('yellowing');
+  const dustColor = hasYellowing ? `rgba(180, 160, 50, ${dustOpacity})` : `rgba(143, 122, 92, ${dustOpacity})`;
+
+  return (
+    <View 
+      style={[StyleSheet.absoluteFill, styles.overlayContainer]} 
+      testID={testID}
+      onLayout={(event) => {
+        const { width, height } = event.nativeEvent.layout;
+        setLayout({ width, height });
+      }}
+      {...panResponder.panHandlers}
+    >
+      {layout.width > 0 && layout.height > 0 && (
+        <Canvas style={StyleSheet.absoluteFill}>
+          <Rect x={0} y={0} width={layout.width} height={layout.height} color={dustColor} />
+          {pathStr ? (
+            <Path 
+              path={pathStr} 
+              color="transparent" 
+              style="stroke" 
+              strokeWidth={50} 
+              strokeCap="round" 
+              strokeJoin="round" 
+              blendMode="clear" 
+            />
+          ) : null}
+        </Canvas>
+      )}
+      
+      <View style={styles.floatingIndicator} pointerEvents="none">
+        <Text style={styles.floatingText}>
+          {`Lau bụi: ${cleanedPercentage}%`}
         </Text>
       </View>
-
-      <View style={styles.statsRow}>
-        <Text style={styles.stat}>Health: {Math.round(Number(currentHealth || 0))}</Text>
-        <Text style={styles.stat}>Direction changes: {directionChanges}</Text>
-      </View>
-
-      <Text style={styles.layerText}>
-        Active layers: {visualLayers.length > 0 ? visualLayers.join(', ') : 'none'}
-      </Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.surfaceDark,
-    borderWidth: 1,
-    borderColor: colors.borderDark,
-    borderRadius: borderRadius.lg,
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  title: {
-    color: colors.textPrimary,
-    fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.semibold,
-  },
-  subtitle: {
-    color: colors.textSecondary,
-    fontSize: typography.fontSize.sm,
-    lineHeight: 20,
-  },
-  scrubArea: {
-    height: 180,
-    borderRadius: borderRadius.lg,
-    backgroundColor: '#d8cfbf',
-    borderWidth: 1,
-    borderColor: colors.borderDark,
+  overlayContainer: {
+    zIndex: 10,
+    backgroundColor: 'transparent',
     overflow: 'hidden',
-    justifyContent: 'center',
-    alignItems: 'center',
+    borderRadius: borderRadius.lg, // Match the image toggle border radius
   },
-  scrubAreaDisabled: {
-    opacity: 0.5,
+  floatingIndicator: {
+    position: 'absolute',
+    bottom: spacing.md,
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 20,
+    left: 'auto',
+    right: 'auto',
+    width: 'auto',
   },
-  dustOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#8f7a5c',
-  },
-  scrubLabel: {
+  floatingText: {
     color: '#ffffff',
-    fontSize: typography.fontSize.lg,
+    fontSize: typography.fontSize.sm,
     fontWeight: typography.fontWeight.semibold,
-    zIndex: 1,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  stat: {
-    color: colors.textSecondary,
-    fontSize: typography.fontSize.sm,
-  },
-  layerText: {
-    color: colors.textSecondary,
-    fontSize: typography.fontSize.sm,
+    textAlign: 'center',
   },
 });

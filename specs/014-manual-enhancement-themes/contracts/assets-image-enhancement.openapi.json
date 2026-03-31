@@ -1,0 +1,237 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "KLECTR Assets Image Enhancement API",
+    "version": "1.1.0",
+    "description": "Additive contracts for manual asset image enhancement and per-asset theme override. This 1.1.0 change follows semver MINOR policy with backward-compatible optional additions only.",
+    "x-contract-evolution": {
+      "policy": "semver-minor-additive",
+      "compatibility": "backward-compatible",
+      "previousVersion": "1.0.0"
+    }
+  },
+  "paths": {
+    "/api/assets/{id}/enhance-image": {
+      "post": {
+        "summary": "Queue manual image enhancement for an asset",
+        "operationId": "queueAssetImageEnhancement",
+        "tags": ["Assets"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Enhancement request accepted and queued",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/EnhanceQueuedResponse" }
+              }
+            }
+          },
+          "400": { "description": "Validation error" },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Asset not found" },
+          "409": {
+            "description": "Conflict: enhancement already queued or processing",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" },
+                "example": {
+                  "success": false,
+                  "error": {
+                    "code": "ENHANCEMENT_ALREADY_ACTIVE",
+                    "message": "Enhancement already queued or processing"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assets/{id}": {
+      "patch": {
+        "summary": "Update asset, including optional presentation theme override",
+        "operationId": "updateAssetWithThemeOverride",
+        "tags": ["Assets"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/AssetPatchRequest" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Asset updated",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AssetRead" }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error (including unknown theme preset)",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/ErrorResponse" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "403": { "description": "Forbidden" },
+          "404": { "description": "Asset not found" }
+        }
+      },
+      "get": {
+        "summary": "Get asset details including enhancement status",
+        "operationId": "getAssetWithEnhancement",
+        "tags": ["Assets"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Asset details",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/AssetRead" }
+              }
+            }
+          },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "Asset not found" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AssetPatchRequest": {
+        "type": "object",
+        "properties": {
+          "presentation": {
+            "type": "object",
+            "properties": {
+              "themeOverrideId": {
+                "type": ["string", "null"],
+                "description": "Optional preset id. Non-null value must exist in preset catalog; null clears override and falls back to user default or fallback preset vault-graphite."
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": true
+      },
+      "AssetRead": {
+        "type": "object",
+        "required": ["id", "images"],
+        "properties": {
+          "id": { "type": "string" },
+          "images": {
+            "type": "object",
+            "properties": {
+              "original": { "$ref": "#/components/schemas/ImageRef" },
+              "processed": { "$ref": "#/components/schemas/ImageRef" },
+              "thumbnail": { "$ref": "#/components/schemas/ImageRef" },
+              "card": { "$ref": "#/components/schemas/ImageRef" },
+              "enhanced": { "$ref": "#/components/schemas/ImageRef" }
+            },
+            "additionalProperties": false
+          },
+          "presentation": {
+            "type": "object",
+            "properties": {
+              "themeOverrideId": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          },
+          "enhancement": {
+            "$ref": "#/components/schemas/EnhancementState"
+          }
+        },
+        "additionalProperties": true
+      },
+      "ImageRef": {
+        "type": "object",
+        "properties": {
+          "url": { "type": "string", "format": "uri" },
+          "width": { "type": "integer", "minimum": 1 },
+          "height": { "type": "integer", "minimum": 1 }
+        },
+        "additionalProperties": true
+      },
+      "EnhancementState": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": ["idle", "queued", "processing", "succeeded", "failed"]
+          },
+          "lastJobId": { "type": "string" },
+          "attemptCount": { "type": "integer", "minimum": 0, "maximum": 3 },
+          "errorCode": { "type": "string" },
+          "errorMessage": { "type": "string" },
+          "requestedAt": { "type": "string", "format": "date-time" },
+          "completedAt": { "type": "string", "format": "date-time" }
+        },
+        "additionalProperties": false
+      },
+      "EnhanceQueuedResponse": {
+        "type": "object",
+        "required": ["success", "data"],
+        "properties": {
+          "success": { "type": "boolean", "const": true },
+          "data": {
+            "type": "object",
+            "required": ["assetId", "jobId", "status"],
+            "properties": {
+              "assetId": { "type": "string" },
+              "jobId": { "type": "string" },
+              "status": { "type": "string", "const": "queued" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["success", "error"],
+        "properties": {
+          "success": { "type": "boolean", "const": false },
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": { "type": "string" },
+              "message": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

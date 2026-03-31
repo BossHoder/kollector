@@ -20,10 +20,11 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl
 
 try:
-    from PIL import Image, ImageChops, ImageOps
+    from PIL import Image, ImageChops, ImageFilter, ImageOps
 except ImportError:  # pragma: no cover - exercised only in misconfigured environments
     Image = None
     ImageChops = None
+    ImageFilter = None
     ImageOps = None
 
 try:
@@ -70,6 +71,43 @@ class AnalyzeResponse(BaseModel):
     brand: str | MetadataValue | None = None
     model: str | MetadataValue | None = None
     colorway: str | MetadataValue | None = None
+
+
+class EnhancementResizeOptions(BaseModel):
+    enabled: bool = True
+    maxWidth: int = Field(default=2048, ge=1)
+    maxHeight: int = Field(default=2048, ge=1)
+    kernel: str = Field(default="lanczos")
+
+
+class EnhancementSharpenOptions(BaseModel):
+    enabled: bool = True
+    method: str = Field(default="unsharp")
+
+
+class EnhancementCropOptions(BaseModel):
+    enabled: bool = True
+    mode: str = Field(default="heuristic")
+
+
+class EnhancementOptions(BaseModel):
+    resize: EnhancementResizeOptions = Field(default_factory=EnhancementResizeOptions)
+    sharpen: EnhancementSharpenOptions = Field(default_factory=EnhancementSharpenOptions)
+    crop: EnhancementCropOptions = Field(default_factory=EnhancementCropOptions)
+
+
+class EnhanceImageRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    image_url: HttpUrl
+    options: EnhancementOptions = Field(default_factory=EnhancementOptions)
+
+
+class EnhanceImageResponse(BaseModel):
+    enhanced_image_url: str | None = None
+    enhancedImageUrl: str | None = None
+    width: int | None = None
+    height: int | None = None
 
 
 class ErrorPayload(BaseModel):
@@ -361,6 +399,158 @@ def _upload_processed_image(image_bytes: bytes, category: str, budget_ms: int) -
     if _get_storage_driver() == "local":
         return _upload_processed_image_local(image_bytes, category, budget_ms)
     return _upload_processed_image_cloudinary(image_bytes, category, budget_ms)
+
+
+def _upload_enhanced_image_cloudinary(image_bytes: bytes, budget_ms: int) -> str:
+    start_monotonic = time.monotonic()
+    _require_cloudinary_config()
+
+    file_obj = io.BytesIO(image_bytes)
+    file_obj.name = "enhanced.png"
+
+    try:
+        result = cloudinary.uploader.upload(
+            file_obj,
+            resource_type="image",
+            folder="assets/enhanced",
+            public_id=f"enhanced-{uuid.uuid4().hex}",
+            format="png",
+            overwrite=True,
+        )
+    except Exception as exc:
+        raise RetryableServiceError(f"Cloudinary upload failed: {exc}") from exc
+
+    _enforce_stage_budget(start_monotonic, budget_ms, "Upload")
+
+    secure_url = result.get("secure_url")
+    if not secure_url:
+        raise RetryableServiceError("Cloudinary upload failed to return URL")
+    return secure_url
+
+
+def _upload_enhanced_image_local(image_bytes: bytes, budget_ms: int) -> str:
+    start_monotonic = time.monotonic()
+    _ensure_storage_root()
+
+    relative_path = _sanitize_storage_relative_path(
+        f"assets/enhanced/enhanced-{uuid.uuid4().hex}.png"
+    )
+    absolute_path = _get_storage_root() / Path(relative_path)
+    absolute_path.parent.mkdir(parents=True, exist_ok=True)
+    absolute_path.write_bytes(image_bytes)
+
+    _enforce_stage_budget(start_monotonic, budget_ms, "Upload")
+    return _build_storage_public_url(relative_path)
+
+
+def _upload_enhanced_image(image_bytes: bytes, budget_ms: int) -> str:
+    if _get_storage_driver() == "local":
+        return _upload_enhanced_image_local(image_bytes, budget_ms)
+    return _upload_enhanced_image_cloudinary(image_bytes, budget_ms)
+
+
+def _lanczos_resample() -> Any:
+    if hasattr(Image, "Resampling"):
+        return Image.Resampling.LANCZOS
+    return Image.LANCZOS
+
+
+def _unsharp_filter() -> Any:
+    if ImageFilter is None:
+        raise RetryableServiceError("Pillow image filters are not available")
+    return ImageFilter.UnsharpMask(radius=2, percent=140, threshold=3)
+
+
+def _apply_heuristic_crop(image: Any, options: EnhancementCropOptions) -> Any:
+    if not options.enabled:
+        return image
+
+    _require_numpy()
+    array = np.asarray(image.convert("RGB"), dtype="float32")
+    grayscale = array.mean(axis=2)
+
+    border_pixels = np.concatenate(
+        [
+            grayscale[0, :],
+            grayscale[-1, :],
+            grayscale[:, 0],
+            grayscale[:, -1],
+        ]
+    )
+    border_reference = float(np.median(border_pixels))
+    delta = np.abs(grayscale - border_reference)
+    threshold = max(12.0, float(delta.std()) * 0.5)
+    mask = delta > threshold
+    coordinates = np.argwhere(mask)
+
+    if coordinates.size == 0:
+        return image
+
+    top, left = coordinates.min(axis=0)
+    bottom, right = coordinates.max(axis=0) + 1
+
+    cropped_width = int(right - left)
+    cropped_height = int(bottom - top)
+    min_width = int(image.width * 0.4)
+    min_height = int(image.height * 0.4)
+
+    if cropped_width < min_width or cropped_height < min_height:
+        return image
+
+    pad_x = max(4, int(image.width * 0.02))
+    pad_y = max(4, int(image.height * 0.02))
+    crop_box = (
+        max(0, int(left - pad_x)),
+        max(0, int(top - pad_y)),
+        min(image.width, int(right + pad_x)),
+        min(image.height, int(bottom + pad_y)),
+    )
+
+    if crop_box == (0, 0, image.width, image.height):
+        return image
+
+    return image.crop(crop_box)
+
+
+def _apply_resize(image: Any, options: EnhancementResizeOptions) -> Any:
+    if not options.enabled:
+        return image
+
+    width, height = image.size
+    downscale_ratio = min(options.maxWidth / width, options.maxHeight / height, 1.0)
+
+    upscale_ratio = min(options.maxWidth / width, options.maxHeight / height)
+    target_ratio = downscale_ratio
+
+    if max(width, height) < 1600 and upscale_ratio > 1.05:
+        target_ratio = min(upscale_ratio, 1.25)
+
+    if abs(target_ratio - 1.0) < 0.05:
+        return image
+
+    new_size = (
+        max(1, int(round(width * target_ratio))),
+        max(1, int(round(height * target_ratio))),
+    )
+    return image.resize(new_size, resample=_lanczos_resample())
+
+
+def _apply_sharpen(image: Any, options: EnhancementSharpenOptions) -> Any:
+    if not options.enabled:
+        return image
+
+    return image.filter(_unsharp_filter())
+
+
+def _enhance_image(image_bytes: bytes, options: EnhancementOptions, budget_ms: int) -> tuple[bytes, tuple[int, int]]:
+    start_monotonic = time.monotonic()
+    image = _load_image(image_bytes, mode="RGB")
+    image = ImageOps.autocontrast(image, cutoff=1)
+    image = _apply_heuristic_crop(image, options.crop)
+    image = _apply_resize(image, options.resize)
+    image = _apply_sharpen(image, options.sharpen)
+    _enforce_stage_budget(start_monotonic, budget_ms, "Enhancement")
+    return _image_to_png_bytes(image), image.size
 
 
 def _transformers_common_kwargs(revision: str) -> dict[str, Any]:
@@ -1101,6 +1291,112 @@ def analyze(
             detail=ErrorResponse(
                 error=ErrorPayload(
                     message=f"Internal processing error: {exc}",
+                    code="retryable_error",
+                )
+            ).model_dump(),
+        ) from exc
+
+
+@app.post("/enhance-image", response_model=EnhanceImageResponse)
+def enhance_image(
+    request: EnhanceImageRequest,
+    x_request_id: str | None = Header(default=None),
+    x_correlation_id: str | None = Header(default=None),
+    x_asset_id: str | None = Header(default=None),
+    x_job_id: str | None = Header(default=None),
+) -> EnhanceImageResponse:
+    request_id = x_request_id or str(uuid.uuid4())
+    correlation_id = x_correlation_id or request_id
+    start_monotonic = time.monotonic()
+
+    def remaining_ms() -> int:
+        elapsed = int((time.monotonic() - start_monotonic) * 1000)
+        return max(0, TOTAL_BUDGET_MS - elapsed)
+
+    try:
+        download_budget = _stage_budget(remaining_ms(), DOWNLOAD_BUDGET_MS, "Download")
+        original_bytes = _download_image_bytes(
+            _rewrite_download_url(str(request.image_url)),
+            download_budget,
+        )
+
+        enhancement_budget = _stage_budget(
+            remaining_ms(), INFERENCE_BUDGET_MS, "Enhancement"
+        )
+        enhanced_bytes, size = _enhance_image(
+            original_bytes,
+            request.options,
+            enhancement_budget,
+        )
+
+        upload_budget = _stage_budget(remaining_ms(), UPLOAD_BUDGET_MS, "Upload")
+        enhanced_image_url = _upload_enhanced_image(enhanced_bytes, upload_budget)
+
+        if not enhanced_image_url:
+            raise RetryableServiceError("Enhanced image URL is missing")
+
+        duration_ms = int((time.monotonic() - start_monotonic) * 1000)
+        logger.info(
+            "enhance_image_completed requestId=%s correlationId=%s assetId=%s jobId=%s durationMs=%s width=%s height=%s",
+            request_id,
+            correlation_id,
+            x_asset_id,
+            x_job_id,
+            duration_ms,
+            size[0],
+            size[1],
+        )
+
+        return EnhanceImageResponse(
+            enhanced_image_url=enhanced_image_url,
+            enhancedImageUrl=enhanced_image_url,
+            width=int(size[0]),
+            height=int(size[1]),
+        )
+    except UnprocessableImageError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=ErrorResponse(
+                error=ErrorPayload(
+                    message=str(exc),
+                    code="unprocessable_image",
+                )
+            ).model_dump(),
+        ) from exc
+    except BudgetExceededError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                error=ErrorPayload(
+                    message=str(exc),
+                    code="retryable_error",
+                )
+            ).model_dump(),
+        ) from exc
+    except RetryableServiceError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                error=ErrorPayload(
+                    message=str(exc),
+                    code="retryable_error",
+                )
+            ).model_dump(),
+        ) from exc
+    except Exception as exc:
+        logger.exception(
+            "enhance_image_failed requestId=%s correlationId=%s assetId=%s jobId=%s error=%s",
+            request_id,
+            correlation_id,
+            x_asset_id,
+            x_job_id,
+            exc,
+        )
+        raise HTTPException(
+            status_code=500,
+            detail=ErrorResponse(
+                error=ErrorPayload(
+                    message=f"Internal enhancement error: {exc}",
                     code="retryable_error",
                 )
             ).model_dump(),

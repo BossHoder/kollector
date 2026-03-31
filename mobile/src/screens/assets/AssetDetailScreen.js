@@ -24,16 +24,27 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { archiveAsset, retryAsset } from '../../api/assetsApi';
+import {
+  archiveAsset,
+  retryAsset,
+  triggerEnhancement,
+  updateAsset as updateAssetRequest,
+} from '../../api/assetsApi';
 import { queueAssetMaintenance } from '../../api/gamification';
 import AssetMaintenanceRubMask from '../../components/AssetMaintenanceRubMask';
 import ImageToggle from '../../components/assets/ImageToggle';
 import ProcessingOverlay from '../../components/assets/ProcessingOverlay';
 import StatusPill from '../../components/ui/StatusPill';
+import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useAsset } from '../../hooks/useAsset';
 import { useRealtimeFallback } from '../../hooks/useRealtimeFallback';
+import {
+  ASSET_THEME_PRESETS,
+  getAssetThemePresetById,
+  resolveAssetThemeId,
+} from '../../config/assetThemePresets';
 import { borderRadius, colors, spacing, touchTargetSize, typography } from '../../styles/tokens';
 import { normalizeMetadata, getDisplayText } from '../../utils/assetMetadata';
 import { coerceBool } from '../../utils/coerceBool';
@@ -55,6 +66,27 @@ function InfoRow({ label, value }) {
       <Text style={styles.infoLabel}>{label}</Text>
       <Text style={styles.infoValue}>{displayValue}</Text>
     </View>
+  );
+}
+
+function ThemeChip({ label, accentColor, selected, onPress, disabled, testID }) {
+  return (
+    <TouchableOpacity
+      style={[
+        styles.themeChip,
+        selected && styles.themeChipSelected,
+        disabled && styles.themeChipDisabled,
+      ]}
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      testID={testID}
+    >
+      <View style={[styles.themeAccent, { backgroundColor: accentColor }]} />
+      <Text style={[styles.themeChipText, selected && styles.themeChipTextSelected]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
   );
 }
 
@@ -112,7 +144,8 @@ export default function AssetDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const { assetId } = route.params || {};
-  const { onAssetProcessed, isConnected } = useSocket();
+  const { onAssetProcessed, onAssetImageEnhanced, isConnected } = useSocket();
+  const { user } = useAuth();
   const toast = useToast();
   let insets = { top: 0, right: 0, bottom: 0, left: 0 };
 
@@ -124,6 +157,8 @@ export default function AssetDetailScreen() {
 
   const [showProcessed, setShowProcessed] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [enhancementLoading, setEnhancementLoading] = useState(false);
+  const [themeLoading, setThemeLoading] = useState(false);
   const [maintenanceResetKey, setMaintenanceResetKey] = useState(0);
 
   const { asset, isLoading, error, refetch, updateAsset } = useAsset(assetId, {
@@ -152,6 +187,49 @@ export default function AssetDetailScreen() {
 
     return unsubscribe;
   }, [assetId, onAssetProcessed, updateAsset]);
+
+  useEffect(() => {
+    const unsubscribe = onAssetImageEnhanced((payload) => {
+      if (payload.assetId !== assetId) {
+        return;
+      }
+
+      updateAsset((prev) => {
+        if (!prev) {
+          return prev;
+        }
+
+        const nextEnhancement = {
+          ...(prev.enhancement || {}),
+          status: payload.status,
+          attemptCount: payload.attemptCount,
+          completedAt: payload.timestamp,
+          errorMessage: payload.error || null,
+        };
+
+        const nextImages = {
+          ...(prev.images || {}),
+        };
+
+        if (payload.enhancedImageUrl) {
+          nextImages.enhanced = {
+            ...(prev.images?.enhanced || {}),
+            url: payload.enhancedImageUrl,
+          };
+        }
+
+        return {
+          ...prev,
+          images: nextImages,
+          enhancedImageUrl: payload.enhancedImageUrl || prev.enhancedImageUrl,
+          detailImageUrl: payload.enhancedImageUrl || prev.detailImageUrl,
+          enhancement: nextEnhancement,
+        };
+      });
+    });
+
+    return unsubscribe;
+  }, [assetId, onAssetImageEnhanced, updateAsset]);
 
   const handleArchive = useCallback(async () => {
     try {
@@ -185,6 +263,63 @@ export default function AssetDetailScreen() {
       toast.error('Không thể thử lại phân tích');
     } finally {
       setActionLoading(false);
+    }
+  }, [assetId, toast, updateAsset]);
+
+  const handleEnhancement = useCallback(async () => {
+    try {
+      setEnhancementLoading(true);
+      const response = await triggerEnhancement(assetId);
+      updateAsset((prev) => {
+        if (!prev) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          enhancement: {
+            ...(prev.enhancement || {}),
+            status: response?.data?.status || 'queued',
+            lastJobId: response?.data?.jobId || prev.enhancement?.lastJobId,
+            requestedAt: new Date().toISOString(),
+            errorMessage: null,
+          },
+        };
+      });
+      toast.success('Đã xếp hàng tăng cường ảnh');
+    } catch (error) {
+      toast.error(error?.message || 'Không thể tăng cường ảnh');
+    } finally {
+      setEnhancementLoading(false);
+    }
+  }, [assetId, toast, updateAsset]);
+
+  const handleThemeOverride = useCallback(async (themeOverrideId) => {
+    try {
+      setThemeLoading(true);
+      const updatedAsset = await updateAssetRequest(assetId, {
+        presentation: {
+          themeOverrideId,
+        },
+      });
+
+      updateAsset((prev) => ({
+        ...(prev || {}),
+        ...updatedAsset,
+        presentation: updatedAsset.presentation || {
+          themeOverrideId,
+        },
+      }));
+
+      toast.success(
+        themeOverrideId
+          ? 'Đã cập nhật theme cho tài sản'
+          : 'Đã xóa theme override của tài sản'
+      );
+    } catch (error) {
+      toast.error(error?.message || 'Không thể cập nhật theme tài sản');
+    } finally {
+      setThemeLoading(false);
     }
   }, [assetId, toast, updateAsset]);
 
@@ -330,8 +465,22 @@ export default function AssetDetailScreen() {
   const isPartial = status === 'partial';
   const canArchive = ['active', 'partial', 'failed'].includes(status);
   const canRetry = isFailed || isPartial;
+  const enhancement = asset.enhancement || {};
+  const enhancementStatus = enhancement.status || 'idle';
+  const enhancementBusy = enhancementStatus === 'queued' || enhancementStatus === 'processing';
+  const assetThemeOverrideId = asset.presentation?.themeOverrideId ?? null;
+  const userDefaultThemeId = user?.settings?.preferences?.assetTheme?.defaultThemeId ?? null;
+  const resolvedThemeId = resolveAssetThemeId(assetThemeOverrideId, userDefaultThemeId);
+  const resolvedTheme = getAssetThemePresetById(resolvedThemeId);
+  const overrideTheme = getAssetThemePresetById(assetThemeOverrideId);
 
-  const processedImageUrl = asset.processedImageUrl || asset.processedImage?.url || asset.imageUrl;
+  const processedImageUrl =
+    asset.detailImageUrl
+    || asset.enhancedImageUrl
+    || asset.images?.enhanced?.url
+    || asset.processedImageUrl
+    || asset.processedImage?.url
+    || asset.imageUrl;
   const originalImageUrl = asset.originalImageUrl || asset.primaryImage?.url || asset.imageUrl;
 
   const analysis = asset.aiMetadata || asset.aiAnalysis || asset.analysis || {};
@@ -386,14 +535,24 @@ export default function AssetDetailScreen() {
       >
         <View style={styles.imageSection}>
           {!isProcessing ? (
-            <ImageToggle
-              processedUri={processedImageUrl}
-              originalUri={originalImageUrl}
-              showProcessed={showProcessed}
-              onToggle={setShowProcessed}
-              disabled={isProcessing}
-              testID="image-toggle"
-            />
+            <View style={{ position: 'relative' }}>
+              <ImageToggle
+                processedUri={processedImageUrl}
+                originalUri={originalImageUrl}
+                showProcessed={showProcessed}
+                onToggle={setShowProcessed}
+                disabled={isProcessing || canMaintain}
+                testID="image-toggle"
+              />
+              {canMaintain ? (
+                <AssetMaintenanceRubMask
+                  currentHealth={maintenanceHealth}
+                  onMaintain={handleMaintenance}
+                  resetKey={maintenanceResetKey}
+                  visualLayers={asset.visualLayers || []}
+                />
+              ) : null}
+            </View>
           ) : (
             <ProcessingOverlay visible message="Đang phân tích ảnh..." testID="processing-overlay" />
           )}
@@ -415,28 +574,91 @@ export default function AssetDetailScreen() {
           </Card>
         ) : null}
 
+        <Card title="Tăng cường ảnh">
+          <InfoRow label="Trạng thái" value={enhancementStatus} />
+          {typeof enhancement.attemptCount === 'number' ? (
+            <InfoRow label="Số lần thử" value={String(enhancement.attemptCount)} />
+          ) : null}
+          {getDisplayText(enhancement.errorMessage) ? (
+            <Text style={styles.inlineErrorText}>{getDisplayText(enhancement.errorMessage)}</Text>
+          ) : null}
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              styles.retryActionButton,
+              (enhancementBusy || enhancementLoading) && styles.disabledAction,
+            ]}
+            onPress={handleEnhancement}
+            disabled={enhancementBusy || enhancementLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Tăng cường ảnh"
+            testID="enhance-image-button"
+          >
+            {enhancementLoading ? (
+              <ActivityIndicator size="small" color={colors.backgroundDark} />
+            ) : (
+              <Text style={styles.retryActionText}>
+                {enhancementBusy ? 'Đang xử lý tăng cường ảnh' : 'Tăng cường ảnh'}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </Card>
+
+        <Card title="Theme tài sản">
+          <InfoRow
+            label="Theme đang áp dụng"
+            value={resolvedTheme?.name || 'Vault Graphite'}
+          />
+          <InfoRow
+            label="Override riêng"
+            value={overrideTheme?.name || 'Không'}
+          />
+          <View style={styles.themeList}>
+            {ASSET_THEME_PRESETS.filter((preset) => preset.active).map((preset) => (
+              <ThemeChip
+                key={preset.id}
+                label={preset.name}
+                accentColor={preset.tokenSet.accent}
+                selected={assetThemeOverrideId === preset.id}
+                onPress={() => handleThemeOverride(preset.id)}
+                disabled={themeLoading}
+                testID={`asset-theme-${preset.id}`}
+              />
+            ))}
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.actionButton,
+              styles.archiveActionButton,
+              styles.clearThemeButton,
+              themeLoading && styles.disabledAction,
+            ]}
+            onPress={() => handleThemeOverride(null)}
+            disabled={themeLoading}
+            accessibilityRole="button"
+            accessibilityLabel="Xóa theme override"
+          >
+            {themeLoading ? (
+              <ActivityIndicator size="small" color={colors.textSecondary} />
+            ) : (
+              <Text style={styles.archiveActionText}>Xóa theme override</Text>
+            )}
+          </TouchableOpacity>
+        </Card>
+
         {condition && !isProcessing ? (
           <Card title="Tình trạng">
             <ConditionMeter condition={condition} />
           </Card>
         ) : null}
 
-        {!isProcessing ? (
+        {!isProcessing && !canMaintain ? (
           <Card title="Maintenance">
-            {canMaintain ? (
-              <AssetMaintenanceRubMask
-                currentHealth={maintenanceHealth}
-                onMaintain={handleMaintenance}
-                resetKey={maintenanceResetKey}
-                visualLayers={asset.visualLayers || []}
-              />
-            ) : (
-              <Text style={styles.maintenanceHint} testID="maintenance-disabled-message">
-                {maintenanceDisabled
-                  ? 'Maintenance is disabled until this asset becomes active.'
-                  : 'This asset is already above 80 health and does not need maintenance yet.'}
-              </Text>
-            )}
+            <Text style={styles.maintenanceHint} testID="maintenance-disabled-message">
+              {maintenanceDisabled
+                ? 'Maintenance is disabled until this asset becomes active.'
+                : 'This asset is already above 80 health and does not need maintenance yet.'}
+            </Text>
           </Card>
         ) : null}
 
@@ -680,6 +902,50 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
   },
+  inlineErrorText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.error,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  themeList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  themeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.borderDark,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surfaceHighlight,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    minHeight: touchTargetSize,
+  },
+  themeChipSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.surfaceDark,
+  },
+  themeChipDisabled: {
+    opacity: 0.6,
+  },
+  themeAccent: {
+    width: 10,
+    height: 10,
+    borderRadius: borderRadius.full,
+  },
+  themeChipText: {
+    fontSize: typography.fontSize.sm,
+    color: colors.textSecondary,
+    fontWeight: typography.fontWeight.medium,
+  },
+  themeChipTextSelected: {
+    color: colors.textPrimary,
+  },
   actionsContainer: {
     marginTop: spacing.lg,
     gap: spacing.md,
@@ -691,6 +957,9 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
+  },
+  disabledAction: {
+    opacity: 0.65,
   },
   retryActionButton: {
     backgroundColor: colors.primary,
@@ -717,6 +986,9 @@ const styles = StyleSheet.create({
   },
   secondaryActionText: {
     color: colors.textSecondary,
+  },
+  clearThemeButton: {
+    marginTop: spacing.md,
   },
   bottomSpacer: {
     height: spacing.xxl,

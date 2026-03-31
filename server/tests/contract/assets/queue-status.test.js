@@ -11,6 +11,7 @@ const { connectDatabase, disconnectDatabase } = require('../../../src/config/dat
 
 // Create mock function that we can control
 const mockGetQueueMetrics = jest.fn();
+const mockGetEnhancementQueueMetrics = jest.fn();
 
 // Mock the queue module
 jest.mock('../../../src/modules/assets/assets.queue', () => {
@@ -23,6 +24,11 @@ jest.mock('../../../src/modules/assets/assets.queue', () => {
     closeQueue: jest.fn()
   };
 });
+
+jest.mock('../../../src/modules/assets/assets.enhancement.queue', () => ({
+  getEnhancementQueueMetrics: mockGetEnhancementQueueMetrics,
+  closeEnhancementQueue: jest.fn(),
+}));
 
 // Mock Redis connection
 jest.mock('../../../src/config/redis', () => ({
@@ -45,6 +51,11 @@ jest.mock('../../../src/config/socket', () => ({
 jest.mock('../../../src/workers/ai.worker', () => ({
   startWorker: jest.fn().mockReturnValue({ close: jest.fn() }),
   getWorker: jest.fn()
+}));
+
+jest.mock('../../../src/workers/asset-enhancement.worker', () => ({
+  startEnhancementWorker: jest.fn().mockReturnValue({ close: jest.fn() }),
+  getEnhancementWorker: jest.fn(),
 }));
 
 // Import app after mocks are set up
@@ -74,6 +85,14 @@ describe('GET /api/assets/queue-status', () => {
       delayed: 0,
       paused: 0
     });
+    mockGetEnhancementQueueMetrics.mockResolvedValue({
+      waiting: 1,
+      active: 1,
+      completed: 25,
+      failed: 0,
+      delayed: 0,
+      paused: 0,
+    });
     
     // Create and login test user
     const result = await authService.register('test@example.com', 'TestPass123');
@@ -97,6 +116,8 @@ describe('GET /api/assets/queue-status', () => {
       expect(response.body.data).toHaveProperty('active');
       expect(response.body.data).toHaveProperty('completed');
       expect(response.body.data).toHaveProperty('failed');
+      expect(response.body.data).toHaveProperty('assetEnhancement');
+      expect(response.body.data).toHaveProperty('enhancementAck');
       
       // Verify they are numbers
       expect(typeof response.body.data.waiting).toBe('number');
@@ -117,7 +138,24 @@ describe('GET /api/assets/queue-status', () => {
         completed: 150,
         failed: 3,
         delayed: 0,
-        paused: 0
+        paused: 0,
+        aiProcessing: {
+          waiting: 5,
+          active: 2,
+          completed: 150,
+          failed: 3,
+          delayed: 0,
+          paused: 0,
+        },
+        assetEnhancement: {
+          waiting: 1,
+          active: 1,
+          completed: 25,
+          failed: 0,
+          delayed: 0,
+          paused: 0,
+        },
+        enhancementAck: expect.any(Object),
       });
     });
   });

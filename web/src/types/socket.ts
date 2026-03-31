@@ -24,6 +24,28 @@ export interface AssetProcessedFailureEvent {
 
 export type AssetProcessedEvent = AssetProcessedSuccessEvent | AssetProcessedFailureEvent;
 
+export interface AssetImageEnhancedSuccessEvent {
+  event: 'asset_image_enhanced';
+  assetId: string;
+  status: 'succeeded';
+  enhancedImageUrl: string;
+  attemptCount: number;
+  timestamp: string;
+}
+
+export interface AssetImageEnhancedFailureEvent {
+  event: 'asset_image_enhanced';
+  assetId: string;
+  status: 'failed';
+  error: string;
+  attemptCount: number;
+  timestamp: string;
+}
+
+export type AssetImageEnhancedEvent =
+  | AssetImageEnhancedSuccessEvent
+  | AssetImageEnhancedFailureEvent;
+
 // Socket connection state
 export type SocketStatus = 'connected' | 'disconnected' | 'connecting' | 'reconnecting' | 'error';
 
@@ -39,4 +61,5 @@ export interface SocketContextValue extends SocketState {
   subscribeToAsset: (assetId: string) => void;
   unsubscribeFromAsset: (assetId: string) => void;
   onAssetProcessed?: (callback: (event: AssetProcessedEvent) => void) => () => void;
+  onAssetImageEnhanced?: (callback: (event: AssetImageEnhancedEvent) => void) => () => void;
 }

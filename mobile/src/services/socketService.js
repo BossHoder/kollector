@@ -121,6 +121,10 @@ class SocketService {
     this.socket.on('asset_processed', (payload) => {
       this.emit('asset_processed', payload);
     });
+
+    this.socket.on('asset_image_enhanced', (payload) => {
+      this.emit('asset_image_enhanced', payload);
+    });
   }
 
   /**

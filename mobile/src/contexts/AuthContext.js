@@ -43,6 +43,28 @@ import { socketService } from '../services/socketService';
 
 const AuthContext = createContext(null);
 
+function normalizeUser(user, emailFallback = null) {
+  if (!user) {
+    return null;
+  }
+
+  const normalizedUser = {
+    ...user,
+    id: user.id || user._id || null,
+    email: user.email || emailFallback,
+  };
+
+  if (user.settings !== undefined) {
+    normalizedUser.settings = user.settings;
+  }
+
+  if (user.profile !== undefined) {
+    normalizedUser.profile = user.profile;
+  }
+
+  return normalizedUser;
+}
+
 /**
  * Auth Provider Component
  */
@@ -59,38 +81,55 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Check if we have stored tokens
         const hasTokens = await hasStoredTokens();
-        
+
         if (!hasTokens) {
           setState({ isLoading: false, isAuthenticated: false, user: null });
           return;
         }
 
-        // Try to get user data from store
-        const storedUser = await getUserData();
-        
-        if (storedUser) {
-          // Validate token by making an API call
-          try {
-            const accessToken = await getAccessToken();
-            if (accessToken) {
-              // Token exists and user data is cached
-              setState({
-                isLoading: false,
-                isAuthenticated: true,
-                user: storedUser,
-              });
-              return;
-            }
-          } catch {
-            // Token validation failed, clear and go to login
-          }
+        const accessToken = await getAccessToken();
+        if (!accessToken) {
+          await clearAllTokens();
+          setState({ isLoading: false, isAuthenticated: false, user: null });
+          return;
         }
 
-        // No valid session found
-        await clearAllTokens();
-        setState({ isLoading: false, isAuthenticated: false, user: null });
+        const storedUser = await getUserData();
+
+        try {
+          const profileResponse = await apiRequest('/auth/me');
+          const profile = normalizeUser(
+            profileResponse,
+            storedUser?.email || null
+          ) || normalizeUser(storedUser, storedUser?.email || null);
+
+          if (!profile) {
+            throw new Error('Profile payload missing');
+          }
+
+          await setUserData(profile);
+          setState({
+            isLoading: false,
+            isAuthenticated: true,
+            user: profile,
+          });
+        } catch (profileError) {
+          const fallbackUser = normalizeUser(storedUser, storedUser?.email || null);
+          const fallbackToken = await getAccessToken();
+
+          if (fallbackUser && fallbackToken) {
+            setState({
+              isLoading: false,
+              isAuthenticated: true,
+              user: fallbackUser,
+            });
+            return;
+          }
+
+          await clearAllTokens();
+          setState({ isLoading: false, isAuthenticated: false, user: null });
+        }
       } catch (error) {
         console.error('Auth initialization failed:', error);
         setState({ isLoading: false, isAuthenticated: false, user: null });
@@ -116,11 +155,7 @@ export function AuthProvider({ children }) {
     await setAccessToken(response.accessToken);
     await setRefreshToken(response.refreshToken);
 
-    // Store user data
-    const user = {
-      id: response.user?.id || response.userId,
-      email: response.user?.email || email,
-    };
+    const user = normalizeUser(response.user, email);
     await setUserData(user);
 
     setState({
@@ -147,10 +182,7 @@ export function AuthProvider({ children }) {
       await setAccessToken(response.accessToken);
       await setRefreshToken(response.refreshToken);
 
-      const user = {
-        id: response.user?.id || response.userId,
-        email: response.user?.email || email,
-      };
+      const user = normalizeUser(response.user, email);
       await setUserData(user);
 
       setState({
@@ -192,7 +224,10 @@ export function AuthProvider({ children }) {
    */
   const updateUser = useCallback(async (updates) => {
     setState((prev) => {
-      const newUser = { ...prev.user, ...updates };
+      const nextUser = typeof updates === 'function'
+        ? updates(prev.user)
+        : { ...(prev.user || {}), ...updates };
+      const newUser = normalizeUser(nextUser, prev.user?.email || null);
       setUserData(newUser); // Fire and forget
       return { ...prev, user: newUser };
     });

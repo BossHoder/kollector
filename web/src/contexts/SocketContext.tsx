@@ -15,11 +15,16 @@ import {
   type ReactNode,
 } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { socketManager, SocketStatus } from '@/lib/socket';
+import {
+  ASSET_IMAGE_ENHANCED_EVENT,
+  ASSET_PROCESSED_EVENT,
+  socketManager,
+  SocketStatus,
+} from '@/lib/socket';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
 import type { SocketState, SocketContextValue } from '@/types/socket';
-import type { AssetProcessedEvent } from '@/types/socket';
+import type { AssetProcessedEvent, AssetImageEnhancedEvent } from '@/types/socket';
 import type { Asset } from '@/types/asset';
 
 const SocketContext = createContext<SocketContextValue | null>(null);
@@ -101,12 +106,71 @@ export function SocketProvider({ children }: SocketProviderProps) {
       }
     };
 
-    socketManager.on<AssetProcessedEvent>('asset_processed', handleAssetProcessed);
+    socketManager.on<AssetProcessedEvent>(ASSET_PROCESSED_EVENT, handleAssetProcessed);
 
     return () => {
-      socketManager.off<AssetProcessedEvent>('asset_processed', handleAssetProcessed);
+      socketManager.off<AssetProcessedEvent>(ASSET_PROCESSED_EVENT, handleAssetProcessed);
     };
   }, [isAuthenticated, queryClient, showSuccess, showError, showInfo]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const handleAssetImageEnhanced = (event: AssetImageEnhancedEvent) => {
+      queryClient.setQueryData<Asset>(
+        ['asset', event.assetId],
+        (oldAsset) => {
+          if (!oldAsset) {
+            return oldAsset;
+          }
+
+          return {
+            ...oldAsset,
+            images: {
+              ...(oldAsset.images || {}),
+              ...(event.status === 'succeeded'
+                ? {
+                    enhanced: {
+                      ...(oldAsset.images?.enhanced || {}),
+                      url: event.enhancedImageUrl,
+                    },
+                  }
+                : {}),
+            },
+            enhancedImageUrl:
+              event.status === 'succeeded'
+                ? event.enhancedImageUrl
+                : oldAsset.enhancedImageUrl,
+            detailImageUrl:
+              event.status === 'succeeded'
+                ? event.enhancedImageUrl
+                : oldAsset.detailImageUrl,
+            enhancement: {
+              ...(oldAsset.enhancement || {}),
+              status: event.status,
+              attemptCount: event.attemptCount,
+              errorMessage: 'error' in event ? event.error : null,
+              completedAt: event.timestamp,
+            },
+          };
+        }
+      );
+
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+
+      if (event.status === 'succeeded') {
+        showSuccess('Ảnh chi tiết đã được tăng cường.');
+      } else {
+        showError(`Tăng cường ảnh thất bại: ${event.error}`);
+      }
+    };
+
+    socketManager.on<AssetImageEnhancedEvent>(ASSET_IMAGE_ENHANCED_EVENT, handleAssetImageEnhanced);
+
+    return () => {
+      socketManager.off<AssetImageEnhancedEvent>(ASSET_IMAGE_ENHANCED_EVENT, handleAssetImageEnhanced);
+    };
+  }, [isAuthenticated, queryClient, showError, showSuccess]);
 
   // Subscribe to specific asset updates
   const subscribeToAsset = useCallback((assetId: string) => {

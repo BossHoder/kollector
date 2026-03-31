@@ -2,6 +2,7 @@ const express = require('express');
 const { body } = require('express-validator');
 const authController = require('./auth.controller');
 const validate = require('../../middleware/validate.middleware');
+const authenticate = require('../../middleware/auth.middleware');
 
 const router = express.Router();
 
@@ -48,5 +49,17 @@ router.post('/login', loginValidation, validate, authController.login.bind(authC
  * Refresh access token
  */
 router.post('/refresh', authController.refreshToken.bind(authController));
+
+router.use(authenticate);
+
+const patchMeValidation = [
+  body('settings.preferences.assetTheme.defaultThemeId')
+    .optional({ values: 'undefined' })
+    .custom((value) => value === null || typeof value === 'string')
+    .withMessage('settings.preferences.assetTheme.defaultThemeId must be a string or null'),
+];
+
+router.get('/me', authController.getMe.bind(authController));
+router.patch('/me', patchMeValidation, validate, authController.patchMe.bind(authController));
 
 module.exports = router;

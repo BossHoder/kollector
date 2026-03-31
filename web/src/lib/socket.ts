@@ -13,6 +13,9 @@ import { getAccessToken } from './auth';
 const API_BASE_URL = import.meta.env.VITE_API_URL || '';
 const SOCKET_BASE_URL = import.meta.env.VITE_SOCKET_URL || '';
 
+export const ASSET_PROCESSED_EVENT = 'asset_processed';
+export const ASSET_IMAGE_ENHANCED_EVENT = 'asset_image_enhanced';
+
 export type SocketStatus = 'disconnected' | 'connecting' | 'connected' | 'reconnecting' | 'error';
 
 export type StatusChangeCallback = (status: SocketStatus) => void;
@@ -136,6 +139,22 @@ export class SocketManager {
    */
   off<T>(event: string, handler: (data: T) => void): void {
     this.socket?.off(event, handler);
+  }
+
+  onAssetProcessed<T>(handler: (data: T) => void): void {
+    this.on<T>(ASSET_PROCESSED_EVENT, handler);
+  }
+
+  offAssetProcessed<T>(handler: (data: T) => void): void {
+    this.off<T>(ASSET_PROCESSED_EVENT, handler);
+  }
+
+  onAssetImageEnhanced<T>(handler: (data: T) => void): void {
+    this.on<T>(ASSET_IMAGE_ENHANCED_EVENT, handler);
+  }
+
+  offAssetImageEnhanced<T>(handler: (data: T) => void): void {
+    this.off<T>(ASSET_IMAGE_ENHANCED_EVENT, handler);
   }
 
   /**

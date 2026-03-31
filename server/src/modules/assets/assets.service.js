@@ -1,42 +1,49 @@
 const Asset = require('../../models/Asset');
+const User = require('../../models/User');
 const logger = require('../../config/logger');
 const {
   uploadImage,
   deleteImage,
-  extractPublicIdFromUrl
+  extractPublicIdFromUrl,
 } = require('../../config/cloudinary');
 const { addToProcessingQueue } = require('./assets.queue');
-const { serializeUploadedAsset } = require('./upload.helpers');
+const { addToEnhancementQueue } = require('./assets.enhancement.queue');
+const { serializeAsset } = require('./asset.serializer');
+const {
+  ENHANCEMENT_ACTIVE_STATUSES,
+  ENHANCEMENT_STATUS,
+} = require('./enhancement.constants');
+const { assertValidAssetThemePresetId } = require('./theme-presets.catalog');
 
-/**
- * Asset Service
- * Handles asset business logic
- */
+function buildError(message, statusCode, code) {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  error.code = code;
+  return error;
+}
+
 class AssetService {
-  /**
-   * Upload image to the configured storage backend
-   * @param {Buffer} buffer - Image buffer
-   * @param {Object} options - Upload options
-   * @returns {Promise<{url: string, publicId: string}>}
-   */
   async uploadAssetImage(buffer, options = {}) {
-    const result = await uploadImage(buffer, {
+    return uploadImage(buffer, {
       folder: options.folder || 'assets/originals',
-      ...options
+      ...options,
     });
-    return result;
   }
 
-  /**
-   * Create asset and enqueue for AI processing
-   * @param {string} userId - User ID
-   * @param {Object} data - Asset data
-   * @param {string} data.category - Asset category
-   * @param {Buffer} data.imageBuffer - Image buffer
-   * @param {string} data.imageMimetype - Image MIME type
-   * @param {string} data.originalFilename - Original filename
-   * @returns {Promise<{assetId: string, jobId: string, asset: object}>}
-   */
+  async getUserDefaultThemeId(userId) {
+    if (!userId) {
+      return null;
+    }
+
+    const user = await User.findById(userId).lean();
+    return user?.settings?.preferences?.assetTheme?.defaultThemeId || null;
+  }
+
+  async serializeForUser(asset, userId) {
+    const userDefaultThemeId = await this.getUserDefaultThemeId(userId);
+    return serializeAsset(asset, { userDefaultThemeId });
+  }
+
   async createAssetAndEnqueue(userId, data) {
     const {
       category,
@@ -46,12 +53,10 @@ class AssetService {
       fileSizeBytes,
     } = data;
 
-    // Upload image to storage first so the worker receives a public URL.
     const uploadResult = await this.uploadAssetImage(imageBuffer, {
-      folder: 'assets/originals'
+      folder: 'assets/originals',
     });
 
-    // This endpoint always queues AI work per the analyze-queue contract.
     const asset = await Asset.create({
       userId,
       category,
@@ -61,19 +66,26 @@ class AssetService {
       fileSizeBytes: fileSizeBytes || null,
       condition: {
         health: 100,
-        decayRate: 2
+        decayRate: 2,
       },
       visualLayers: [],
       images: {
         original: {
           url: uploadResult.url,
           publicId: uploadResult.publicId,
-          uploadedAt: new Date()
-        }
+          uploadedAt: new Date(),
+        },
+      },
+      presentation: {
+        themeOverrideId: null,
+      },
+      enhancement: {
+        status: ENHANCEMENT_STATUS.IDLE,
+        attemptCount: 0,
       },
       aiMetadata: {},
       nfc: {},
-      marketData: {}
+      marketData: {},
     });
 
     const createdAt = new Date().toISOString();
@@ -82,7 +94,7 @@ class AssetService {
       userId: userId.toString(),
       imageUrl: uploadResult.url,
       category,
-      createdAt
+      createdAt,
     });
 
     asset.processingJobId = jobId;
@@ -99,16 +111,10 @@ class AssetService {
     return {
       assetId: asset._id.toString(),
       jobId,
-      asset: serializeUploadedAsset(asset),
+      asset: await this.serializeForUser(asset, userId),
     };
   }
 
-  /**
-   * Create a new asset
-   * @param {string} userId
-   * @param {object} assetData
-   * @returns {Promise<object>}
-   */
   async createAsset(userId, assetData) {
     try {
       const { category, status = 'draft' } = assetData;
@@ -119,97 +125,93 @@ class AssetService {
         status,
         condition: {
           health: 100,
-          decayRate: 2
+          decayRate: 2,
         },
         visualLayers: [],
         images: {
           original: {
-            url: 'https://placeholder.com/asset-image.jpg', // Placeholder until actual image is uploaded
-            uploadedAt: new Date()
-          }
+            url: 'https://placeholder.com/asset-image.jpg',
+            uploadedAt: new Date(),
+          },
+        },
+        presentation: {
+          themeOverrideId: null,
+        },
+        enhancement: {
+          status: ENHANCEMENT_STATUS.IDLE,
+          attemptCount: 0,
         },
         aiMetadata: {},
         nfc: {},
-        marketData: {}
+        marketData: {},
       });
 
       logger.info('Asset created', {
         assetId: asset._id,
         userId,
-        category
+        category,
       });
 
-      return asset;
+      return this.serializeForUser(asset, userId);
     } catch (error) {
       logger.error('Error creating asset', { error: error.message, userId });
       throw error;
     }
   }
 
-  /**
-   * List assets for a user with cursor-based pagination
-   * @param {string} userId
-   * @param {object} options - { cursor, limit, category, status }
-   * @returns {Promise<{items: Array, nextCursor: string|null}>}
-   */
   async listAssets(userId, options = {}) {
     try {
       const { cursor, limit = 20, category, status } = options;
       const maxLimit = Math.min(limit, 100);
-
-      // Build query
       const query = { userId };
-      
+
       if (category) {
         const escapedCategory = String(category).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         query.category = new RegExp(`^${escapedCategory}$`, 'i');
       }
-      
+
       if (status) {
         query.status = status;
       }
 
-      // Decode cursor if provided
       if (cursor) {
         const decodedCursor = this.decodeCursor(cursor);
         query.$or = [
           { createdAt: { $lt: decodedCursor.createdAt } },
-          { 
+          {
             createdAt: decodedCursor.createdAt,
-            _id: { $lt: decodedCursor._id }
-          }
+            _id: { $lt: decodedCursor._id },
+          },
         ];
       }
 
-      // Fetch items + 1 to check if there are more
       const items = await Asset.find(query)
         .sort({ createdAt: -1, _id: -1 })
         .limit(maxLimit + 1)
         .lean();
 
-      // Check if there are more items
       const hasMore = items.length > maxLimit;
       const assets = hasMore ? items.slice(0, maxLimit) : items;
+      const userDefaultThemeId = await this.getUserDefaultThemeId(userId);
 
-      // Generate next cursor if there are more items
       let nextCursor = null;
       if (hasMore) {
         const lastItem = assets[assets.length - 1];
         nextCursor = this.encodeCursor({
           createdAt: lastItem.createdAt,
-          _id: lastItem._id
+          _id: lastItem._id,
         });
       }
 
       logger.debug('Assets listed', {
         userId,
         count: assets.length,
-        hasMore
+        hasMore,
       });
 
       return {
-        items: assets,
-        nextCursor
+        items: assets.map((asset) => serializeAsset(asset, { userDefaultThemeId })),
+        nextCursor,
       };
     } catch (error) {
       logger.error('Error listing assets', { error: error.message, userId });
@@ -217,112 +219,95 @@ class AssetService {
     }
   }
 
-  /**
-   * Get asset by ID (with ownership check)
-   * @param {string} assetId
-   * @param {string} userId
-   * @returns {Promise<object>}
-   */
   async getAssetById(assetId, userId) {
     try {
       const asset = await Asset.findOne({
         _id: assetId,
-        userId
+        userId,
       }).lean();
 
       if (!asset) {
-        const error = new Error('Asset not found');
-        error.statusCode = 404;
-        error.code = 'NOT_FOUND';
-        throw error;
+        throw buildError('Asset not found', 404, 'NOT_FOUND');
       }
 
       logger.debug('Asset retrieved', { assetId, userId });
-
-      return asset;
+      return this.serializeForUser(asset, userId);
     } catch (error) {
       if (error.statusCode === 404) {
         throw error;
       }
+
       logger.error('Error getting asset', { error: error.message, assetId, userId });
       throw error;
     }
   }
 
-  /**
-   * Update asset
-   * @param {string} assetId
-   * @param {string} userId
-   * @param {object} updates
-   * @returns {Promise<object>}
-   */
   async updateAsset(assetId, userId, updates) {
     try {
-      // Only allow updating certain fields
-      const allowedUpdates = ['category', 'status'];
-      const filteredUpdates = {};
-      
-      for (const key of allowedUpdates) {
-        if (updates[key] !== undefined) {
-          filteredUpdates[key] = updates[key];
-        }
-      }
-
-      const asset = await Asset.findOneAndUpdate(
-        { _id: assetId, userId },
-        { $set: filteredUpdates },
-        { new: true, runValidators: true }
-      );
+      const asset = await Asset.findOne({ _id: assetId, userId });
 
       if (!asset) {
-        const error = new Error('Asset not found');
-        error.statusCode = 404;
-        error.code = 'NOT_FOUND';
-        throw error;
+        throw buildError('Asset not found', 404, 'NOT_FOUND');
       }
 
-      logger.info('Asset updated', { assetId, userId, updates: filteredUpdates });
+      if (updates.category !== undefined) {
+        asset.category = updates.category;
+      }
 
-      return asset;
+      if (updates.status !== undefined) {
+        asset.status = updates.status;
+      }
+
+      if (updates.presentation && Object.prototype.hasOwnProperty.call(updates.presentation, 'themeOverrideId')) {
+        const themeOverrideId = assertValidAssetThemePresetId(
+          updates.presentation.themeOverrideId,
+          'presentation.themeOverrideId'
+        );
+
+        asset.presentation = {
+          ...(asset.presentation?.toObject ? asset.presentation.toObject() : asset.presentation || {}),
+          themeOverrideId,
+        };
+      }
+
+      await asset.save();
+
+      logger.info('Asset updated', { assetId, userId });
+
+      return this.serializeForUser(asset, userId);
     } catch (error) {
-      if (error.statusCode === 404) {
+      if (error.statusCode === 404 || error.code === 'INVALID_THEME_PRESET') {
         throw error;
       }
+
       logger.error('Error updating asset', { error: error.message, assetId, userId });
       throw error;
     }
   }
 
-  /**
-   * Delete asset
-   * @param {string} assetId
-   * @param {string} userId
-   * @returns {Promise<void>}
-   */
   async deleteAsset(assetId, userId) {
     try {
       const asset = await Asset.findOne({
         _id: assetId,
-        userId
+        userId,
       });
 
       if (!asset) {
-        const error = new Error('Asset not found');
-        error.statusCode = 404;
-        error.code = 'NOT_FOUND';
-        throw error;
+        throw buildError('Asset not found', 404, 'NOT_FOUND');
       }
 
       const publicIdsToDelete = [
         asset.images?.original?.publicId,
         asset.images?.processed?.publicId,
+        asset.images?.enhanced?.publicId,
         asset.images?.thumbnail?.publicId,
-        extractPublicIdFromUrl(asset.images?.processed?.url)
+        extractPublicIdFromUrl(asset.images?.processed?.url),
+        extractPublicIdFromUrl(asset.images?.enhanced?.url),
       ].filter(Boolean);
 
       await Asset.deleteOne({
         _id: assetId,
-        userId
+        userId,
       });
 
       for (const publicId of new Set(publicIdsToDelete)) {
@@ -332,7 +317,7 @@ class AssetService {
           logger.warn('Asset file cleanup failed', {
             assetId,
             publicId,
-            error: cleanupError.message
+            error: cleanupError.message,
           });
         }
       }
@@ -342,51 +327,34 @@ class AssetService {
       if (error.statusCode === 404) {
         throw error;
       }
+
       logger.error('Error deleting asset', { error: error.message, assetId, userId });
       throw error;
     }
   }
 
-  /**
-   * Retry failed/partial asset analysis
-   * 
-   * @param {string} assetId - Asset ID to retry
-   * @param {string} userId - User ID (for ownership verification)
-   * @returns {Promise<{asset: object, jobId: string}>}
-   * @throws {Error} NOT_FOUND if asset doesn't exist or not owned by user
-   * @throws {Error} NOT_RETRYABLE if asset is not in failed/partial state
-   */
   async retryAsset(assetId, userId) {
-    // Find asset and verify ownership
     const asset = await Asset.findOne({ _id: assetId, userId });
-    
+
     if (!asset) {
-      const error = new Error('Asset not found');
-      error.statusCode = 404;
-      error.code = 'NOT_FOUND';
-      throw error;
+      throw buildError('Asset not found', 404, 'NOT_FOUND');
     }
 
-    // Only allow retry for failed or partial status
     const retryableStatuses = ['failed', 'partial'];
     if (!retryableStatuses.includes(asset.status)) {
-      const error = new Error(`Asset cannot be retried. Current status: ${asset.status}. Only failed or partial assets can be retried.`);
-      error.statusCode = 409;
-      error.code = 'NOT_RETRYABLE';
-      throw error;
+      throw buildError(
+        `Asset cannot be retried. Current status: ${asset.status}. Only failed or partial assets can be retried.`,
+        409,
+        'NOT_RETRYABLE'
+      );
     }
 
-    // Get the original image URL (required for re-processing)
     const imageUrl = asset.images?.original?.url;
-    
+
     if (!imageUrl) {
-      const error = new Error('Asset has no original image to process');
-      error.statusCode = 409;
-      error.code = 'NOT_RETRYABLE';
-      throw error;
+      throw buildError('Asset has no original image to process', 409, 'NOT_RETRYABLE');
     }
 
-    // Enqueue new AI processing job
     const createdAt = new Date().toISOString();
     const jobId = await addToProcessingQueue({
       assetId: asset._id.toString(),
@@ -394,10 +362,10 @@ class AssetService {
       imageUrl,
       category: asset.category,
       createdAt,
-      isRetry: true
+      isRetry: true,
     });
 
-    // Update asset status to processing and clear previous error
+    const previousStatus = asset.status;
     asset.status = 'processing';
     asset.set('aiMetadata.error', null);
     asset.set('aiMetadata.failedAt', null);
@@ -408,46 +376,93 @@ class AssetService {
       assetId: asset._id,
       jobId,
       userId,
-      previousStatus: asset.status,
-      category: asset.category
+      previousStatus,
+      category: asset.category,
     });
 
     return {
-      asset: asset.toObject(),
-      jobId
+      asset: await this.serializeForUser(asset, userId),
+      jobId,
     };
   }
 
-  /**
-   * Encode cursor for pagination
-   * @param {object} data
-   * @returns {string}
-   */
+  async queueEnhancement(assetId, userId) {
+    const asset = await Asset.findOne({ _id: assetId, userId });
+
+    if (!asset) {
+      throw buildError('Asset not found', 404, 'NOT_FOUND');
+    }
+
+    const enhancementStatus = asset.enhancement?.status || ENHANCEMENT_STATUS.IDLE;
+    if (ENHANCEMENT_ACTIVE_STATUSES.includes(enhancementStatus)) {
+      throw buildError(
+        'Enhancement already queued or processing',
+        409,
+        'ENHANCEMENT_ALREADY_ACTIVE'
+      );
+    }
+
+    const originalImageUrl = asset.images?.original?.url;
+    if (!originalImageUrl) {
+      throw buildError(
+        'Asset has no original image to enhance',
+        409,
+        'ENHANCEMENT_NOT_AVAILABLE'
+      );
+    }
+
+    const requestedAt = new Date().toISOString();
+    const jobId = await addToEnhancementQueue({
+      assetId: asset._id.toString(),
+      userId: userId.toString(),
+      originalImageUrl,
+      requestedAt,
+      attempt: 1,
+    });
+
+    asset.enhancement = {
+      ...(asset.enhancement?.toObject ? asset.enhancement.toObject() : asset.enhancement || {}),
+      status: ENHANCEMENT_STATUS.QUEUED,
+      lastJobId: jobId,
+      requestedBy: userId,
+      requestedAt: new Date(requestedAt),
+      completedAt: null,
+      errorCode: null,
+      errorMessage: null,
+      attemptCount: 0,
+    };
+    await asset.save();
+
+    logger.info('Asset enhancement queued', {
+      assetId: asset._id,
+      jobId,
+      userId,
+    });
+
+    return {
+      assetId: asset._id.toString(),
+      jobId,
+      status: ENHANCEMENT_STATUS.QUEUED,
+      asset: await this.serializeForUser(asset, userId),
+    };
+  }
+
   encodeCursor(data) {
-    const cursorData = {
+    return Buffer.from(JSON.stringify({
       createdAt: data.createdAt.toISOString(),
-      _id: data._id.toString()
-    };
-    return Buffer.from(JSON.stringify(cursorData)).toString('base64');
+      _id: data._id.toString(),
+    })).toString('base64');
   }
 
-  /**
-   * Decode cursor for pagination
-   * @param {string} cursor
-   * @returns {object}
-   */
   decodeCursor(cursor) {
     try {
       const decoded = JSON.parse(Buffer.from(cursor, 'base64').toString('utf-8'));
       return {
         createdAt: new Date(decoded.createdAt),
-        _id: decoded._id
+        _id: decoded._id,
       };
     } catch (error) {
-      const err = new Error('Invalid cursor');
-      err.statusCode = 400;
-      err.code = 'INVALID_CURSOR';
-      throw err;
+      throw buildError('Invalid cursor', 400, 'INVALID_CURSOR');
     }
   }
 }

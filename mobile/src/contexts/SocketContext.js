@@ -66,6 +66,10 @@ export function SocketProvider({ children }) {
     return socketService.on('asset_processed', handler);
   }, []);
 
+  const onAssetImageEnhanced = useCallback((handler) => {
+    return socketService.on('asset_image_enhanced', handler);
+  }, []);
+
   /**
    * Force reconnect (for manual reconnect button)
    */
@@ -95,6 +99,7 @@ export function SocketProvider({ children }) {
       isMaxReconnectReached,
       isFallbackActive: fallback.isFallbackActive,
       onAssetProcessed,
+      onAssetImageEnhanced,
       forceReconnect,
     }),
     [
@@ -104,6 +109,7 @@ export function SocketProvider({ children }) {
       isMaxReconnectReached,
       fallback.isFallbackActive,
       onAssetProcessed,
+      onAssetImageEnhanced,
       forceReconnect,
     ]
   );

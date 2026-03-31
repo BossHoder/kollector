@@ -45,7 +45,11 @@ const updateAssetValidation = [
   body('status')
     .optional()
     .isIn(['draft', 'processing', 'active', 'archived'])
-    .withMessage('Status must be one of: draft, processing, active, archived')
+    .withMessage('Status must be one of: draft, processing, active, archived'),
+  body('presentation.themeOverrideId')
+    .optional({ values: 'undefined' })
+    .custom((value) => value === null || typeof value === 'string')
+    .withMessage('presentation.themeOverrideId must be a string or null')
 ];
 
 /**
@@ -115,6 +119,17 @@ router.post('/analyze-queue',
  * Get queue metrics for monitoring
  */
 router.get('/queue-status', assetController.getQueueStatus.bind(assetController));
+
+/**
+ * POST /api/assets/:id/enhance-image
+ * Queue manual image enhancement for an asset
+ */
+router.post(
+  '/:id/enhance-image',
+  assetIdValidation,
+  validate,
+  assetController.queueEnhancement.bind(assetController)
+);
 
 /**
  * POST /api/assets

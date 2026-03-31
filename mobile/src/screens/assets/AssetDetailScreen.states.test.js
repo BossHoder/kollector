@@ -2,6 +2,7 @@ import React from 'react';
 import { render, waitFor, screen } from '@testing-library/react-native';
 import AssetDetailScreen from './AssetDetailScreen';
 import { useRoute } from '@react-navigation/native';
+import { useAuth } from '../../contexts/AuthContext';
 import * as assetsApi from '../../api/assetsApi';
 
 jest.mock('@react-navigation/native', () => ({
@@ -9,12 +10,20 @@ jest.mock('@react-navigation/native', () => ({
   useRoute: jest.fn(),
 }));
 
+jest.mock('../../contexts/AuthContext', () => ({
+  useAuth: jest.fn(),
+}));
+
 jest.mock('../../contexts/ToastContext', () => ({
   useToast: jest.fn(() => ({ success: jest.fn(), error: jest.fn() })),
 }));
 
 jest.mock('../../contexts/SocketContext', () => ({
-  useSocket: jest.fn(() => ({ isConnected: true, onAssetProcessed: jest.fn(() => () => {}) })),
+  useSocket: jest.fn(() => ({
+    isConnected: true,
+    onAssetProcessed: jest.fn(() => () => {}),
+    onAssetImageEnhanced: jest.fn(() => () => {}),
+  })),
 }));
 
 jest.mock('../../api/assetsApi');
@@ -39,6 +48,21 @@ const baseAsset = {
 };
 
 describe('AssetDetailScreen status matrix', () => {
+  beforeEach(() => {
+    useAuth.mockReturnValue({
+      user: {
+        email: 'test@example.com',
+        settings: {
+          preferences: {
+            assetTheme: {
+              defaultThemeId: null,
+            },
+          },
+        },
+      },
+    });
+  });
+
   it.each([
     ['active', 'Sẵn sàng'],
     ['processing', 'Đang xử lý'],

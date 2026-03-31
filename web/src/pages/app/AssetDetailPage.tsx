@@ -103,7 +103,7 @@ export function AssetDetailPage() {
           <div className="bg-surface-dark border border-border-dark rounded-xl overflow-hidden p-4">
             <ImageToggle
               originalUrl={asset.originalImageUrl || asset.imageUrl || ''}
-              processedUrl={asset.processedImageUrl || asset.thumbnailUrl || ''}
+              processedUrl={asset.detailImageUrl || asset.processedImageUrl || asset.thumbnailUrl || ''}
               alt={asset.title || 'Asset'}
             />
           </div>

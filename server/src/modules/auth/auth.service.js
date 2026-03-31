@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../../models/User');
 const logger = require('../../config/logger');
+const { assertValidAssetThemePresetId } = require('../assets/theme-presets.catalog');
 
 /**
  * Auth Service
@@ -162,6 +163,56 @@ class AuthService {
     }
   }
 
+  async getMe(userId) {
+    const user = await User.findById(userId);
+    if (!user) {
+      const error = new Error('User not found');
+      error.statusCode = 404;
+      error.code = 'NOT_FOUND';
+      throw error;
+    }
+
+    return this.toPublicUser(user);
+  }
+
+  async patchMe(userId, updates) {
+    const user = await User.findById(userId);
+    if (!user) {
+      const error = new Error('User not found');
+      error.statusCode = 404;
+      error.code = 'NOT_FOUND';
+      throw error;
+    }
+
+    const defaultThemeId =
+      updates?.settings?.preferences?.assetTheme?.defaultThemeId;
+
+    if (
+      updates?.settings?.preferences?.assetTheme
+      && Object.prototype.hasOwnProperty.call(
+        updates.settings.preferences.assetTheme,
+        'defaultThemeId'
+      )
+    ) {
+      const validatedThemeId = assertValidAssetThemePresetId(
+        defaultThemeId,
+        'settings.preferences.assetTheme.defaultThemeId'
+      );
+
+      user.settings = user.settings || {};
+      user.settings.preferences = user.settings.preferences || {};
+      user.settings.preferences.assetTheme = {
+        ...(user.settings.preferences.assetTheme?.toObject
+          ? user.settings.preferences.assetTheme.toObject()
+          : user.settings.preferences.assetTheme || {}),
+        defaultThemeId: validatedThemeId,
+      };
+    }
+
+    await user.save();
+    return this.toPublicUser(user);
+  }
+
   /**
    * Generate JWT access token without expiration
    * @param {object} user
@@ -211,6 +262,7 @@ class AuthService {
     return {
       id: user._id.toString(),
       email: user.email,
+      profile: user.profile,
       gamification: user.gamification,
       settings: user.settings,
       createdAt: user.createdAt,

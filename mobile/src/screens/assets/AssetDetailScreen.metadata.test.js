@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react-native';
 import AssetDetailScreen from './AssetDetailScreen';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { useSocket } from '../../contexts/SocketContext';
 import * as assetsApi from '../../api/assetsApi';
@@ -9,6 +10,9 @@ import * as assetsApi from '../../api/assetsApi';
 jest.mock('@react-navigation/native', () => ({
   useNavigation: jest.fn(),
   useRoute: jest.fn(),
+}));
+jest.mock('../../contexts/AuthContext', () => ({
+  useAuth: jest.fn(),
 }));
 jest.mock('../../contexts/ToastContext');
 jest.mock('../../contexts/SocketContext');
@@ -59,9 +63,22 @@ describe('AssetDetailScreen metadata rendering', () => {
       error: jest.fn(),
       info: jest.fn(),
     });
+    useAuth.mockReturnValue({
+      user: {
+        email: 'test@example.com',
+        settings: {
+          preferences: {
+            assetTheme: {
+              defaultThemeId: null,
+            },
+          },
+        },
+      },
+    });
 
     useSocket.mockReturnValue({
       onAssetProcessed: jest.fn(() => () => {}),
+      onAssetImageEnhanced: jest.fn(() => () => {}),
       isConnected: true,
     });
 

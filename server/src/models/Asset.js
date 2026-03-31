@@ -6,6 +6,7 @@ const {
   clampHealth,
   computeVisualLayersForHealth,
 } = require('../modules/gamification/gamification.helpers');
+const { ENHANCEMENT_STATUS } = require('../modules/assets/enhancement.constants');
 
 const maintenanceLogSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now },
@@ -21,10 +22,40 @@ const assetSchema = new mongoose.Schema({
   status: { type: String, enum: ['draft', 'processing', 'partial', 'active', 'archived', 'failed'], default: 'draft', index: true },
 
   images: {
-    original: { url: { type: String }, publicId: String, uploadedAt: { type: Date, default: Date.now } },
+    original: {
+      url: { type: String, immutable: true },
+      publicId: { type: String, immutable: true },
+      uploadedAt: { type: Date, default: Date.now, immutable: true },
+    },
     processed: { url: String, publicId: String, processedAt: Date },
     thumbnail: { url: String, publicId: String },
     card: { url: String, generatedAt: Date, expiresAt: Date },
+    enhanced: {
+      url: String,
+      publicId: String,
+      width: Number,
+      height: Number,
+      generatedAt: Date,
+    },
+  },
+
+  presentation: {
+    themeOverrideId: { type: String, default: null },
+  },
+
+  enhancement: {
+    status: {
+      type: String,
+      enum: Object.values(ENHANCEMENT_STATUS),
+      default: ENHANCEMENT_STATUS.IDLE,
+    },
+    lastJobId: String,
+    requestedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    requestedAt: Date,
+    completedAt: Date,
+    errorCode: String,
+    errorMessage: String,
+    attemptCount: { type: Number, min: 0, max: 3, default: 0 },
   },
 
   originalFilename: { type: String, trim: true },

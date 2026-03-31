@@ -29,12 +29,19 @@ export function mapAsset(rawAsset: Partial<Asset> & Record<string, any>): Asset 
     rawAsset.imageUrl ||
     rawAsset.images?.original?.url ||
     undefined;
+  const enhancedImageUrl =
+    rawAsset.enhancedImageUrl ||
+    rawAsset.images?.enhanced?.url ||
+    undefined;
   const processedImageUrl =
     rawAsset.processedImageUrl ||
     rawAsset.images?.processed?.url ||
+    undefined;
+  const thumbnailUrl =
     rawAsset.thumbnailUrl ||
     rawAsset.images?.thumbnail?.url ||
-    undefined;
+    processedImageUrl ||
+    originalImageUrl;
   const fileSizeMB =
     typeof rawAsset.fileSizeMB === 'number'
       ? rawAsset.fileSizeMB
@@ -54,10 +61,14 @@ export function mapAsset(rawAsset: Partial<Asset> & Record<string, any>): Asset 
     title: deriveTitle(rawAsset),
     imageUrl: originalImageUrl,
     originalImageUrl,
-    thumbnailUrl: processedImageUrl || originalImageUrl,
+    thumbnailUrl,
     processedImageUrl,
+    enhancedImageUrl,
+    detailImageUrl: enhancedImageUrl || processedImageUrl || originalImageUrl,
     fileSizeMB,
     uploadedAt,
+    enhancement: rawAsset.enhancement || { status: 'idle', attemptCount: 0 },
+    presentation: rawAsset.presentation || { themeOverrideId: null },
   } as Asset;
 }
 

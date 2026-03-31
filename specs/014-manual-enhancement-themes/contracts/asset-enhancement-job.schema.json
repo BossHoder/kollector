@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "asset-enhancement-job.schema.json",
+  "title": "Asset Enhancement Job Payload",
+  "description": "BullMQ payload contract for manual image enhancement jobs on queue asset-enhancement.",
+  "type": "object",
+  "required": [
+    "jobType",
+    "queue",
+    "assetId",
+    "userId",
+    "originalImageUrl",
+    "requestedAt",
+    "attempt"
+  ],
+  "properties": {
+    "jobType": {
+      "type": "string",
+      "const": "asset_image_enhancement"
+    },
+    "queue": {
+      "type": "string",
+      "const": "asset-enhancement"
+    },
+    "assetId": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{24}$"
+    },
+    "userId": {
+      "type": "string",
+      "pattern": "^[a-fA-F0-9]{24}$"
+    },
+    "originalImageUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "requestedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "attempt": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "resize": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "maxWidth": { "type": "integer", "minimum": 1 },
+            "maxHeight": { "type": "integer", "minimum": 1 },
+            "kernel": { "type": "string", "enum": ["lanczos"] }
+          },
+          "additionalProperties": false
+        },
+        "sharpen": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "method": { "type": "string", "enum": ["unsharp"] }
+          },
+          "additionalProperties": false
+        },
+        "crop": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "mode": { "type": "string", "enum": ["heuristic"] }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "jobType": "asset_image_enhancement",
+      "queue": "asset-enhancement",
+      "assetId": "507f1f77bcf86cd799439011",
+      "userId": "507f1f77bcf86cd799439012",
+      "originalImageUrl": "https://res.cloudinary.com/klectr/image/upload/v123/assets/original.jpg",
+      "requestedAt": "2026-03-24T09:00:00.000Z",
+      "attempt": 1,
+      "options": {
+        "resize": { "enabled": true, "maxWidth": 2048, "maxHeight": 2048, "kernel": "lanczos" },
+        "sharpen": { "enabled": true, "method": "unsharp" },
+        "crop": { "enabled": true, "mode": "heuristic" }
+      }
+    }
+  ]
+}

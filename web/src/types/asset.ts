@@ -23,6 +23,13 @@ export interface AssetImages {
   card?: {
     url: string;
   };
+  enhanced?: {
+    url: string;
+    publicId?: string;
+    width?: number;
+    height?: number;
+    generatedAt?: string;
+  };
 }
 
 export interface ConfidenceValue {
@@ -81,12 +88,27 @@ export interface Asset {
     brand?: string;
     model?: string;
   };
+  presentation?: {
+    themeOverrideId?: string | null;
+  };
+  enhancement?: {
+    status?: 'idle' | 'queued' | 'processing' | 'succeeded' | 'failed';
+    lastJobId?: string;
+    attemptCount?: number;
+    errorCode?: string;
+    errorMessage?: string;
+    requestedAt?: string;
+    completedAt?: string;
+  };
+  resolvedThemeId?: string;
   // Extended fields used by UI
   title?: string;
   imageUrl?: string;
   thumbnailUrl?: string;
   originalImageUrl?: string;
   processedImageUrl?: string;
+  enhancedImageUrl?: string;
+  detailImageUrl?: string;
   originalFilename?: string;
   fileSizeMB?: number;
   fileSizeBytes?: number;

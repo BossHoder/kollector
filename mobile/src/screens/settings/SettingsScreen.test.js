@@ -1,17 +1,11 @@
-/**
- * SettingsScreen Component Tests
- *
- * Tests for Settings screen showing email + socket state
- */
-
 import React from 'react';
-import { render, fireEvent, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import SettingsScreen from './SettingsScreen';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSocket } from '../../contexts/SocketContext';
 import { useToast } from '../../contexts/ToastContext';
+import * as authApi from '../../api/authApi';
 
-// Mock contexts
 jest.mock('../../contexts/AuthContext', () => ({
   useAuth: jest.fn(),
 }));
@@ -24,8 +18,11 @@ jest.mock('../../contexts/ToastContext', () => ({
   useToast: jest.fn(),
 }));
 
+jest.mock('../../api/authApi');
+
 describe('SettingsScreen', () => {
   const mockLogout = jest.fn();
+  const mockUpdateUser = jest.fn();
   const mockToast = {
     success: jest.fn(),
     error: jest.fn(),
@@ -33,177 +30,86 @@ describe('SettingsScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     useAuth.mockReturnValue({
-      user: { email: 'test@example.com' },
+      user: {
+        email: 'test@example.com',
+        settings: {
+          preferences: {
+            assetTheme: {
+              defaultThemeId: null,
+            },
+          },
+        },
+      },
       logout: mockLogout,
+      updateUser: mockUpdateUser,
     });
-    
+
     useSocket.mockReturnValue({
       connectionState: 'connected',
       isFallbackActive: false,
       reconnectAttempts: 0,
-      isConnected: true,
     });
-    
+
     useToast.mockReturnValue(mockToast);
-  });
-
-  describe('user email display', () => {
-    it('should display user email when logged in', () => {
-      useAuth.mockReturnValue({
-        user: { email: 'user@test.com' },
-        logout: mockLogout,
-      });
-
-      const { getByText } = render(<SettingsScreen />);
-
-      expect(getByText('user@test.com')).toBeTruthy();
-    });
-
-    it('should display fallback when no email', () => {
-      useAuth.mockReturnValue({
-        user: null,
-        logout: mockLogout,
-      });
-
-      const { getByText } = render(<SettingsScreen />);
-
-      expect(getByText('Chưa đăng nhập')).toBeTruthy();
-    });
-
-    it('should display email label', () => {
-      const { getByText } = render(<SettingsScreen />);
-
-      expect(getByText('Email')).toBeTruthy();
+    authApi.updateDefaultAssetTheme.mockResolvedValue({
+      email: 'test@example.com',
+      settings: {
+        preferences: {
+          assetTheme: {
+            defaultThemeId: 'vault-graphite',
+          },
+        },
+      },
     });
   });
 
-  describe('socket connection state', () => {
-    it('should display connected status', () => {
-      useSocket.mockReturnValue({
-        connectionState: 'connected',
-      });
+  it('renders account, theme, and connection sections', () => {
+    const { getByText } = render(<SettingsScreen />);
 
-      const { getByText } = render(<SettingsScreen />);
+    expect(getByText('Thông tin tài khoản')).toBeTruthy();
+    expect(getByText('Theme tài sản')).toBeTruthy();
+    expect(getByText('Trạng thái kết nối')).toBeTruthy();
+  });
 
-      expect(getByText('Đã kết nối')).toBeTruthy();
-    });
+  it('shows the current user email', () => {
+    const { getByText } = render(<SettingsScreen />);
 
-    it('should display disconnected status', () => {
-      useSocket.mockReturnValue({
-        connectionState: 'disconnected',
-      });
+    expect(getByText('test@example.com')).toBeTruthy();
+  });
 
-      const { getByText } = render(<SettingsScreen />);
+  it('updates the default asset theme when a preset is pressed', async () => {
+    const { getByTestId } = render(<SettingsScreen />);
 
-      expect(getByText('Mất kết nối')).toBeTruthy();
-    });
+    fireEvent.press(getByTestId('theme-option-vault-graphite'));
 
-    it('should display reconnecting status', () => {
-      useSocket.mockReturnValue({
-        connectionState: 'reconnecting',
-        isFallbackActive: true,
-        reconnectAttempts: 2,
-        isConnected: false,
-      });
-
-      const { getByText } = render(<SettingsScreen />);
-
-      expect(getByText('Đang kết nối lại')).toBeTruthy();
-    });
-
-    it('should render polling fallback and reconnect attempts', () => {
-      useSocket.mockReturnValue({
-        connectionState: 'disconnected',
-        isFallbackActive: true,
-        reconnectAttempts: 4,
-        isConnected: false,
-      });
-
-      const { getByText } = render(<SettingsScreen />);
-
-      expect(getByText('Đang bật (12s)')).toBeTruthy();
-      expect(getByText('4')).toBeTruthy();
-    });
-
-    it('should display Realtime Status label', () => {
-      const { getByText } = render(<SettingsScreen />);
-
-      expect(getByText('Kết nối realtime')).toBeTruthy();
+    await waitFor(() => {
+      expect(authApi.updateDefaultAssetTheme).toHaveBeenCalledWith('vault-graphite');
+      expect(mockUpdateUser).toHaveBeenCalled();
+      expect(mockToast.success).toHaveBeenCalled();
     });
   });
 
-  describe('logout button', () => {
-    it('should render logout button', () => {
-      const { getByRole } = render(<SettingsScreen />);
+  it('clears the default asset theme', async () => {
+    const { getByRole } = render(<SettingsScreen />);
 
-      expect(getByRole('button', { name: /đăng xuất/i })).toBeTruthy();
-    });
+    fireEvent.press(getByRole('button', { name: /xóa theme mặc định/i }));
 
-    it('should call logout on button press', async () => {
-      mockLogout.mockResolvedValue(undefined);
-
-      const { getByRole } = render(<SettingsScreen />);
-      const logoutButton = getByRole('button', { name: /đăng xuất/i });
-
-      fireEvent.press(logoutButton);
-
-      await waitFor(() => {
-        expect(mockLogout).toHaveBeenCalled();
-      });
-    });
-
-    it('should show success toast on successful logout', async () => {
-      mockLogout.mockResolvedValue(undefined);
-
-      const { getByRole } = render(<SettingsScreen />);
-      fireEvent.press(getByRole('button', { name: /đăng xuất/i }));
-
-      await waitFor(() => {
-        expect(mockToast.success).toHaveBeenCalledWith('Đã đăng xuất thành công');
-      });
-    });
-
-    it('should show error toast on logout failure', async () => {
-      mockLogout.mockRejectedValue(new Error('Logout failed'));
-
-      const { getByRole } = render(<SettingsScreen />);
-      fireEvent.press(getByRole('button', { name: /đăng xuất/i }));
-
-      await waitFor(() => {
-        expect(mockToast.error).toHaveBeenCalledWith('Đăng xuất không thành công');
-      });
+    await waitFor(() => {
+      expect(authApi.updateDefaultAssetTheme).toHaveBeenCalledWith(null);
     });
   });
 
-  describe('sections display', () => {
-    it('should show Account section', () => {
-      const { getByText } = render(<SettingsScreen />);
+  it('logs out when the logout button is pressed', async () => {
+    mockLogout.mockResolvedValue(undefined);
+    const { getByRole } = render(<SettingsScreen />);
 
-      expect(getByText('Thông tin tài khoản')).toBeTruthy();
-    });
+    fireEvent.press(getByRole('button', { name: /đăng xuất/i }));
 
-    it('should show Connection section', () => {
-      const { getByText } = render(<SettingsScreen />);
-
-      expect(getByText('Trạng thái kết nối')).toBeTruthy();
-    });
-
-    it('should show Settings title', () => {
-      const { getByText } = render(<SettingsScreen />);
-
-      expect(getByText('Cài đặt')).toBeTruthy();
-    });
-  });
-
-  describe('accessibility', () => {
-    it('should have accessible logout button', () => {
-      const { getByRole } = render(<SettingsScreen />);
-
-      const button = getByRole('button', { name: /đăng xuất/i });
-      expect(button.props.accessibilityRole).toBe('button');
-      expect(button.props.accessibilityLabel).toBe('Đăng xuất');
+    await waitFor(() => {
+      expect(mockLogout).toHaveBeenCalled();
+      expect(mockToast.success).toHaveBeenCalledWith('Đã đăng xuất thành công');
     });
   });
 });

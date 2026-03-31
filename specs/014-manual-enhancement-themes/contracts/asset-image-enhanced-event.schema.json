@@ -1,0 +1,62 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "asset-image-enhanced-event.schema.json",
+  "title": "Asset Image Enhanced Event",
+  "description": "Socket.io event payload emitted when manual image enhancement completes or fails. Additive event; existing asset_processed remains unchanged.",
+  "oneOf": [
+    { "$ref": "#/definitions/SuccessEvent" },
+    { "$ref": "#/definitions/FailureEvent" }
+  ],
+  "definitions": {
+    "SuccessEvent": {
+      "type": "object",
+      "required": ["event", "assetId", "status", "enhancedImageUrl", "attemptCount", "timestamp"],
+      "properties": {
+        "event": { "type": "string", "const": "asset_image_enhanced" },
+        "assetId": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{24}$"
+        },
+        "status": { "type": "string", "const": "succeeded" },
+        "enhancedImageUrl": { "type": "string", "format": "uri" },
+        "attemptCount": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    },
+    "FailureEvent": {
+      "type": "object",
+      "required": ["event", "assetId", "status", "error", "attemptCount", "timestamp"],
+      "properties": {
+        "event": { "type": "string", "const": "asset_image_enhanced" },
+        "assetId": {
+          "type": "string",
+          "pattern": "^[a-fA-F0-9]{24}$"
+        },
+        "status": { "type": "string", "const": "failed" },
+        "error": { "type": "string" },
+        "attemptCount": { "type": "integer", "minimum": 1, "maximum": 3 },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "event": "asset_image_enhanced",
+      "assetId": "507f1f77bcf86cd799439011",
+      "status": "succeeded",
+      "enhancedImageUrl": "https://res.cloudinary.com/klectr/image/upload/v123/assets/enhanced.jpg",
+      "attemptCount": 1,
+      "timestamp": "2026-03-24T09:01:00.000Z"
+    },
+    {
+      "event": "asset_image_enhanced",
+      "assetId": "507f1f77bcf86cd799439011",
+      "status": "failed",
+      "error": "Enhancement failed after 3 attempts",
+      "attemptCount": 3,
+      "timestamp": "2026-03-24T09:02:00.000Z"
+    }
+  ]
+}

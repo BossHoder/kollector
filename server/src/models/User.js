@@ -53,7 +53,10 @@ const userSchema = new mongoose.Schema({
         preferences: {
             theme: { type: String, enum: ['light', 'dark', 'system'], default: 'system' },
             language: { type: String, default: 'vi' },
-            currency: { type: String, default: 'USD' }
+            currency: { type: String, default: 'USD' },
+            assetTheme: {
+                defaultThemeId: { type: String, default: null }
+            }
         }
     },
 
