@@ -3,6 +3,34 @@ const User = require('../../models/User');
 const logger = require('../../config/logger');
 const { assertValidAssetThemePresetId } = require('../assets/theme-presets.catalog');
 
+function toPlainObject(value) {
+  if (!value) {
+    return value;
+  }
+
+  return typeof value.toObject === 'function' ? value.toObject() : value;
+}
+
+function normalizeUserSettings(settings) {
+  const normalizedSettings = toPlainObject(settings) || {};
+  const normalizedPreferences = toPlainObject(normalizedSettings.preferences) || {};
+  const normalizedAssetTheme = toPlainObject(normalizedPreferences.assetTheme) || {};
+
+  return {
+    ...normalizedSettings,
+    preferences: {
+      ...normalizedPreferences,
+      assetTheme: {
+        ...normalizedAssetTheme,
+        defaultThemeId:
+          normalizedAssetTheme.defaultThemeId === undefined
+            ? null
+            : normalizedAssetTheme.defaultThemeId,
+      },
+    },
+  };
+}
+
 /**
  * Auth Service
  * Handles user authentication logic
@@ -264,7 +292,7 @@ class AuthService {
       email: user.email,
       profile: user.profile,
       gamification: user.gamification,
-      settings: user.settings,
+      settings: normalizeUserSettings(user.settings),
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
