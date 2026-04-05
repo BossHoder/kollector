@@ -12,7 +12,13 @@
  * - Realtime updates via socket
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -41,6 +47,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { useAsset } from '../../hooks/useAsset';
 import { useRealtimeFallback } from '../../hooks/useRealtimeFallback';
 import {
+  ASSET_THEME_FALLBACK_ID,
   ASSET_THEME_PRESETS,
   getAssetThemePresetById,
   resolveAssetThemeId,
@@ -49,32 +56,144 @@ import { borderRadius, colors, spacing, touchTargetSize, typography } from '../.
 import { normalizeMetadata, getDisplayText } from '../../utils/assetMetadata';
 import { coerceBool } from '../../utils/coerceBool';
 
-function Card({ title, children, style }) {
+function hexToRgb(hex) {
+  if (typeof hex !== 'string') {
+    return null;
+  }
+
+  const normalizedHex = hex.trim().replace('#', '');
+
+  if (!/^[\da-f]{3}$|^[\da-f]{6}$/i.test(normalizedHex)) {
+    return null;
+  }
+
+  const expandedHex = normalizedHex.length === 3
+    ? normalizedHex.split('').map((value) => `${value}${value}`).join('')
+    : normalizedHex;
+
+  const colorValue = Number.parseInt(expandedHex, 16);
+
+  return {
+    r: (colorValue >> 16) & 255,
+    g: (colorValue >> 8) & 255,
+    b: colorValue & 255,
+  };
+}
+
+function withAlpha(hex, alpha) {
+  const rgb = hexToRgb(hex);
+
+  if (!rgb) {
+    return hex;
+  }
+
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+}
+
+function getContrastingTextColor(backgroundHex) {
+  const rgb = hexToRgb(backgroundHex);
+
+  if (!rgb) {
+    return colors.backgroundDark;
+  }
+
+  const luminance = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+
+  return luminance > 150 ? colors.backgroundDark : colors.textPrimary;
+}
+
+function buildAssetThemePalette(themePreset) {
+  const tokenSet = themePreset?.tokenSet || {};
+  const surface = tokenSet.surface || colors.backgroundDark;
+  const surfaceElevated = tokenSet.surfaceElevated || colors.surfaceDark;
+  const textPrimary = tokenSet.text || colors.textPrimary;
+  const accent = tokenSet.accent || colors.primary;
+
+  return {
+    surface,
+    surfaceElevated,
+    textPrimary,
+    textSecondary: withAlpha(textPrimary, 0.78),
+    textMuted: withAlpha(textPrimary, 0.58),
+    accent,
+    accentSoft: withAlpha(accent, 0.18),
+    accentBorder: withAlpha(accent, 0.42),
+    accentText: getContrastingTextColor(accent),
+    border: withAlpha(textPrimary, 0.12),
+    divider: withAlpha(textPrimary, 0.12),
+    chipBackground: withAlpha(textPrimary, 0.06),
+    chipSelectedBackground: withAlpha(accent, 0.16),
+    chipSelectedText: textPrimary,
+    placeholderBackground: withAlpha(surfaceElevated, 0.95),
+  };
+}
+
+const DEFAULT_ASSET_THEME_PALETTE = buildAssetThemePalette(
+  getAssetThemePresetById(ASSET_THEME_FALLBACK_ID)
+);
+const AssetThemeContext = createContext(DEFAULT_ASSET_THEME_PALETTE);
+
+function Card({ title, children, style, theme }) {
+  const contextTheme = useContext(AssetThemeContext);
+  const resolvedTheme = theme || contextTheme;
+
   return (
-    <View style={[styles.card, style]}>
-      {title ? <Text style={styles.cardTitle}>{title}</Text> : null}
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: resolvedTheme.surfaceElevated,
+          borderColor: resolvedTheme.border,
+        },
+        style,
+      ]}
+    >
+      {title ? (
+        <Text style={[styles.cardTitle, { color: resolvedTheme.textPrimary }]}>{title}</Text>
+      ) : null}
       {children}
     </View>
   );
 }
 
-function InfoRow({ label, value }) {
+function InfoRow({ label, value, theme }) {
+  const contextTheme = useContext(AssetThemeContext);
+  const resolvedTheme = theme || contextTheme;
   const displayValue = getDisplayText(value) || '-';
 
   return (
-    <View style={styles.infoRow}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{displayValue}</Text>
+    <View style={[styles.infoRow, { borderBottomColor: resolvedTheme.divider }]}>
+      <Text style={[styles.infoLabel, { color: resolvedTheme.textSecondary }]}>{label}</Text>
+      <Text style={[styles.infoValue, { color: resolvedTheme.textPrimary }]}>{displayValue}</Text>
     </View>
   );
 }
 
-function ThemeChip({ label, accentColor, selected, onPress, disabled, testID }) {
+function ThemeChip({
+  label,
+  accentColor,
+  selected,
+  onPress,
+  disabled,
+  testID,
+  theme,
+}) {
+  const contextTheme = useContext(AssetThemeContext);
+  const resolvedTheme = theme || contextTheme;
+
   return (
     <TouchableOpacity
       style={[
         styles.themeChip,
+        {
+          borderColor: resolvedTheme.border,
+          backgroundColor: resolvedTheme.chipBackground,
+        },
         selected && styles.themeChipSelected,
+        selected && {
+          borderColor: resolvedTheme.accentBorder,
+          backgroundColor: resolvedTheme.chipSelectedBackground,
+        },
         disabled && styles.themeChipDisabled,
       ]}
       onPress={onPress}
@@ -83,14 +202,23 @@ function ThemeChip({ label, accentColor, selected, onPress, disabled, testID }) 
       testID={testID}
     >
       <View style={[styles.themeAccent, { backgroundColor: accentColor }]} />
-      <Text style={[styles.themeChipText, selected && styles.themeChipTextSelected]}>
+      <Text
+        style={[
+          styles.themeChipText,
+          { color: resolvedTheme.textSecondary },
+          selected && styles.themeChipTextSelected,
+          selected && { color: resolvedTheme.chipSelectedText },
+        ]}
+      >
         {label}
       </Text>
     </TouchableOpacity>
   );
 }
 
-function ConditionMeter({ condition }) {
+function ConditionMeter({ condition, theme }) {
+  const contextTheme = useContext(AssetThemeContext);
+  const resolvedTheme = theme || contextTheme;
   const conditionMap = {
     mint: { label: 'Tuyệt vời', width: 100, color: colors.success },
     excellent: { label: 'Xuất sắc', width: 90, color: '#22c55e' },
@@ -128,7 +256,7 @@ function ConditionMeter({ condition }) {
           {config.label}
         </Text>
       </View>
-      <View style={styles.conditionBar}>
+      <View style={[styles.conditionBar, { backgroundColor: resolvedTheme.chipBackground }]}>
         <View
           style={[
             styles.conditionFill,
@@ -303,13 +431,24 @@ export default function AssetDetailScreen() {
         },
       });
 
-      updateAsset((prev) => ({
-        ...(prev || {}),
-        ...updatedAsset,
-        presentation: updatedAsset.presentation || {
-          themeOverrideId,
-        },
-      }));
+      updateAsset((prev) => {
+        const hasReturnedThemeOverrideId = Object.prototype.hasOwnProperty.call(
+          updatedAsset?.presentation || {},
+          'themeOverrideId'
+        );
+
+        return {
+          ...(prev || {}),
+          ...updatedAsset,
+          presentation: {
+            ...(prev?.presentation || {}),
+            ...(updatedAsset?.presentation || {}),
+            themeOverrideId: hasReturnedThemeOverrideId
+              ? updatedAsset.presentation.themeOverrideId
+              : themeOverrideId,
+          },
+        };
+      });
 
       toast.success(
         themeOverrideId
@@ -471,8 +610,10 @@ export default function AssetDetailScreen() {
   const assetThemeOverrideId = asset.presentation?.themeOverrideId ?? null;
   const userDefaultThemeId = user?.settings?.preferences?.assetTheme?.defaultThemeId ?? null;
   const resolvedThemeId = resolveAssetThemeId(assetThemeOverrideId, userDefaultThemeId);
-  const resolvedTheme = getAssetThemePresetById(resolvedThemeId);
+  const resolvedTheme = getAssetThemePresetById(resolvedThemeId)
+    || getAssetThemePresetById(ASSET_THEME_FALLBACK_ID);
   const overrideTheme = getAssetThemePresetById(assetThemeOverrideId);
+  const themePalette = buildAssetThemePalette(resolvedTheme);
 
   const processedImageUrl =
     asset.detailImageUrl
@@ -503,8 +644,9 @@ export default function AssetDetailScreen() {
     : getDisplayText(analysis.estimatedValue);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <AssetThemeContext.Provider value={themePalette}>
+      <SafeAreaView style={[styles.container, { backgroundColor: themePalette.surface }]}>
+        <View style={[styles.header, { borderBottomColor: themePalette.border }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
@@ -513,7 +655,7 @@ export default function AssetDetailScreen() {
         >
           <Text style={styles.backText}>← Quay lại</Text>
         </TouchableOpacity>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={[styles.title, { color: themePalette.textPrimary }]} numberOfLines={1}>
           {assetTitle}
         </Text>
         <View style={styles.statusPillContainer}>
@@ -521,18 +663,18 @@ export default function AssetDetailScreen() {
         </View>
       </View>
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: spacing.xxxl + insets.bottom }]}
-        refreshControl={(
-          <RefreshControl
-            refreshing={coerceBool(isLoading)}
-            onRefresh={refetch}
-            tintColor={colors.primary}
-          />
-        )}
-        showsVerticalScrollIndicator={false}
-      >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: spacing.xxxl + insets.bottom }]}
+          refreshControl={(
+            <RefreshControl
+              refreshing={coerceBool(isLoading)}
+              onRefresh={refetch}
+              tintColor={themePalette.accent}
+            />
+          )}
+          showsVerticalScrollIndicator={false}
+        >
         <View style={styles.imageSection}>
           {!isProcessing ? (
             <View style={{ position: 'relative' }}>
@@ -543,6 +685,7 @@ export default function AssetDetailScreen() {
                 onToggle={setShowProcessed}
                 disabled={isProcessing || canMaintain}
                 testID="image-toggle"
+                theme={themePalette}
               />
               {canMaintain ? (
                 <AssetMaintenanceRubMask
@@ -559,16 +702,16 @@ export default function AssetDetailScreen() {
         </View>
 
         {isFailed && errorMessage ? (
-          <Card style={styles.errorCard}>
+          <Card style={styles.errorCard} theme={themePalette}>
             <Text style={styles.errorCardTitle}>Phân tích thất bại</Text>
-            <Text style={styles.errorCardMessage}>{errorMessage}</Text>
+            <Text style={[styles.errorCardMessage, { color: themePalette.textSecondary }]}>{errorMessage}</Text>
           </Card>
         ) : null}
 
         {isPartial ? (
-          <Card style={styles.warningCard}>
+          <Card style={styles.warningCard} theme={themePalette}>
             <Text style={styles.warningCardTitle}>Phân tích một phần</Text>
-            <Text style={styles.warningCardMessage}>
+            <Text style={[styles.warningCardMessage, { color: themePalette.textSecondary }]}>
               Một số dữ liệu phân tích có thể không đầy đủ. Bạn có thể thử lại để có kết quả đầy đủ.
             </Text>
           </Card>
@@ -586,6 +729,9 @@ export default function AssetDetailScreen() {
             style={[
               styles.actionButton,
               styles.retryActionButton,
+              {
+                backgroundColor: themePalette.accent,
+              },
               (enhancementBusy || enhancementLoading) && styles.disabledAction,
             ]}
             onPress={handleEnhancement}
@@ -595,9 +741,9 @@ export default function AssetDetailScreen() {
             testID="enhance-image-button"
           >
             {enhancementLoading ? (
-              <ActivityIndicator size="small" color={colors.backgroundDark} />
+              <ActivityIndicator size="small" color={themePalette.accentText} />
             ) : (
-              <Text style={styles.retryActionText}>
+              <Text style={[styles.retryActionText, { color: themePalette.accentText }]}>
                 {enhancementBusy ? 'Đang xử lý tăng cường ảnh' : 'Tăng cường ảnh'}
               </Text>
             )}
@@ -619,10 +765,11 @@ export default function AssetDetailScreen() {
                 key={preset.id}
                 label={preset.name}
                 accentColor={preset.tokenSet.accent}
-                selected={assetThemeOverrideId === preset.id}
+                selected={resolvedThemeId === preset.id}
                 onPress={() => handleThemeOverride(preset.id)}
                 disabled={themeLoading}
                 testID={`asset-theme-${preset.id}`}
+                theme={themePalette}
               />
             ))}
           </View>
@@ -631,6 +778,10 @@ export default function AssetDetailScreen() {
               styles.actionButton,
               styles.archiveActionButton,
               styles.clearThemeButton,
+              {
+                backgroundColor: themePalette.chipBackground,
+                borderColor: themePalette.border,
+              },
               themeLoading && styles.disabledAction,
             ]}
             onPress={() => handleThemeOverride(null)}
@@ -639,7 +790,7 @@ export default function AssetDetailScreen() {
             accessibilityLabel="Xóa theme override"
           >
             {themeLoading ? (
-              <ActivityIndicator size="small" color={colors.textSecondary} />
+              <ActivityIndicator size="small" color={themePalette.textSecondary} />
             ) : (
               <Text style={styles.archiveActionText}>Xóa theme override</Text>
             )}
@@ -654,10 +805,10 @@ export default function AssetDetailScreen() {
 
         {!isProcessing && !canMaintain ? (
           <Card title="Maintenance">
-            <Text style={styles.maintenanceHint} testID="maintenance-disabled-message">
+            <Text style={[styles.maintenanceHint, { color: themePalette.textSecondary }]} testID="maintenance-disabled-message">
               {maintenanceDisabled
                 ? 'Maintenance is disabled until this asset becomes active.'
-                : 'This asset is already above 80 health and does not need maintenance yet.'}
+                : 'Tài sản đang còn mới, trên 80 điểm sạch sẽ. Chưa cần lau chùi..'}
             </Text>
           </Card>
         ) : null}
@@ -698,7 +849,13 @@ export default function AssetDetailScreen() {
         <View style={styles.actionsContainer}>
           {canRetry ? (
             <TouchableOpacity
-              style={[styles.actionButton, styles.retryActionButton]}
+              style={[
+                styles.actionButton,
+                styles.retryActionButton,
+                {
+                  backgroundColor: themePalette.accent,
+                },
+              ]}
               onPress={handleRetry}
               disabled={actionLoading}
               accessibilityLabel="Thử lại phân tích"
@@ -706,7 +863,7 @@ export default function AssetDetailScreen() {
               testID="retry-button"
             >
               {actionLoading ? (
-                <ActivityIndicator size="small" color={colors.textPrimary} />
+                <ActivityIndicator size="small" color={themePalette.accentText} />
               ) : (
                 <Text style={styles.retryActionText}>Thử lại phân tích</Text>
               )}
@@ -718,6 +875,10 @@ export default function AssetDetailScreen() {
               style={[
                 styles.actionButton,
                 styles.archiveActionButton,
+                {
+                  backgroundColor: canRetry ? 'transparent' : themePalette.chipBackground,
+                  borderColor: themePalette.border,
+                },
                 canRetry && styles.secondaryAction,
               ]}
               onPress={handleArchive}
@@ -729,6 +890,7 @@ export default function AssetDetailScreen() {
               <Text
                 style={[
                   styles.archiveActionText,
+                  { color: themePalette.textSecondary },
                   canRetry && styles.secondaryActionText,
                 ]}
               >
@@ -739,8 +901,9 @@ export default function AssetDetailScreen() {
         </View>
 
         <View style={[styles.bottomSpacer, { height: spacing.xxl + insets.bottom }]} />
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
+    </AssetThemeContext.Provider>
   );
 }
 

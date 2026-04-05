@@ -88,7 +88,7 @@ class GamificationService {
       throw createHttpError(
         429,
         'MAINTENANCE_COOLDOWN',
-        'This asset has already been maintained today'
+        'Đã bảo trì tài sản này hôm nay. Vui lòng thử lại vào ngày mai.'
       );
     }
 

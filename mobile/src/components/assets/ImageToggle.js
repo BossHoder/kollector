@@ -38,6 +38,7 @@ export function ImageToggle({
   value,
   onToggle,
   onChange,
+  theme,
   disabled: rawDisabled = false,
   testID = 'image-toggle',
   showLoadingIndicator: rawShowLoadingIndicator = false,
@@ -78,6 +79,16 @@ export function ImageToggle({
     internalShowProcessed,
   ]);
 
+  const palette = useMemo(() => ({
+    accent: theme?.accent || colors.primary,
+    accentText: theme?.accentText || colors.white,
+    textSecondary: theme?.textSecondary || colors.gray700,
+    textMuted: theme?.textMuted || colors.gray500,
+    border: theme?.border || colors.gray300,
+    surface: theme?.surface || colors.gray50,
+    surfaceElevated: theme?.surfaceElevated || colors.gray100,
+  }), [theme]);
+
   // Current image to display
   const currentUri = normalizedShowProcessed ? processedUri : originalUri;
   const isLoading = normalizedShowProcessed ? processedLoading : originalLoading;
@@ -116,7 +127,7 @@ export function ImageToggle({
     if (!singleUri) {
       return (
         <View style={styles.container} testID={testID}>
-          <View style={styles.placeholder}>
+          <View style={[styles.placeholder, { backgroundColor: palette.surfaceElevated }]}>
             <Text style={styles.placeholderText}>Không có ảnh</Text>
           </View>
         </View>
@@ -140,10 +151,13 @@ export function ImageToggle({
   return (
     <View style={styles.container} testID={testID}>
       {/* Image */}
-      <View style={styles.imageWrapper}>
+      <View style={[styles.imageWrapper, { backgroundColor: palette.surfaceElevated }]}>
         {(isLoading || showLoadingIndicator) && (
-          <View style={styles.loadingOverlay} testID="image-loading">
-            <ActivityIndicator size="large" color={colors.primary} />
+          <View
+            style={[styles.loadingOverlay, { backgroundColor: palette.surfaceElevated }]}
+            testID="image-loading"
+          >
+            <ActivityIndicator size="large" color={palette.accent} />
           </View>
         )}
 
@@ -171,12 +185,17 @@ export function ImageToggle({
       </View>
 
       {/* Toggle buttons */}
-      <View style={styles.toggleContainer}>
+      <View style={[styles.toggleContainer, { borderColor: palette.border }]}>
         <TouchableOpacity
           style={[
             styles.toggleButton,
             styles.toggleButtonLeft,
+            {
+              backgroundColor: palette.surface,
+              borderRightColor: palette.border,
+            },
             normalizedShowProcessed && styles.toggleButtonActive,
+            normalizedShowProcessed && { backgroundColor: palette.accent },
           ]}
           onPress={() => handleToggle(true)}
           disabled={disabled}
@@ -188,7 +207,9 @@ export function ImageToggle({
           <Text
             style={[
               styles.toggleButtonText,
+              { color: palette.textSecondary },
               normalizedShowProcessed && styles.toggleButtonTextActive,
+              normalizedShowProcessed && { color: palette.accentText },
             ]}
           >
             Đã xử lý
@@ -199,7 +220,11 @@ export function ImageToggle({
           style={[
             styles.toggleButton,
             styles.toggleButtonRight,
+            {
+              backgroundColor: palette.surface,
+            },
             !normalizedShowProcessed && styles.toggleButtonActive,
+            !normalizedShowProcessed && { backgroundColor: palette.accent },
           ]}
           onPress={() => handleToggle(false)}
           disabled={disabled}
@@ -211,7 +236,9 @@ export function ImageToggle({
           <Text
             style={[
               styles.toggleButtonText,
+              { color: palette.textSecondary },
               !normalizedShowProcessed && styles.toggleButtonTextActive,
+              !normalizedShowProcessed && { color: palette.accentText },
             ]}
           >
             Gốc

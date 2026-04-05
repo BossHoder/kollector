@@ -398,6 +398,43 @@ describe('AssetDetailScreen', () => {
     });
   });
 
+  describe('Theme Override', () => {
+    beforeEach(() => {
+      useRoute.mockReturnValue({ params: { assetId: 'asset-ready' } });
+      assetsApi.getAsset.mockResolvedValue({
+        ...mockAssets.ready,
+        presentation: { themeOverrideId: null },
+      });
+      assetsApi.updateAsset.mockResolvedValue({
+        ...mockAssets.ready,
+        presentation: { themeOverrideId: 'museum-forest' },
+      });
+    });
+
+    it('updates the applied theme when selecting a preset override', async () => {
+      render(<AssetDetailScreen />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Không')).toBeTruthy();
+      });
+
+      fireEvent.press(screen.getByTestId('asset-theme-museum-forest'));
+
+      await waitFor(() => {
+        expect(assetsApi.updateAsset).toHaveBeenCalledWith('asset-ready', {
+          presentation: {
+            themeOverrideId: 'museum-forest',
+          },
+        });
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByText('Không')).toBeNull();
+        expect(screen.getAllByText('Museum Forest').length).toBeGreaterThan(1);
+      });
+    });
+  });
+
   describe('Error State', () => {
     it('should show error state when fetch fails', async () => {
       useRoute.mockReturnValue({ params: { assetId: 'asset-invalid' } });

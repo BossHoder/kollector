@@ -86,7 +86,32 @@ export default function SettingsScreen() {
     try {
       setThemeLoading(true);
       const updatedUser = await updateDefaultAssetTheme(nextThemeId);
-      await updateUser(updatedUser);
+      await updateUser((prevUser) => {
+        const hasReturnedDefaultThemeId = Object.prototype.hasOwnProperty.call(
+          updatedUser?.settings?.preferences?.assetTheme || {},
+          'defaultThemeId'
+        );
+
+        return {
+          ...(prevUser || {}),
+          ...(updatedUser || {}),
+          settings: {
+            ...(prevUser?.settings || {}),
+            ...(updatedUser?.settings || {}),
+            preferences: {
+              ...(prevUser?.settings?.preferences || {}),
+              ...(updatedUser?.settings?.preferences || {}),
+              assetTheme: {
+                ...(prevUser?.settings?.preferences?.assetTheme || {}),
+                ...(updatedUser?.settings?.preferences?.assetTheme || {}),
+                defaultThemeId: hasReturnedDefaultThemeId
+                  ? updatedUser.settings.preferences.assetTheme.defaultThemeId
+                  : nextThemeId,
+              },
+            },
+          },
+        };
+      });
       toast.success(
         nextThemeId
           ? 'Đã cập nhật theme mặc định cho tài sản'
@@ -125,7 +150,7 @@ export default function SettingsScreen() {
                 key={preset.id}
                 label={preset.name}
                 accentColor={preset.tokenSet.accent}
-                selected={defaultThemeId === preset.id}
+                selected={resolvedThemeId === preset.id}
                 disabled={themeLoading}
                 onPress={() => handleThemeChange(preset.id)}
                 testID={`theme-option-${preset.id}`}
