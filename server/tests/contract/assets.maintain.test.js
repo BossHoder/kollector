@@ -28,6 +28,32 @@ function buildActiveAsset(overrides = {}) {
   };
 }
 
+async function withFixedSystemDate(fixedNow, callback) {
+  const RealDate = Date;
+
+  class FixedDate extends RealDate {
+    constructor(...args) {
+      if (args.length === 0) {
+        return new RealDate(fixedNow);
+      }
+
+      return new RealDate(...args);
+    }
+
+    static now() {
+      return fixedNow.getTime();
+    }
+  }
+
+  global.Date = FixedDate;
+
+  try {
+    return await callback();
+  } finally {
+    global.Date = RealDate;
+  }
+}
+
 describe('POST /api/assets/:assetId/maintain', () => {
   let accessToken;
   let userId;
@@ -258,29 +284,34 @@ describe('POST /api/assets/:assetId/maintain', () => {
   });
 
   it('returns 429 when the asset was already maintained today', async () => {
-    const asset = await Asset.create(buildActiveAsset({
-      userId,
-      condition: {
-        health: 50,
-        decayRate: 2,
-        lastDecayDate: null,
-        lastMaintenanceDate: new Date(),
-        maintenanceCount: 1,
-      },
-      version: 2,
-    }));
+    const fixedNow = new Date();
+    fixedNow.setUTCHours(12, 0, 0, 0);
 
-    const response = await request(app)
-      .post(`/api/assets/${asset._id}/maintain`)
-      .set('Authorization', `Bearer ${accessToken}`)
-      .send({
+    await withFixedSystemDate(fixedNow, async () => {
+      const asset = await Asset.create(buildActiveAsset({
+        userId,
+        condition: {
+          health: 50,
+          decayRate: 2,
+          lastDecayDate: null,
+          lastMaintenanceDate: new Date(),
+          maintenanceCount: 1,
+        },
         version: 2,
-        cleanedPercentage: 90,
-        durationMs: 2200,
-      })
-      .expect(429);
+      }));
 
-    expect(response.body.error.code).toBe('MAINTENANCE_COOLDOWN');
+      const response = await request(app)
+        .post(`/api/assets/${asset._id}/maintain`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({
+          version: 2,
+          cleanedPercentage: 90,
+          durationMs: 2200,
+        })
+        .expect(429);
+
+      expect(response.body.error.code).toBe('MAINTENANCE_COOLDOWN');
+    });
   });
 
   it('returns 401 without authentication', async () => {
