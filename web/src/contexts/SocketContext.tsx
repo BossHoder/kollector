@@ -149,7 +149,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
               ...(oldAsset.enhancement || {}),
               status: event.status,
               attemptCount: event.attemptCount,
-              errorMessage: 'error' in event ? event.error : null,
+              errorMessage: 'error' in event ? event.error : undefined,
               completedAt: event.timestamp,
             },
           };
