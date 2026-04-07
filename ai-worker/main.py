@@ -1262,10 +1262,23 @@ def analyze(
         postprocess_budget = _stage_budget(
             remaining_ms(), INFERENCE_BUDGET_MS, "Foreground zoom"
         )
-        processed_bytes = _zoom_background_removed_image(
-            processed_bytes,
-            postprocess_budget,
-        )
+        try:
+            processed_bytes = _zoom_background_removed_image(
+                processed_bytes,
+                postprocess_budget,
+            )
+        except BudgetExceededError:
+            raise
+        except Exception as zoom_exc:
+            logger.warning(
+                "foreground_zoom_fallback requestId=%s correlationId=%s assetId=%s jobId=%s category=%s error=%s",
+                request_id,
+                correlation_id,
+                x_asset_id,
+                x_job_id,
+                request.category,
+                zoom_exc,
+            )
 
         upload_budget = _stage_budget(remaining_ms(), UPLOAD_BUDGET_MS, "Upload")
         processed_image_url = _upload_processed_image(
