@@ -23,35 +23,34 @@ let mockSocketStatus: 'disconnected' | 'connecting' | 'connected' | 'error' = 'c
 let mockStatusCallback: ((status: string) => void) | null = null;
 let mockEventHandlers: Map<string, ((data: unknown) => void)[]> = new Map();
 
-vi.mock('@/lib/socket', () => ({
-  socketManager: {
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-    onStatusChange: vi.fn((callback) => {
-      mockStatusCallback = callback;
-      return () => {
-        mockStatusCallback = null;
-      };
-    }),
-    on: vi.fn((event, handler) => {
-      const handlers = mockEventHandlers.get(event) || [];
-      handlers.push(handler);
-      mockEventHandlers.set(event, handlers);
-    }),
-    off: vi.fn((event, handler) => {
-      const handlers = mockEventHandlers.get(event) || [];
-      mockEventHandlers.set(event, handlers.filter(h => h !== handler));
-    }),
-    emit: vi.fn(),
-    isConnected: () => mockSocketStatus === 'connected',
-  },
-  SocketStatus: {
-    disconnected: 'disconnected',
-    connecting: 'connecting',
-    connected: 'connected',
-    error: 'error',
-  },
-}));
+vi.mock('@/lib/socket', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/socket')>();
+
+  return {
+    ...actual,
+    socketManager: {
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      onStatusChange: vi.fn((callback) => {
+        mockStatusCallback = callback;
+        return () => {
+          mockStatusCallback = null;
+        };
+      }),
+      on: vi.fn((event, handler) => {
+        const handlers = mockEventHandlers.get(event) || [];
+        handlers.push(handler);
+        mockEventHandlers.set(event, handlers);
+      }),
+      off: vi.fn((event, handler) => {
+        const handlers = mockEventHandlers.get(event) || [];
+        mockEventHandlers.set(event, handlers.filter(h => h !== handler));
+      }),
+      emit: vi.fn(),
+      isConnected: () => mockSocketStatus === 'connected',
+    },
+  };
+});
 
 // Mock localStorage
 const localStorageMock = (() => {
