@@ -17,6 +17,10 @@ const User = require('../../../src/models/User');
 const Asset = require('../../../src/models/Asset');
 const authService = require('../../../src/modules/auth/auth.service');
 const { connectDatabase, disconnectDatabase } = require('../../../src/config/database');
+const {
+  addToEnhancementQueue,
+  getEnhancementQueueMetrics,
+} = require('../../../src/modules/assets/assets.enhancement.queue');
 
 jest.setTimeout(30000);
 
@@ -33,6 +37,16 @@ describe('POST /api/assets/:id/enhance-image', () => {
   });
 
   beforeEach(async () => {
+    addToEnhancementQueue.mockResolvedValue('enhancement-job-123');
+    getEnhancementQueueMetrics.mockResolvedValue({
+      waiting: 0,
+      active: 0,
+      completed: 0,
+      failed: 0,
+      delayed: 0,
+      paused: 0,
+    });
+
     await User.deleteMany({});
     await Asset.deleteMany({});
 
