@@ -387,6 +387,40 @@ describe('AssetDetailScreen', () => {
     });
   });
 
+  describe('Enhancement Workflow', () => {
+    beforeEach(() => {
+      useRoute.mockReturnValue({ params: { assetId: 'asset-ready' } });
+      assetsApi.getAsset.mockResolvedValue({
+        ...mockAssets.ready,
+        enhancement: { status: 'idle', attemptCount: 0 },
+      });
+      assetsApi.triggerEnhancement.mockResolvedValue({
+        data: {
+          status: 'queued',
+          jobId: 'enhancement-job-123',
+        },
+      });
+    });
+
+    it('should move the asset into processing while the enhancement workflow runs', async () => {
+      render(<AssetDetailScreen />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('enhance-image-button')).toBeTruthy();
+      });
+
+      fireEvent.press(screen.getByTestId('enhance-image-button'));
+
+      await waitFor(() => {
+        expect(assetsApi.triggerEnhancement).toHaveBeenCalledWith('asset-ready');
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('processing-overlay')).toBeTruthy();
+      });
+    });
+  });
+
   describe('Loading State', () => {
     it('should show loading state while fetching', () => {
       useRoute.mockReturnValue({ params: { assetId: 'asset-ready' } });

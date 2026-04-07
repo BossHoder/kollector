@@ -82,12 +82,27 @@ export function SocketProvider({ children }: SocketProviderProps) {
 
           const aiMetadata = 'aiMetadata' in event ? event.aiMetadata : oldAsset.aiMetadata;
           const errorMessage = 'error' in event ? event.error : undefined;
+          const processedImageUrl =
+            'processedImageUrl' in event ? event.processedImageUrl : oldAsset.processedImageUrl;
 
           return {
             ...oldAsset,
             status: event.status,
             aiMetadata,
-            ...(errorMessage && { error: errorMessage }),
+            images: {
+              ...(oldAsset.images || {}),
+              ...(processedImageUrl
+                ? {
+                    processed: {
+                      ...(oldAsset.images?.processed || {}),
+                      url: processedImageUrl,
+                    },
+                  }
+                : {}),
+            },
+            processedImageUrl,
+            detailImageUrl: processedImageUrl || oldAsset.detailImageUrl,
+            error: errorMessage,
           };
         }
       );
@@ -126,6 +141,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
 
           return {
             ...oldAsset,
+            status: event.status === 'failed' ? 'failed' : oldAsset.status,
             images: {
               ...(oldAsset.images || {}),
               ...(event.status === 'succeeded'
@@ -141,10 +157,6 @@ export function SocketProvider({ children }: SocketProviderProps) {
               event.status === 'succeeded'
                 ? event.enhancedImageUrl
                 : oldAsset.enhancedImageUrl,
-            detailImageUrl:
-              event.status === 'succeeded'
-                ? event.enhancedImageUrl
-                : oldAsset.detailImageUrl,
             enhancement: {
               ...(oldAsset.enhancement || {}),
               status: event.status,
@@ -152,6 +164,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
               errorMessage: 'error' in event ? event.error : undefined,
               completedAt: event.timestamp,
             },
+            error: event.status === 'failed' ? event.error : oldAsset.error,
           };
         }
       );
@@ -159,7 +172,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
 
       if (event.status === 'succeeded') {
-        showSuccess('Ảnh chi tiết đã được tăng cường.');
+        showInfo('Enhancement complete. Background cleanup is continuing.');
       } else {
         showError(`Tăng cường ảnh thất bại: ${event.error}`);
       }
@@ -170,7 +183,7 @@ export function SocketProvider({ children }: SocketProviderProps) {
     return () => {
       socketManager.off<AssetImageEnhancedEvent>(ASSET_IMAGE_ENHANCED_EVENT, handleAssetImageEnhanced);
     };
-  }, [isAuthenticated, queryClient, showError, showSuccess]);
+  }, [isAuthenticated, queryClient, showError, showInfo]);
 
   // Subscribe to specific asset updates
   const subscribeToAsset = useCallback((assetId: string) => {

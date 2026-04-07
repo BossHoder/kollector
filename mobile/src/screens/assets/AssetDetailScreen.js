@@ -303,12 +303,32 @@ export default function AssetDetailScreen() {
   useEffect(() => {
     const unsubscribe = onAssetProcessed((payload) => {
       if (payload.assetId === assetId) {
-        updateAsset({
-          status: payload.status,
-          aiMetadata: payload.aiMetadata,
-          aiAnalysis: payload.aiMetadata,
-          processedImageUrl: payload.processedImageUrl,
-          error: payload.error || null,
+        updateAsset((prev) => {
+          if (!prev) {
+            return prev;
+          }
+
+          const nextImages = {
+            ...(prev.images || {}),
+          };
+
+          if (payload.processedImageUrl) {
+            nextImages.processed = {
+              ...(prev.images?.processed || {}),
+              url: payload.processedImageUrl,
+            };
+          }
+
+          return {
+            ...prev,
+            status: payload.status,
+            aiMetadata: payload.aiMetadata,
+            aiAnalysis: payload.aiMetadata,
+            images: nextImages,
+            processedImageUrl: payload.processedImageUrl || prev.processedImageUrl,
+            detailImageUrl: payload.processedImageUrl || prev.detailImageUrl,
+            error: payload.error || null,
+          };
         });
       }
     });
@@ -350,7 +370,8 @@ export default function AssetDetailScreen() {
           ...prev,
           images: nextImages,
           enhancedImageUrl: payload.enhancedImageUrl || prev.enhancedImageUrl,
-          detailImageUrl: payload.enhancedImageUrl || prev.detailImageUrl,
+          status: payload.status === 'failed' ? 'failed' : prev.status,
+          error: payload.status === 'failed' ? payload.error || prev.error : prev.error,
           enhancement: nextEnhancement,
         };
       });
@@ -405,6 +426,7 @@ export default function AssetDetailScreen() {
 
         return {
           ...prev,
+          status: 'processing',
           enhancement: {
             ...(prev.enhancement || {}),
             status: response?.data?.status || 'queued',
@@ -414,9 +436,9 @@ export default function AssetDetailScreen() {
           },
         };
       });
-      toast.success('Đã xếp hàng tăng cường ảnh');
+      toast.success('Đã xếp hàng tăng cường và tái xử lý ảnh');
     } catch (error) {
-      toast.error(error?.message || 'Không thể tăng cường ảnh');
+      toast.error(error?.message || 'Không thể khởi động workflow tăng cường ảnh');
     } finally {
       setEnhancementLoading(false);
     }
@@ -607,6 +629,7 @@ export default function AssetDetailScreen() {
   const enhancement = asset.enhancement || {};
   const enhancementStatus = enhancement.status || 'idle';
   const enhancementBusy = enhancementStatus === 'queued' || enhancementStatus === 'processing';
+  const enhancementWorkflowBusy = enhancementBusy || enhancementLoading || isProcessing;
   const assetThemeOverrideId = asset.presentation?.themeOverrideId ?? null;
   const userDefaultThemeId = user?.settings?.preferences?.assetTheme?.defaultThemeId ?? null;
   const resolvedThemeId = resolveAssetThemeId(assetThemeOverrideId, userDefaultThemeId);
@@ -616,10 +639,11 @@ export default function AssetDetailScreen() {
   const themePalette = buildAssetThemePalette(resolvedTheme);
 
   const processedImageUrl =
-    asset.detailImageUrl
+    asset.processedImageUrl
+    || asset.images?.processed?.url
+    || asset.detailImageUrl
     || asset.enhancedImageUrl
     || asset.images?.enhanced?.url
-    || asset.processedImageUrl
     || asset.processedImage?.url
     || asset.imageUrl;
   const originalImageUrl = asset.originalImageUrl || asset.primaryImage?.url || asset.imageUrl;
@@ -717,7 +741,7 @@ export default function AssetDetailScreen() {
           </Card>
         ) : null}
 
-        <Card title="Tăng cường ảnh">
+        <Card title="Tăng cường và tái xử lý ảnh">
           <InfoRow label="Trạng thái" value={enhancementStatus} />
           {typeof enhancement.attemptCount === 'number' ? (
             <InfoRow label="Số lần thử" value={String(enhancement.attemptCount)} />
@@ -732,19 +756,21 @@ export default function AssetDetailScreen() {
               {
                 backgroundColor: themePalette.accent,
               },
-              (enhancementBusy || enhancementLoading) && styles.disabledAction,
+              enhancementWorkflowBusy && styles.disabledAction,
             ]}
             onPress={handleEnhancement}
-            disabled={enhancementBusy || enhancementLoading}
+            disabled={enhancementWorkflowBusy}
             accessibilityRole="button"
-            accessibilityLabel="Tăng cường ảnh"
+            accessibilityLabel="Tăng cường và tái xử lý ảnh"
             testID="enhance-image-button"
           >
             {enhancementLoading ? (
               <ActivityIndicator size="small" color={themePalette.accentText} />
             ) : (
               <Text style={[styles.retryActionText, { color: themePalette.accentText }]}>
-                {enhancementBusy ? 'Đang xử lý tăng cường ảnh' : 'Tăng cường ảnh'}
+                {enhancementWorkflowBusy
+                  ? 'Đang tăng cường và tái xử lý ảnh'
+                  : 'Tăng cường và tái xử lý ảnh'}
               </Text>
             )}
           </TouchableOpacity>

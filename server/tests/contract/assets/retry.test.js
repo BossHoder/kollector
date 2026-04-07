@@ -1,6 +1,7 @@
 const request = require('supertest');
 
 const mockAddToProcessingQueue = jest.fn();
+const mockAddToEnhancementQueue = jest.fn();
 
 jest.mock('../../../src/modules/assets/assets.queue', () => ({
   addToProcessingQueue: mockAddToProcessingQueue,
@@ -9,6 +10,17 @@ jest.mock('../../../src/modules/assets/assets.queue', () => ({
   closeQueue: jest.fn(),
   DEFAULT_JOB_OPTIONS: {},
   QUEUE_NAME: 'ai-processing',
+}));
+
+jest.mock('../../../src/modules/assets/assets.enhancement.queue', () => ({
+  addToEnhancementQueue: mockAddToEnhancementQueue,
+  getEnhancementQueueMetrics: jest.fn(),
+  closeEnhancementQueue: jest.fn(),
+}));
+
+jest.mock('../../../src/workers/asset-enhancement.worker', () => ({
+  startEnhancementWorker: jest.fn().mockReturnValue({ close: jest.fn() }),
+  getEnhancementWorker: jest.fn(),
 }));
 
 const { app } = require('../../../src/app');
@@ -54,6 +66,7 @@ describe('POST /api/assets/:id/retry', () => {
     await Asset.deleteMany({});
     jest.clearAllMocks();
     mockAddToProcessingQueue.mockResolvedValue('mock-retry-job-id');
+    mockAddToEnhancementQueue.mockResolvedValue('mock-enhancement-retry-job-id');
 
     const result1 = await authService.register('user1@example.com', 'TestPass123');
     accessToken = result1.accessToken;
@@ -82,8 +95,10 @@ describe('POST /api/assets/:id/retry', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.asset.status).toBe('processing');
-      expect(response.body.asset.processingJobId).toBe('mock-retry-job-id');
-      expect(mockAddToProcessingQueue).toHaveBeenCalledTimes(1);
+      expect(response.body.asset.processingJobId).toBeUndefined();
+      expect(response.body.asset.enhancement?.status).toBe('queued');
+      expect(mockAddToEnhancementQueue).toHaveBeenCalledTimes(1);
+      expect(mockAddToProcessingQueue).not.toHaveBeenCalled();
     });
 
     it('should return 202 for partial asset', async () => {
@@ -131,14 +146,14 @@ describe('POST /api/assets/:id/retry', () => {
         .expect(202);
 
       expect(response.body).toHaveProperty('message');
-      expect(mockAddToProcessingQueue).toHaveBeenCalledWith(
+      expect(mockAddToEnhancementQueue).toHaveBeenCalledWith(
         expect.objectContaining({
           assetId: String(failedAsset._id),
           userId: String(userId),
-          imageUrl: 'https://example.com/assets/original.jpg',
-          category: 'sneaker',
+          originalImageUrl: 'https://example.com/assets/original.jpg',
         })
       );
+      expect(mockAddToProcessingQueue).not.toHaveBeenCalled();
     });
   });
 

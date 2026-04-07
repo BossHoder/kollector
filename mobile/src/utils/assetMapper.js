@@ -56,7 +56,7 @@ export function mapAsset(rawAsset = {}) {
     thumbnailUrl,
     processedImageUrl,
     enhancedImageUrl,
-    detailImageUrl: enhancedImageUrl || processedImageUrl || originalImageUrl,
+    detailImageUrl: processedImageUrl || enhancedImageUrl || originalImageUrl,
     primaryImage: rawAsset.primaryImage || (originalImageUrl ? { url: originalImageUrl } : null),
     fileSizeMB,
     uploadedAt,

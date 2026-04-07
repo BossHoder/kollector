@@ -24,6 +24,11 @@ const {
 
 jest.setTimeout(30000);
 
+jest.mock('../../../src/workers/asset-enhancement.worker', () => ({
+  startEnhancementWorker: jest.fn().mockReturnValue({ close: jest.fn() }),
+  getEnhancementWorker: jest.fn(),
+}));
+
 describe('POST /api/assets/:id/enhance-image', () => {
   let accessToken;
   let assetId;
@@ -90,6 +95,19 @@ describe('POST /api/assets/:id/enhance-image', () => {
         status: 'queued',
         attemptCount: 0,
       },
+    });
+
+    const response = await request(app)
+      .post(`/api/assets/${assetId}/enhance-image`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(409);
+
+    expect(response.body.error.code).toBe('ENHANCEMENT_ALREADY_ACTIVE');
+  });
+
+  it('returns 409 when the asset is already processing the enhancement workflow', async () => {
+    await Asset.findByIdAndUpdate(assetId, {
+      status: 'processing',
     });
 
     const response = await request(app)

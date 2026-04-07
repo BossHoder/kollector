@@ -61,3 +61,34 @@ def test_analyze_local_storage_returns_public_url(monkeypatch):
     assert (temp_dir / Path(public_path)).exists()
 
     shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def test_analyze_zooms_after_background_removal_before_upload(monkeypatch):
+    uploaded_payload = {}
+
+    def _capture_upload(image_bytes, category, budget_ms):
+        uploaded_payload['image_bytes'] = image_bytes
+        return 'https://cdn.example.com/processed.png'
+
+    monkeypatch.setattr(main, '_download_image_bytes', lambda url, budget_ms: b'raw-bytes')
+    monkeypatch.setattr(main, '_remove_background', lambda image_bytes, budget_ms: b'bg-removed-bytes')
+    monkeypatch.setattr(
+        main,
+        '_zoom_background_removed_image',
+        lambda image_bytes, budget_ms: b'zoomed-after-bg-bytes',
+    )
+    monkeypatch.setattr(main, '_upload_processed_image', _capture_upload)
+    monkeypatch.setattr(
+        main,
+        '_extract_metadata',
+        lambda image_bytes, category, budget_ms: {
+            'brand': None,
+            'model': None,
+            'colorway': None,
+        },
+    )
+
+    response = client.post('/analyze', json={'image_url': 'https://example.com/image.jpg', 'category': 'sneaker'})
+
+    assert response.status_code == 200
+    assert uploaded_payload['image_bytes'] == b'zoomed-after-bg-bytes'

@@ -64,7 +64,7 @@ export function mapAsset(rawAsset: Partial<Asset> & Record<string, any>): Asset 
     thumbnailUrl,
     processedImageUrl,
     enhancedImageUrl,
-    detailImageUrl: enhancedImageUrl || processedImageUrl || originalImageUrl,
+    detailImageUrl: processedImageUrl || enhancedImageUrl || originalImageUrl,
     fileSizeMB,
     uploadedAt,
     enhancement: rawAsset.enhancement || { status: 'idle', attemptCount: 0 },

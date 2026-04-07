@@ -546,7 +546,6 @@ def _enhance_image(image_bytes: bytes, options: EnhancementOptions, budget_ms: i
     start_monotonic = time.monotonic()
     image = _load_image(image_bytes, mode="RGB")
     image = ImageOps.autocontrast(image, cutoff=1)
-    image = _apply_heuristic_crop(image, options.crop)
     image = _apply_resize(image, options.resize)
     image = _apply_sharpen(image, options.sharpen)
     _enforce_stage_budget(start_monotonic, budget_ms, "Enhancement")
@@ -869,6 +868,64 @@ def _remove_background(image_bytes: bytes, budget_ms: int) -> bytes:
         raise UnprocessableImageError("Background removal produced empty output")
 
     return output_bytes
+
+
+def _zoom_background_removed_image(image_bytes: bytes, budget_ms: int) -> bytes:
+    start_monotonic = time.monotonic()
+    image = _load_image(image_bytes, mode="RGBA")
+    alpha = image.getchannel("A").point(lambda value: 255 if value > MIN_MASK_ALPHA else 0)
+    bbox = alpha.getbbox()
+
+    if bbox is None:
+        _enforce_stage_budget(start_monotonic, budget_ms, "Foreground zoom")
+        return image_bytes
+
+    left, top, right, bottom = bbox
+    subject_width = max(1, int(right - left))
+    subject_height = max(1, int(bottom - top))
+    dominant_coverage = max(
+        subject_width / max(1, image.width),
+        subject_height / max(1, image.height),
+    )
+
+    if dominant_coverage >= 0.72:
+        _enforce_stage_budget(start_monotonic, budget_ms, "Foreground zoom")
+        return image_bytes
+
+    target_coverage = 0.78
+    padding_x = max(12, int(subject_width * 0.18))
+    padding_y = max(12, int(subject_height * 0.18))
+    desired_width = min(
+        image.width,
+        max(subject_width + (padding_x * 2), int(round(subject_width / target_coverage))),
+    )
+    desired_height = min(
+        image.height,
+        max(subject_height + (padding_y * 2), int(round(subject_height / target_coverage))),
+    )
+
+    if desired_width >= image.width and desired_height >= image.height:
+        _enforce_stage_budget(start_monotonic, budget_ms, "Foreground zoom")
+        return image_bytes
+
+    center_x = (left + right) / 2
+    center_y = (top + bottom) / 2
+    crop_left = int(round(center_x - (desired_width / 2)))
+    crop_top = int(round(center_y - (desired_height / 2)))
+
+    crop_left = max(0, min(crop_left, image.width - desired_width))
+    crop_top = max(0, min(crop_top, image.height - desired_height))
+
+    crop_box = (
+        crop_left,
+        crop_top,
+        crop_left + desired_width,
+        crop_top + desired_height,
+    )
+    zoomed_image = image.crop(crop_box).resize(image.size, resample=_lanczos_resample())
+
+    _enforce_stage_budget(start_monotonic, budget_ms, "Foreground zoom")
+    return _image_to_png_bytes(zoomed_image)
 
 
 def _get_vision_model() -> dict[str, Any]:
@@ -1201,6 +1258,14 @@ def analyze(
             remaining_ms(), INFERENCE_BUDGET_MS, "Inference"
         )
         processed_bytes = _remove_background(original_bytes, inference_budget)
+
+        postprocess_budget = _stage_budget(
+            remaining_ms(), INFERENCE_BUDGET_MS, "Foreground zoom"
+        )
+        processed_bytes = _zoom_background_removed_image(
+            processed_bytes,
+            postprocess_budget,
+        )
 
         upload_budget = _stage_budget(remaining_ms(), UPLOAD_BUDGET_MS, "Upload")
         processed_image_url = _upload_processed_image(

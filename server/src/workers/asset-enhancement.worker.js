@@ -4,6 +4,7 @@ const { extractPublicIdFromUrl } = require('../config/cloudinary');
 const logger = require('../config/logger');
 const Asset = require('../models/Asset');
 const { callEnhanceImage } = require('../modules/assets/ai.client');
+const { addToProcessingQueue } = require('../modules/assets/assets.queue');
 const {
   emitAssetImageEnhanced,
   buildEnhancementSuccessPayload,
@@ -79,6 +80,23 @@ async function processEnhancementJob(job) {
       throw missingOutputError;
     }
 
+    let processingJobId;
+
+    try {
+      processingJobId = await addToProcessingQueue({
+        assetId,
+        userId,
+        imageUrl: enhancementResult.enhancedImageUrl,
+        category: asset.category,
+        createdAt: new Date().toISOString(),
+      });
+    } catch (queueError) {
+      queueError.retryable = true;
+      throw queueError;
+    }
+
+    asset.status = 'processing';
+    asset.processingJobId = String(processingJobId);
     asset.images.enhanced = {
       url: enhancementResult.enhancedImageUrl,
       publicId: extractPublicIdFromUrl(enhancementResult.enhancedImageUrl),
@@ -99,6 +117,14 @@ async function processEnhancementJob(job) {
     };
     await asset.save();
 
+    logger.info('Enhanced asset queued for AI processing', {
+      enhancementJobId: job.id,
+      processingJobId,
+      assetId,
+      userId,
+      category: asset.category,
+    });
+
     emitAssetImageEnhanced(
       userId,
       buildEnhancementSuccessPayload(
@@ -113,6 +139,7 @@ async function processEnhancementJob(job) {
       assetId,
       duration: Date.now() - startTime,
       enhancedImageUrl: enhancementResult.enhancedImageUrl,
+      nextProcessingJobId: processingJobId,
     };
   } catch (error) {
     logger.error('Enhancement job processing error', {
@@ -182,6 +209,10 @@ async function handleEnhancementFailure(job, error) {
       errorMessage: error.message,
       attemptCount,
     };
+    asset.status = 'failed';
+    asset.processingJobId = undefined;
+    asset.set('aiMetadata.error', error.message);
+    asset.set('aiMetadata.failedAt', new Date());
     await asset.save();
 
     emitAssetImageEnhanced(

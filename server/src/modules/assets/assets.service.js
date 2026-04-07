@@ -6,7 +6,6 @@ const {
   deleteImage,
   extractPublicIdFromUrl,
 } = require('../../config/cloudinary');
-const { addToProcessingQueue } = require('./assets.queue');
 const { addToEnhancementQueue } = require('./assets.enhancement.queue');
 const { serializeAsset } = require('./asset.serializer');
 const {
@@ -42,6 +41,49 @@ class AssetService {
   async serializeForUser(asset, userId) {
     const userDefaultThemeId = await this.getUserDefaultThemeId(userId);
     return serializeAsset(asset, { userDefaultThemeId });
+  }
+
+  async enqueueEnhancementWorkflow(asset, userId) {
+    const originalImageUrl = asset.images?.original?.url;
+
+    if (!originalImageUrl) {
+      throw buildError(
+        'Asset has no original image to enhance',
+        409,
+        'ENHANCEMENT_NOT_AVAILABLE'
+      );
+    }
+
+    const requestedAt = new Date().toISOString();
+    const jobId = await addToEnhancementQueue({
+      assetId: asset._id.toString(),
+      userId: userId.toString(),
+      originalImageUrl,
+      requestedAt,
+      attempt: 1,
+    });
+
+    asset.status = 'processing';
+    asset.set('aiMetadata.error', null);
+    asset.set('aiMetadata.failedAt', null);
+    asset.processingJobId = undefined;
+    asset.enhancement = {
+      ...(asset.enhancement?.toObject ? asset.enhancement.toObject() : asset.enhancement || {}),
+      status: ENHANCEMENT_STATUS.QUEUED,
+      lastJobId: jobId,
+      requestedBy: userId,
+      requestedAt: new Date(requestedAt),
+      completedAt: null,
+      errorCode: null,
+      errorMessage: null,
+      attemptCount: 0,
+    };
+    await asset.save();
+
+    return {
+      jobId,
+      requestedAt,
+    };
   }
 
   async createAssetAndEnqueue(userId, data) {
@@ -88,17 +130,7 @@ class AssetService {
       marketData: {},
     });
 
-    const createdAt = new Date().toISOString();
-    const jobId = await addToProcessingQueue({
-      assetId: asset._id.toString(),
-      userId: userId.toString(),
-      imageUrl: uploadResult.url,
-      category,
-      createdAt,
-    });
-
-    asset.processingJobId = jobId;
-    await asset.save();
+    const { jobId } = await this.enqueueEnhancementWorkflow(asset, userId);
 
     logger.info('Asset created from upload flow', {
       assetId: asset._id,
@@ -349,28 +381,12 @@ class AssetService {
       );
     }
 
-    const imageUrl = asset.images?.original?.url;
-
-    if (!imageUrl) {
+    if (!asset.images?.original?.url) {
       throw buildError('Asset has no original image to process', 409, 'NOT_RETRYABLE');
     }
 
-    const createdAt = new Date().toISOString();
-    const jobId = await addToProcessingQueue({
-      assetId: asset._id.toString(),
-      userId: userId.toString(),
-      imageUrl,
-      category: asset.category,
-      createdAt,
-      isRetry: true,
-    });
-
     const previousStatus = asset.status;
-    asset.status = 'processing';
-    asset.set('aiMetadata.error', null);
-    asset.set('aiMetadata.failedAt', null);
-    asset.processingJobId = jobId;
-    await asset.save();
+    const { jobId } = await this.enqueueEnhancementWorkflow(asset, userId);
 
     logger.info('Asset retry enqueued', {
       assetId: asset._id,
@@ -394,7 +410,7 @@ class AssetService {
     }
 
     const enhancementStatus = asset.enhancement?.status || ENHANCEMENT_STATUS.IDLE;
-    if (ENHANCEMENT_ACTIVE_STATUSES.includes(enhancementStatus)) {
+    if (asset.status === 'processing' || ENHANCEMENT_ACTIVE_STATUSES.includes(enhancementStatus)) {
       throw buildError(
         'Enhancement already queued or processing',
         409,
@@ -402,36 +418,7 @@ class AssetService {
       );
     }
 
-    const originalImageUrl = asset.images?.original?.url;
-    if (!originalImageUrl) {
-      throw buildError(
-        'Asset has no original image to enhance',
-        409,
-        'ENHANCEMENT_NOT_AVAILABLE'
-      );
-    }
-
-    const requestedAt = new Date().toISOString();
-    const jobId = await addToEnhancementQueue({
-      assetId: asset._id.toString(),
-      userId: userId.toString(),
-      originalImageUrl,
-      requestedAt,
-      attempt: 1,
-    });
-
-    asset.enhancement = {
-      ...(asset.enhancement?.toObject ? asset.enhancement.toObject() : asset.enhancement || {}),
-      status: ENHANCEMENT_STATUS.QUEUED,
-      lastJobId: jobId,
-      requestedBy: userId,
-      requestedAt: new Date(requestedAt),
-      completedAt: null,
-      errorCode: null,
-      errorMessage: null,
-      attemptCount: 0,
-    };
-    await asset.save();
+    const { jobId } = await this.enqueueEnhancementWorkflow(asset, userId);
 
     logger.info('Asset enhancement queued', {
       assetId: asset._id,

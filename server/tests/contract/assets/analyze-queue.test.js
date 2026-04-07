@@ -11,6 +11,7 @@ const fs = require('fs');
 // Create mock functions at module scope
 const mockUploadImage = jest.fn();
 const mockAddToProcessingQueue = jest.fn();
+const mockAddToEnhancementQueue = jest.fn();
 
 // Mock the queue to avoid Redis dependency in contract tests
 jest.mock('../../../src/modules/assets/assets.queue', () => {
@@ -23,6 +24,12 @@ jest.mock('../../../src/modules/assets/assets.queue', () => {
     QUEUE_NAME: 'ai-processing'
   };
 });
+
+jest.mock('../../../src/modules/assets/assets.enhancement.queue', () => ({
+  addToEnhancementQueue: mockAddToEnhancementQueue,
+  getEnhancementQueueMetrics: jest.fn(),
+  closeEnhancementQueue: jest.fn(),
+}));
 
 // Mock Cloudinary
 jest.mock('../../../src/config/cloudinary', () => ({
@@ -57,6 +64,11 @@ jest.mock('../../../src/workers/ai.worker', () => ({
   getWorker: jest.fn()
 }));
 
+jest.mock('../../../src/workers/asset-enhancement.worker', () => ({
+  startEnhancementWorker: jest.fn().mockReturnValue({ close: jest.fn() }),
+  getEnhancementWorker: jest.fn(),
+}));
+
 // Import app and models AFTER mocks are declared
 const { app } = require('../../../src/app');
 const User = require('../../../src/models/User');
@@ -87,6 +99,7 @@ describe('POST /api/assets/analyze-queue', () => {
       publicId: 'assets/test'
     });
     mockAddToProcessingQueue.mockResolvedValue('mock-job-id');
+    mockAddToEnhancementQueue.mockResolvedValue('mock-enhancement-job-id');
     
     // Create and login test user
     const result = await authService.register('test@example.com', 'TestPass123');
@@ -120,6 +133,7 @@ describe('POST /api/assets/analyze-queue', () => {
       expect(response.body.data).toHaveProperty('jobId');
       expect(response.body.data).toHaveProperty('status', 'processing');
       expect(response.body.data).toHaveProperty('message');
+      expect(response.body.data.jobId).toBe('mock-enhancement-job-id');
       
       // Verify assetId is a valid MongoDB ObjectId format
       expect(response.body.data.assetId).toMatch(/^[a-fA-F0-9]{24}$/);
@@ -144,6 +158,7 @@ describe('POST /api/assets/analyze-queue', () => {
       expect(asset.status).toBe('processing');
       expect(asset.category).toBe('lego');
       expect(asset.userId.toString()).toBe(userId.toString());
+      expect(asset.enhancement?.status).toBe('queued');
     });
 
     it('should normalize alias and custom categories to canonical values', async () => {
@@ -174,6 +189,29 @@ describe('POST /api/assets/analyze-queue', () => {
         const asset = await Asset.findById(response.body.data.assetId);
         expect(asset?.category).toBe(testCase.stored);
       }
+    });
+
+    it('should queue enhancement first and defer AI processing until the worker chain', async () => {
+      const testImageBuffer = Buffer.from('fake-image-content');
+
+      await request(app)
+        .post('/api/assets/analyze-queue')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .attach('image', testImageBuffer, {
+          filename: 'test-sneaker.jpg',
+          contentType: 'image/jpeg'
+        })
+        .field('category', 'sneaker')
+        .expect(202);
+
+      expect(mockAddToEnhancementQueue).toHaveBeenCalledTimes(1);
+      expect(mockAddToEnhancementQueue).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: String(userId),
+          originalImageUrl: 'https://res.cloudinary.com/test/image/upload/v1234567890/assets/test.jpg',
+        })
+      );
+      expect(mockAddToProcessingQueue).not.toHaveBeenCalled();
     });
   });
 
