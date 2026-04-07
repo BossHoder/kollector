@@ -80,6 +80,7 @@ jobs:
       PROD_SSH_HOST: ${{ secrets.PROD_SSH_HOST }}
       PROD_SSH_USER: ${{ secrets.PROD_SSH_USER }}
       PROD_SSH_KEY: ${{ secrets.PROD_SSH_KEY }}
+      RELEASE_ARCHIVE: .release-artifacts/kollector-release.tgz
     steps:
       - name: Check deploy secrets
         id: deploy_gate
@@ -98,6 +99,8 @@ jobs:
       - name: Create release archive
         if: ${{ steps.deploy_gate.outputs.ready == 'true' }}
         run: |
+          mkdir -p "$(dirname "${RELEASE_ARCHIVE}")"
+          rm -f "${RELEASE_ARCHIVE}"
           tar \
             --exclude=.git \
             --exclude=node_modules \
@@ -105,7 +108,9 @@ jobs:
             --exclude=.pytest_cache \
             --exclude=coverage \
             --exclude=dist \
-            -czf kollector-release.tgz .
+            --exclude=.release-artifacts \
+            --exclude=kollector-release.tgz \
+            -czf "${RELEASE_ARCHIVE}" .
 
       - name: Upload release archive
         if: ${{ steps.deploy_gate.outputs.ready == 'true' }}
@@ -114,7 +119,7 @@ jobs:
           host: ${{ secrets.PROD_SSH_HOST }}
           username: ${{ secrets.PROD_SSH_USER }}
           key: ${{ secrets.PROD_SSH_KEY }}
-          source: kollector-release.tgz
+          source: ${{ env.RELEASE_ARCHIVE }}
           target: /tmp
 
       - name: Deploy on Oracle VM
