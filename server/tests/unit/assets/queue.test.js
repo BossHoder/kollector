@@ -123,7 +123,7 @@ describe('Assets Queue Service', () => {
       );
     });
 
-    it('should only include required fields per ai-job.schema.json (no extra fields)', async () => {
+    it('should only include supported fields per ai-job.schema.json (no extra fields)', async () => {
       const jobData = {
         assetId: '507f1f77bcf86cd799439011',
         userId: '507f1f77bcf86cd799439012',
@@ -139,18 +139,22 @@ describe('Assets Queue Service', () => {
       const addCall = mockQueueAdd.mock.calls[0];
       const submittedData = addCall[1];
 
-      // Verify only the 5 required fields are present
+      // Verify only the supported schema fields are present
       expect(Object.keys(submittedData)).toEqual([
         'assetId',
         'userId',
         'imageUrl',
         'category',
-        'createdAt'
+        'createdAt',
+        'quotaActionType',
+        'quotaIdempotencyKey',
       ]);
 
       // Verify extra fields are NOT included
       expect(submittedData).not.toHaveProperty('extraField');
       expect(submittedData).not.toHaveProperty('anotherField');
+      expect(submittedData.quotaActionType).toBeNull();
+      expect(submittedData.quotaIdempotencyKey).toBeNull();
     });
 
     it('should convert assetId and userId to strings', async () => {

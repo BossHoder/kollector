@@ -5,6 +5,8 @@ const logger = require('../config/logger');
 const Asset = require('../models/Asset');
 const { callEnhanceImage } = require('../modules/assets/ai.client');
 const { addToProcessingQueue } = require('../modules/assets/assets.queue');
+const subscriptionService = require('../modules/subscription/subscription.service');
+const { inferFailureClass } = require('../modules/subscription/quota.service');
 const {
   emitAssetImageEnhanced,
   buildEnhancementSuccessPayload,
@@ -19,6 +21,27 @@ const {
 const WORKER_CONCURRENCY = 2;
 
 let worker = null;
+
+async function releaseProcessingQuotaForJob(job, error) {
+  if (!job?.data?.quotaIdempotencyKey) {
+    return null;
+  }
+
+  const failureClass = inferFailureClass(error);
+  if (failureClass !== 'internal_system') {
+    return null;
+  }
+
+  return subscriptionService.releaseProcessingQuota(
+    {
+      userId: job.data.userId,
+      idempotencyKey: job.data.quotaIdempotencyKey,
+    },
+    {
+      failureClass,
+    }
+  );
+}
 
 async function processEnhancementJob(job) {
   const { assetId, userId, originalImageUrl, requestedAt, options } = job.data;
@@ -89,6 +112,8 @@ async function processEnhancementJob(job) {
         imageUrl: enhancementResult.enhancedImageUrl,
         category: asset.category,
         createdAt: new Date().toISOString(),
+        quotaActionType: job.data.quotaActionType || null,
+        quotaIdempotencyKey: job.data.quotaIdempotencyKey || null,
       });
     } catch (queueError) {
       queueError.retryable = true;
@@ -214,6 +239,16 @@ async function handleEnhancementFailure(job, error) {
     asset.set('aiMetadata.error', error.message);
     asset.set('aiMetadata.failedAt', new Date());
     await asset.save();
+
+    try {
+      await releaseProcessingQuotaForJob(job, error);
+    } catch (quotaError) {
+      logger.error('Failed to release processing quota after enhancement failure', {
+        jobId: job.id,
+        assetId,
+        error: quotaError.message,
+      });
+    }
 
     emitAssetImageEnhanced(
       userId,

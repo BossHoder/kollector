@@ -84,8 +84,14 @@ app.get('/health', (req, res) => {
 // Routes
 const authRoutes = require('./modules/auth/auth.routes');
 const assetRoutes = require('./modules/assets/assets.routes');
+const {
+  subscriptionRouter,
+  adminSubscriptionRouter,
+} = require('./modules/subscription/subscription.routes');
 app.use('/api/auth', authRoutes);
 app.use('/api/assets', assetRoutes);
+app.use('/api/subscription', subscriptionRouter);
+app.use('/api/admin/subscription', adminSubscriptionRouter);
 
 // 404 handler (must be after all routes)
 app.use(notFoundHandler);
@@ -97,6 +103,7 @@ app.use(errorHandler);
 let worker = null;
 let enhancementWorker = null;
 let decayScheduler = null;
+let subscriptionMaintenanceWorker = null;
 
 // Start server
 async function startServer() {
@@ -111,9 +118,13 @@ async function startServer() {
     const { startWorker } = require('./workers/ai.worker');
     const { startEnhancementWorker } = require('./workers/asset-enhancement.worker');
     const { startDecayScheduler } = require('./workers/cron.decay');
+    const {
+      startSubscriptionMaintenanceWorker,
+    } = require('./workers/subscription-maintenance.worker');
     worker = startWorker();
     enhancementWorker = startEnhancementWorker();
     decayScheduler = startDecayScheduler();
+    subscriptionMaintenanceWorker = startSubscriptionMaintenanceWorker();
     
     server.listen(PORT, () => {
       logger.info(`Server running on port ${PORT}`);
@@ -146,6 +157,12 @@ async function gracefulShutdown(signal) {
       decayScheduler.stop();
       decayScheduler = null;
       logger.info('Decay scheduler stopped');
+    }
+
+    if (subscriptionMaintenanceWorker) {
+      await subscriptionMaintenanceWorker.close();
+      subscriptionMaintenanceWorker = null;
+      logger.info('Subscription maintenance worker stopped');
     }
     
     // Close Socket.io connections

@@ -1,0 +1,136 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://klectr/specs/001-subscription-mvp-banking/contracts/subscription-events.schema.json",
+  "title": "Subscription and Quota Events",
+  "description": "Additive event contracts for subscription tier and quota state updates.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SubscriptionTierChangedEvent"
+    },
+    {
+      "$ref": "#/$defs/SubscriptionQuotaUpdatedEvent"
+    }
+  ],
+  "$defs": {
+    "SubscriptionTierChangedEvent": {
+      "type": "object",
+      "required": [
+        "event",
+        "occurredAt",
+        "userId",
+        "fromTier",
+        "toTier",
+        "reason",
+        "effectiveAt"
+      ],
+      "properties": {
+        "event": {
+          "type": "string",
+          "const": "subscription_tier_changed"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "fromTier": {
+          "type": "string",
+          "enum": ["free", "vip"]
+        },
+        "toTier": {
+          "type": "string",
+          "enum": ["free", "vip"]
+        },
+        "reason": {
+          "type": "string",
+          "enum": [
+            "upgrade_approved",
+            "renewal_approved",
+            "expiry",
+            "grace_elapsed",
+            "downgrade_manual"
+          ]
+        },
+        "effectiveAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "graceEndsAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SubscriptionQuotaUpdatedEvent": {
+      "type": "object",
+      "required": [
+        "event",
+        "occurredAt",
+        "userId",
+        "actionType",
+        "idempotencyKey",
+        "outcome",
+        "usage"
+      ],
+      "properties": {
+        "event": {
+          "type": "string",
+          "const": "subscription_quota_updated"
+        },
+        "occurredAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "actionType": {
+          "type": "string",
+          "enum": ["analyze_queue", "enhance_image"]
+        },
+        "idempotencyKey": {
+          "type": "string"
+        },
+        "outcome": {
+          "type": "string",
+          "enum": ["blocked", "reserved", "consumed", "released"]
+        },
+        "usage": {
+          "type": "object",
+          "required": ["tier", "used", "limit", "remaining", "nextResetAt"],
+          "properties": {
+            "tier": {
+              "type": "string",
+              "enum": ["free", "vip"]
+            },
+            "used": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "remaining": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "nextResetAt": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -10,8 +10,42 @@ const { extractPublicIdFromUrl } = require('../config/cloudinary');
 const { QUEUE_NAME } = require('../modules/assets/assets.queue');
 const { callAnalyze } = require('../modules/assets/ai.client');
 const { emitAssetProcessed, buildSuccessPayload, buildFailurePayload } = require('../modules/assets/assets.events');
+const subscriptionService = require('../modules/subscription/subscription.service');
+const { inferFailureClass } = require('../modules/subscription/quota.service');
 const Asset = require('../models/Asset');
 const logger = require('../config/logger');
+
+async function consumeProcessingQuotaForJob(job) {
+  if (!job?.data?.quotaIdempotencyKey) {
+    return null;
+  }
+
+  return subscriptionService.consumeProcessingQuota({
+    userId: job.data.userId,
+    idempotencyKey: job.data.quotaIdempotencyKey,
+  });
+}
+
+async function releaseProcessingQuotaForJob(job, error) {
+  if (!job?.data?.quotaIdempotencyKey) {
+    return null;
+  }
+
+  const failureClass = inferFailureClass(error);
+  if (failureClass !== 'internal_system') {
+    return null;
+  }
+
+  return subscriptionService.releaseProcessingQuota(
+    {
+      userId: job.data.userId,
+      idempotencyKey: job.data.quotaIdempotencyKey,
+    },
+    {
+      failureClass,
+    }
+  );
+}
 
 /**
  * Worker concurrency (jobs processed simultaneously)
@@ -95,6 +129,16 @@ async function processJob(job) {
     };
 
     await asset.save();
+
+    try {
+      await consumeProcessingQuotaForJob(job);
+    } catch (quotaError) {
+      logger.error('Failed to finalize processing quota consumption', {
+        jobId: job.id,
+        assetId,
+        error: quotaError.message,
+      });
+    }
 
     logger.info('AI job completed successfully', {
       jobId: job.id,
@@ -196,6 +240,16 @@ async function handleFailure(job, error) {
       asset.set('aiMetadata.error', error.message);
       asset.set('aiMetadata.failedAt', new Date());
       await asset.save();
+
+      try {
+        await releaseProcessingQuotaForJob(job, error);
+      } catch (quotaError) {
+        logger.error('Failed to release processing quota after AI failure', {
+          jobId: job.id,
+          assetId,
+          error: quotaError.message,
+        });
+      }
 
       // Emit failure event
       const failurePayload = buildFailurePayload(assetId, error.message);

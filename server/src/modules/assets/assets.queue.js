@@ -64,6 +64,8 @@ function getQueue() {
  * @param {string} jobData.imageUrl - Public URL of original image
  * @param {string} jobData.category - Asset category label used for AI context
  * @param {string} jobData.createdAt - ISO timestamp
+ * @param {string|null} [jobData.quotaActionType] - Processing quota action type
+ * @param {string|null} [jobData.quotaIdempotencyKey] - Shared request-level quota key
  * @returns {Promise<string>} Job ID
  */
 async function addToProcessingQueue(jobData) {
@@ -83,7 +85,9 @@ async function addToProcessingQueue(jobData) {
     userId: String(jobData.userId),
     imageUrl: jobData.imageUrl,
     category: jobData.category,
-    createdAt: jobData.createdAt
+    createdAt: jobData.createdAt,
+    quotaActionType: jobData.quotaActionType || null,
+    quotaIdempotencyKey: jobData.quotaIdempotencyKey || null,
   };
 
   const job = await q.add('process-asset', sanitizedData, DEFAULT_JOB_OPTIONS);

@@ -1,6 +1,7 @@
 describe('Asset enhancement acknowledgement metrics', () => {
   let controller;
   let assetService;
+  let subscriptionService;
 
   beforeEach(() => {
     jest.resetModules();
@@ -21,6 +22,11 @@ describe('Asset enhancement acknowledgement metrics', () => {
       getEnhancementQueueMetrics: jest.fn().mockResolvedValue({}),
     }));
 
+    jest.doMock('../../../src/modules/subscription/subscription.service', () => ({
+      reserveProcessingQuota: jest.fn().mockResolvedValue({}),
+      releaseProcessingQuota: jest.fn().mockResolvedValue({}),
+    }));
+
     jest.doMock('../../../src/config/logger', () => ({
       info: jest.fn(),
       warn: jest.fn(),
@@ -30,6 +36,7 @@ describe('Asset enhancement acknowledgement metrics', () => {
 
     controller = require('../../../src/modules/assets/assets.controller');
     assetService = require('../../../src/modules/assets/assets.service');
+    subscriptionService = require('../../../src/modules/subscription/subscription.service');
   });
 
   it('tracks accepted enhancement acknowledgements', async () => {
@@ -53,6 +60,11 @@ describe('Asset enhancement acknowledgement metrics', () => {
     await controller.queueEnhancement(req, res, next);
 
     expect(res.status).toHaveBeenCalledWith(202);
+    expect(subscriptionService.reserveProcessingQuota).toHaveBeenCalledWith('user-1', {
+      actionType: 'enhance_image',
+      resourceId: 'asset-1',
+      idempotencyKey: 'enhance_image:asset-1:req-1',
+    });
     expect(controller.getEnhancementAckMetrics().accepted).toBeGreaterThanOrEqual(1);
     expect(next).not.toHaveBeenCalled();
   });
@@ -75,6 +87,15 @@ describe('Asset enhancement acknowledgement metrics', () => {
     await controller.queueEnhancement(req, res, jest.fn());
 
     expect(res.status).toHaveBeenCalledWith(409);
+    expect(subscriptionService.releaseProcessingQuota).toHaveBeenCalledWith(
+      {
+        userId: 'user-1',
+        idempotencyKey: 'enhance_image:asset-1:req-2',
+      },
+      {
+        failureClass: 'business_validation',
+      }
+    );
     expect(controller.getEnhancementAckMetrics().conflicts).toBeGreaterThanOrEqual(1);
   });
 });

@@ -43,7 +43,7 @@ class AssetService {
     return serializeAsset(asset, { userDefaultThemeId });
   }
 
-  async enqueueEnhancementWorkflow(asset, userId) {
+  async enqueueEnhancementWorkflow(asset, userId, options = {}) {
     const originalImageUrl = asset.images?.original?.url;
 
     if (!originalImageUrl) {
@@ -61,6 +61,8 @@ class AssetService {
       originalImageUrl,
       requestedAt,
       attempt: 1,
+      quotaActionType: options.quotaActionType || null,
+      quotaIdempotencyKey: options.quotaIdempotencyKey || null,
     });
 
     asset.status = 'processing';
@@ -93,6 +95,8 @@ class AssetService {
       originalFilename,
       imageMimetype,
       fileSizeBytes,
+      quotaActionType,
+      quotaIdempotencyKey,
     } = data;
 
     const uploadResult = await this.uploadAssetImage(imageBuffer, {
@@ -130,7 +134,10 @@ class AssetService {
       marketData: {},
     });
 
-    const { jobId } = await this.enqueueEnhancementWorkflow(asset, userId);
+    const { jobId } = await this.enqueueEnhancementWorkflow(asset, userId, {
+      quotaActionType,
+      quotaIdempotencyKey,
+    });
 
     logger.info('Asset created from upload flow', {
       assetId: asset._id,
@@ -402,7 +409,7 @@ class AssetService {
     };
   }
 
-  async queueEnhancement(assetId, userId) {
+  async queueEnhancement(assetId, userId, options = {}) {
     const asset = await Asset.findOne({ _id: assetId, userId });
 
     if (!asset) {
@@ -418,7 +425,7 @@ class AssetService {
       );
     }
 
-    const { jobId } = await this.enqueueEnhancementWorkflow(asset, userId);
+    const { jobId } = await this.enqueueEnhancementWorkflow(asset, userId, options);
 
     logger.info('Asset enhancement queued', {
       assetId: asset._id,

@@ -31,6 +31,15 @@
       "type": "string",
       "format": "date-time",
       "description": "ISO 8601 timestamp when job was created"
+    },
+    "quotaActionType": {
+      "type": ["string", "null"],
+      "enum": ["analyze_queue", "enhance_image", null],
+      "description": "Quota action classification associated with this processing request"
+    },
+    "quotaIdempotencyKey": {
+      "type": ["string", "null"],
+      "description": "Stable request key shared with quota ledger operations"
     }
   },
   "additionalProperties": false,
@@ -40,7 +49,9 @@
       "userId": "507f1f77bcf86cd799439012",
       "imageUrl": "https://res.cloudinary.com/klectr/image/upload/v1234567890/assets/original.jpg",
       "category": "sneaker",
-      "createdAt": "2025-12-28T10:30:00.000Z"
+      "createdAt": "2025-12-28T10:30:00.000Z",
+      "quotaActionType": "analyze_queue",
+      "quotaIdempotencyKey": "analyze_queue:507f1f77bcf86cd799439012:req-123"
     }
   ]
 }

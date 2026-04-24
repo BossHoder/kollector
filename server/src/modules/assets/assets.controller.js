@@ -4,11 +4,40 @@ const { getQueueMetrics } = require('./assets.queue');
 const { getEnhancementQueueMetrics } = require('./assets.enhancement.queue');
 const logger = require('../../config/logger');
 const { getAssetCategoryOptions } = require('./categories.catalog');
+const subscriptionService = require('../subscription/subscription.service');
 const {
   buildAssetFilename,
   normalizeAnalyzeQueueCategory,
   normalizeOptionalText,
 } = require('./upload.helpers');
+
+function buildQuotaIdempotencyKey(actionType, primaryId, requestId) {
+  return `${actionType}:${String(primaryId)}:${String(requestId)}`;
+}
+
+async function rollbackReservedQuota({ reserved, userId, idempotencyKey, failureClass = 'internal_system' }) {
+  if (!reserved) {
+    return;
+  }
+
+  try {
+    await subscriptionService.releaseProcessingQuota(
+      {
+        userId,
+        idempotencyKey,
+      },
+      {
+        failureClass,
+      }
+    );
+  } catch (rollbackError) {
+    logger.warn('Failed to roll back reserved processing quota', {
+      userId,
+      idempotencyKey,
+      error: rollbackError.message,
+    });
+  }
+}
 
 const enhancementAckMetrics = {
   accepted: 0,
@@ -28,6 +57,9 @@ class AssetController {
    * POST /api/assets/analyze-queue
    */
   async analyzeQueue(req, res, next) {
+    let quotaReserved = false;
+    let quotaIdempotencyKey = null;
+
     try {
       const userId = req.user.id;
       const category = normalizeAnalyzeQueueCategory(req.body.category);
@@ -69,6 +101,13 @@ class AssetController {
       }
 
       const originalFilename = buildAssetFilename(assetName, file.originalname, file.mimetype);
+      quotaIdempotencyKey = buildQuotaIdempotencyKey('analyze_queue', userId, req.id);
+
+      await subscriptionService.reserveProcessingQuota(userId, {
+        actionType: 'analyze_queue',
+        idempotencyKey: quotaIdempotencyKey,
+      });
+      quotaReserved = true;
 
       // Create asset and enqueue job
       const result = await assetService.createAssetAndEnqueue(userId, {
@@ -77,6 +116,8 @@ class AssetController {
         imageMimetype: file.mimetype,
         originalFilename,
         fileSizeBytes: file.size,
+        quotaActionType: 'analyze_queue',
+        quotaIdempotencyKey,
       });
 
       logger.info('Asset submitted for AI processing', {
@@ -98,6 +139,21 @@ class AssetController {
         }
       });
     } catch (error) {
+      if (error.code === 'PROCESSING_QUOTA_REACHED') {
+        return res.status(429).json({
+          error: {
+            code: error.code,
+            message: error.message,
+            details: error.details || {},
+          },
+        });
+      }
+
+      await rollbackReservedQuota({
+        reserved: quotaReserved,
+        userId: req.user?.id,
+        idempotencyKey: quotaIdempotencyKey,
+      });
       next(error);
     }
   }
@@ -111,6 +167,8 @@ class AssetController {
       const userId = req.user.id;
       const assetData = req.body;
 
+      await subscriptionService.assertAssetCreationAllowed(userId);
+
       const asset = await assetService.createAsset(userId, assetData);
 
       logger.info('Asset created via API', {
@@ -121,6 +179,16 @@ class AssetController {
 
       res.status(201).json(asset);
     } catch (error) {
+      if (error.code === 'ASSET_LIMIT_REACHED') {
+        return res.status(429).json({
+          error: {
+            code: 'ASSET_LIMIT_REACHED',
+            message: error.message,
+            details: error.details || {},
+          },
+        });
+      }
+
       next(error);
     }
   }
@@ -346,11 +414,25 @@ class AssetController {
 
   async queueEnhancement(req, res, next) {
     const startedAt = Date.now();
+    let quotaReserved = false;
+    let quotaIdempotencyKey = null;
 
     try {
       const userId = req.user.id;
       const assetId = req.params.id;
-      const result = await assetService.queueEnhancement(assetId, userId);
+      quotaIdempotencyKey = buildQuotaIdempotencyKey('enhance_image', assetId, req.id);
+
+      await subscriptionService.reserveProcessingQuota(userId, {
+        actionType: 'enhance_image',
+        resourceId: assetId,
+        idempotencyKey: quotaIdempotencyKey,
+      });
+      quotaReserved = true;
+
+      const result = await assetService.queueEnhancement(assetId, userId, {
+        quotaActionType: 'enhance_image',
+        quotaIdempotencyKey,
+      });
 
       enhancementAckMetrics.accepted += 1;
       enhancementAckMetrics.lastAckDurationMs = Date.now() - startedAt;
@@ -374,6 +456,12 @@ class AssetController {
       });
     } catch (error) {
       if (error.code === 'ENHANCEMENT_ALREADY_ACTIVE') {
+        await rollbackReservedQuota({
+          reserved: quotaReserved,
+          userId: req.user?.id,
+          idempotencyKey: quotaIdempotencyKey,
+          failureClass: 'business_validation',
+        });
         enhancementAckMetrics.conflicts += 1;
         return res.status(409).json({
           success: false,
@@ -385,6 +473,12 @@ class AssetController {
       }
 
       if (error.code === 'NOT_FOUND') {
+        await rollbackReservedQuota({
+          reserved: quotaReserved,
+          userId: req.user?.id,
+          idempotencyKey: quotaIdempotencyKey,
+          failureClass: 'business_validation',
+        });
         return res.status(404).json({
           success: false,
           error: {
@@ -393,6 +487,24 @@ class AssetController {
           },
         });
       }
+
+      if (error.code === 'PROCESSING_QUOTA_REACHED') {
+        return res.status(429).json({
+          success: false,
+          error: {
+            code: error.code,
+            message: error.message,
+            details: error.details || {},
+          },
+        });
+      }
+
+      await rollbackReservedQuota({
+        reserved: quotaReserved,
+        userId: req.user?.id,
+        idempotencyKey: quotaIdempotencyKey,
+        failureClass: error.code === 'ENHANCEMENT_ALREADY_ACTIVE' ? 'business_validation' : 'internal_system',
+      });
 
       enhancementAckMetrics.failures += 1;
       next(error);

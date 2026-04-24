@@ -1,0 +1,737 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "KLECTR Subscription MVP Banking API",
+    "version": "1.2.0",
+    "description": "Additive contracts for Free/VIP subscription, manual bank-transfer upgrade workflow, quota status visibility, and quota/tier error responses.",
+    "x-contract-evolution": {
+      "policy": "semver-minor-additive",
+      "compatibility": "backward-compatible",
+      "previousVersion": "1.1.0"
+    }
+  },
+  "paths": {
+    "/api/subscription/me": {
+      "get": {
+        "summary": "Get current user subscription and quota status",
+        "operationId": "getSubscriptionStatus",
+        "tags": ["Subscription"],
+        "responses": {
+          "200": {
+            "description": "Subscription status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionStatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/subscription/upgrade-requests": {
+      "post": {
+        "summary": "Submit manual bank-transfer request for VIP upgrade or renewal",
+        "operationId": "createUpgradeRequest",
+        "tags": ["Subscription"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/UpgradeRequestCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Upgrade request accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeRequestResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      },
+      "get": {
+        "summary": "List current user subscription requests",
+        "operationId": "listOwnUpgradeRequests",
+        "tags": ["Subscription"],
+        "responses": {
+          "200": {
+            "description": "User request list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeRequestListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    },
+    "/api/subscription/upgrade-requests/{requestId}": {
+      "get": {
+        "summary": "Get current user upgrade request details",
+        "operationId": "getOwnUpgradeRequest",
+        "tags": ["Subscription"],
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Upgrade request details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/admin/subscription/upgrade-requests": {
+      "get": {
+        "summary": "Admin list of subscription requests",
+        "operationId": "adminListUpgradeRequests",
+        "tags": ["AdminSubscription"],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "approved", "rejected", "expired"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Admin request list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeRequestListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/api/admin/subscription/upgrade-requests/{requestId}/approve": {
+      "post": {
+        "summary": "Admin approves upgrade/renewal request and activates VIP",
+        "operationId": "adminApproveUpgradeRequest",
+        "tags": ["AdminSubscription"],
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminDecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request approved and entitlement updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Conflict: request already finalized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/subscription/upgrade-requests/{requestId}/reject": {
+      "post": {
+        "summary": "Admin rejects upgrade/renewal request",
+        "operationId": "adminRejectUpgradeRequest",
+        "tags": ["AdminSubscription"],
+        "parameters": [
+          {
+            "name": "requestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AdminDecisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request rejected",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpgradeRequestResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "409": {
+            "description": "Conflict: request already finalized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assets": {
+      "post": {
+        "summary": "Create asset (additive tier-cap errors)",
+        "operationId": "createAssetWithTierCap",
+        "tags": ["Assets"],
+        "x-additive-contract-note": "Existing endpoint; 429 asset-cap error added for subscription limits",
+        "responses": {
+          "201": {
+            "description": "Created (existing behavior)"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Asset limit reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "ASSET_LIMIT_REACHED",
+                    "message": "Asset creation limit reached for current tier",
+                    "details": {
+                      "tier": "free",
+                      "limitType": "asset",
+                      "used": 20,
+                      "limit": 20,
+                      "nextResetAt": null
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assets/analyze-queue": {
+      "post": {
+        "summary": "Queue AI analysis (additive processing-quota errors)",
+        "operationId": "analyzeQueueWithQuota",
+        "tags": ["Assets"],
+        "x-additive-contract-note": "Existing endpoint; 429 processing-quota error added",
+        "responses": {
+          "202": {
+            "description": "Accepted (existing behavior)"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Monthly processing quota reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "PROCESSING_QUOTA_REACHED",
+                    "message": "Monthly image-processing quota reached",
+                    "details": {
+                      "tier": "free",
+                      "limitType": "processing",
+                      "used": 20,
+                      "limit": 20,
+                      "nextResetAt": "2026-05-01T00:00:00Z"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assets/{id}/enhance-image": {
+      "post": {
+        "summary": "Queue enhancement (additive processing-quota errors)",
+        "operationId": "enhanceImageWithQuota",
+        "tags": ["Assets"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-additive-contract-note": "Existing endpoint; 429 processing-quota error added",
+        "responses": {
+          "202": {
+            "description": "Accepted (existing behavior)"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Enhancement already active (existing behavior)"
+          },
+          "429": {
+            "description": "Monthly processing quota reached",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/assets/{id}": {
+      "patch": {
+        "summary": "Update asset (additive tier-lock theme errors)",
+        "operationId": "updateAssetWithTierThemeLock",
+        "tags": ["Assets"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "x-additive-contract-note": "Existing endpoint; 403 tier-lock error added for VIP-only themes",
+        "responses": {
+          "200": {
+            "description": "Updated (existing behavior)"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Tier does not allow selected theme",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": "THEME_TIER_LOCKED",
+                    "message": "Selected preset requires VIP tier",
+                    "details": {
+                      "tier": "free",
+                      "presetId": "neon-obsidian"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "SubscriptionStatusResponse": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SubscriptionStatusData"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SubscriptionStatusData": {
+        "type": "object",
+        "required": ["tier", "status", "entitlements", "usage", "effectiveAt"],
+        "properties": {
+          "tier": {
+            "type": "string",
+            "enum": ["free", "vip"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "grace_pending_renewal", "expired"]
+          },
+          "effectiveAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expiresAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "graceEndsAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "entitlements": {
+            "$ref": "#/components/schemas/TierEntitlements"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/UsageStatus"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TierEntitlements": {
+        "type": "object",
+        "required": ["assetLimit", "processingMonthlyLimit", "maintenanceExpMultiplier", "theme"],
+        "properties": {
+          "assetLimit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "processingMonthlyLimit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "maintenanceExpMultiplier": {
+            "type": "number",
+            "minimum": 1
+          },
+          "priceUsdMonthly": {
+            "type": ["number", "null"]
+          },
+          "theme": {
+            "$ref": "#/components/schemas/ThemeEntitlement"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ThemeEntitlement": {
+        "type": "object",
+        "required": ["selectablePresetIds", "lockedPresetIds"],
+        "properties": {
+          "selectablePresetIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "lockedPresetIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "freeDefinition": {
+            "type": "object",
+            "properties": {
+              "defaultPresetId": {
+                "type": "string"
+              },
+              "lightPresetId": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "UsageStatus": {
+        "type": "object",
+        "required": ["processingUsed", "processingLimit", "processingRemaining", "nextResetAt", "assetUsed", "assetLimit"],
+        "properties": {
+          "processingUsed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "processingLimit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "processingRemaining": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "nextResetAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "assetUsed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "assetLimit": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpgradeRequestCreate": {
+        "type": "object",
+        "required": ["type", "transferReference", "proofFile"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["upgrade", "renewal"]
+          },
+          "transferReference": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "amount": {
+            "type": "number",
+            "minimum": 0
+          },
+          "currency": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 3
+          },
+          "proofFile": {
+            "type": "string",
+            "format": "binary"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpgradeRequestResponse": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UpgradeRequestSummary"
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpgradeRequestListResponse": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UpgradeRequestSummary"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "UpgradeRequestSummary": {
+        "type": "object",
+        "required": ["id", "userId", "type", "status", "transferReference", "submittedAt", "metadataExpireAt"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["upgrade", "renewal"]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["pending", "approved", "rejected", "expired"]
+          },
+          "transferReference": {
+            "type": "string"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "reviewedAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "reviewedBy": {
+            "type": ["string", "null"]
+          },
+          "rejectionReason": {
+            "type": ["string", "null"]
+          },
+          "proofFileDeleteAt": {
+            "type": ["string", "null"],
+            "format": "date-time"
+          },
+          "metadataExpireAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AdminDecisionRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 400
+          }
+        },
+        "additionalProperties": false
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": ["code", "message"],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {
+                "type": ["object", "null"],
+                "properties": {
+                  "tier": {
+                    "type": "string"
+                  },
+                  "limitType": {
+                    "type": "string",
+                    "enum": ["asset", "processing"]
+                  },
+                  "used": {
+                    "type": "integer"
+                  },
+                  "limit": {
+                    "type": "integer"
+                  },
+                  "nextResetAt": {
+                    "type": ["string", "null"],
+                    "format": "date-time"
+                  },
+                  "presetId": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": true
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}

@@ -52,8 +52,8 @@ const extractStatusKeysFromMobileDisplay = (statusDisplayText) => {
 };
 
 describe('assets contract alignment (server/web/mobile)', () => {
-  const aliasSchema = readJson('specs/011-mobile-ux-parity/contracts/category-aliases.schema.json');
-  const openApi = readJson('specs/011-mobile-ux-parity/contracts/assets.mobile-parity.openapi.json');
+  const aliasSchema = readJson('specs/004-mobile-ux-parity/contracts/category-aliases.schema.json');
+  const openApi = readJson('specs/004-mobile-ux-parity/contracts/assets.mobile-parity.openapi.json');
   const assetModelText = readText('server/src/models/Asset.js');
   const webCategoriesText = readText('web/src/lib/categories.ts');
   const webAssetTypesText = readText('web/src/types/asset.ts');

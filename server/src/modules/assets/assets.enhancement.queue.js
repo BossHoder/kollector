@@ -56,6 +56,8 @@ function sanitizeEnhancementJobData(jobData) {
     userId: String(jobData.userId),
     originalImageUrl: String(jobData.originalImageUrl),
     requestedAt: jobData.requestedAt,
+    quotaActionType: jobData.quotaActionType || null,
+    quotaIdempotencyKey: jobData.quotaIdempotencyKey || null,
     attempt:
       typeof jobData.attempt === 'number' && jobData.attempt > 0
         ? jobData.attempt
