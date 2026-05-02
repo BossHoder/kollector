@@ -132,7 +132,7 @@ export function SettingsPage() {
     <div className="container mx-auto max-w-3xl px-4 py-8">
       <div className="mb-8">
         <Link
-          to="/app/library"
+          to="/app"
           className="inline-flex items-center gap-2 text-stitch-blue hover:text-stitch-blue-dark transition-colors"
         >
           <svg
