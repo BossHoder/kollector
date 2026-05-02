@@ -1,5 +1,6 @@
 const request = require('supertest');
 const { app } = require('../../../src/app');
+const Subscription = require('../../../src/models/Subscription');
 const User = require('../../../src/models/User');
 const authService = require('../../../src/modules/auth/auth.service');
 const { connectDatabase, disconnectDatabase } = require('../../../src/config/database');
@@ -18,9 +19,17 @@ describe('PATCH /api/auth/me asset theme', () => {
   });
 
   beforeEach(async () => {
+    await Subscription.deleteMany({});
     await User.deleteMany({});
     const authResult = await authService.register('me-theme@example.com', 'TestPass123');
     accessToken = authResult.accessToken;
+
+    await Subscription.create({
+      userId: authResult.user.id,
+      tier: 'vip',
+      status: 'active',
+      paymentChannel: 'manual_bank',
+    });
   });
 
   it('persists a valid settings.preferences.assetTheme.defaultThemeId', async () => {

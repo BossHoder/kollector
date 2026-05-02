@@ -2,6 +2,7 @@ const request = require('supertest');
 const { app } = require('../../../src/app');
 const User = require('../../../src/models/User');
 const Asset = require('../../../src/models/Asset');
+const Subscription = require('../../../src/models/Subscription');
 const authService = require('../../../src/modules/auth/auth.service');
 const { connectDatabase, disconnectDatabase } = require('../../../src/config/database');
 
@@ -22,9 +23,17 @@ describe('PATCH /api/assets/:id theme override', () => {
   beforeEach(async () => {
     await User.deleteMany({});
     await Asset.deleteMany({});
+    await Subscription.deleteMany({});
 
     const authResult = await authService.register('theme-override@example.com', 'TestPass123');
     accessToken = authResult.accessToken;
+
+    await Subscription.create({
+      userId: authResult.user.id,
+      tier: 'vip',
+      status: 'active',
+      paymentChannel: 'manual_bank',
+    });
 
     const asset = await Asset.create({
       userId: authResult.user.id,

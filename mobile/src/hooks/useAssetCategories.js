@@ -33,7 +33,7 @@ export function useAssetCategories() {
     isLoading,
     error,
     refetch: fetchCategories,
-  };
+  }; 
 }
 
 export default useAssetCategories;

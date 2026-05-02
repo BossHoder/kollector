@@ -16,6 +16,8 @@ Auto-generated from all feature plans. Last updated: 2025-12-17
 - Node.js 20+, React Native / Expo, TypeScript + `@shopify/react-native-skia`, `react-native-gesture-handler`, `TanStack Query`, `Mongoose` (001-gamification-core)
 - MongoDB (for asset state logic), `react-native-mmkv` (for mobile optimistic queues) (001-gamification-core)
 - Node.js (server), Python 3.x (worker), TypeScript/JavaScript (web/mobile) + Express, Mongoose, express-validator, BullMQ, Redis, Cloudinary, Pillow, NumPy, Socket.io (014-manual-enhancement-themes)
+- Node.js (server), TypeScript/JavaScript (web + mobile), React Native Expo for mobile + Express, Mongoose, BullMQ, Redis (ioredis), Socket.io, express-validator, React Query/TanStack, Expo (001-subscription-mvp-banking)
+- MongoDB (subscriptions, quota counters, audit logs), Redis (queue state), secure object storage for transfer proof files (30-day retention) (001-subscription-mvp-banking)
 
 - Node.js 20 LTS (CommonJS, Express 5) + Express 5, Mongoose 9, BullMQ 5, ioredis 5, Socket.io 4, `jsonwebtoken`, `argon2` for password hashing (001-foundation-backend-setup)
 
@@ -36,9 +38,9 @@ tests/
 Node.js 20 LTS (CommonJS, Express 5): Follow standard conventions
 
 ## Recent Changes
+- 001-subscription-mvp-banking: Added Node.js (server), TypeScript/JavaScript (web + mobile), React Native Expo for mobile + Express, Mongoose, BullMQ, Redis (ioredis), Socket.io, express-validator, React Query/TanStack, Expo
 - 014-manual-enhancement-themes: Added Node.js (server), Python 3.x (worker), TypeScript/JavaScript (web/mobile) + Express, Mongoose, express-validator, BullMQ, Redis, Cloudinary, Pillow, NumPy, Socket.io
 - 001-gamification-core: Added Node.js 20+, React Native / Expo, TypeScript + `@shopify/react-native-skia`, `react-native-gesture-handler`, `TanStack Query`, `Mongoose`
-- 012-ai-processing-service: Added Python 3.11+ (repo currently has `ai-worker/venv` created with Python 3.14.2) + FastAPI (HTTP service), background removal model compatible with `briaai/RMBG-1.4`, vision model compatible with `vikhyatk/moondream2`, Cloudinary uploader
 
 
 <!-- MANUAL ADDITIONS START -->
