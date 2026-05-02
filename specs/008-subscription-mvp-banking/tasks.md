@@ -130,23 +130,23 @@
 
 ### Tests for User Story 3
 
-- [ ] T057 [P] [US3] Add contract test for POST /api/subscription/upgrade-requests in server/tests/contract/subscription/create-upgrade-request.contract.test.js
-- [ ] T058 [P] [US3] Add contract test for GET /api/subscription/upgrade-requests and /{id} in server/tests/contract/subscription/list-upgrade-requests.contract.test.js
-- [ ] T059 [P] [US3] Add contract test for admin approve/reject conflict semantics in server/tests/contract/subscription/admin-decision-conflict.contract.test.js
-- [ ] T060 [P] [US3] Add integration test for admin approval immediate VIP activation in server/tests/integration/subscription/upgrade-activation.integration.test.js
-- [ ] T061 [P] [US3] Add integration test for proof-file 30-day purge and metadata 180-day retention in server/tests/integration/subscription/retention-windows.integration.test.js
-- [ ] T062 [P] [US3] Add integration test for tier and decision audit log writes in server/tests/integration/subscription/upgrade-audit.integration.test.js
+- [X] T057 [P] [US3] Add contract test for POST /api/subscription/upgrade-requests in server/tests/contract/subscription/create-upgrade-request.contract.test.js
+- [X] T058 [P] [US3] Add contract test for GET /api/subscription/upgrade-requests and /{id} in server/tests/contract/subscription/list-upgrade-requests.contract.test.js
+- [X] T059 [P] [US3] Add contract test for admin approve/reject conflict semantics in server/tests/contract/subscription/admin-decision-conflict.contract.test.js
+- [X] T060 [P] [US3] Add integration test for admin approval immediate VIP activation in server/tests/integration/subscription/upgrade-activation.integration.test.js
+- [X] T061 [P] [US3] Add integration test for proof-file 30-day purge and metadata 180-day retention in server/tests/integration/subscription/retention-windows.integration.test.js
+- [X] T062 [P] [US3] Add integration test for tier and decision audit log writes in server/tests/integration/subscription/upgrade-audit.integration.test.js
 
 ### Implementation for User Story 3
 
-- [ ] T063 [US3] Implement transfer-proof multipart upload handling in server/src/modules/subscription/subscription.controller.js
-- [ ] T064 [US3] Persist upgrade/renewal request metadata and retention timestamps in server/src/modules/subscription/subscription.service.js
-- [ ] T065 [US3] Implement user request create/list/detail routes in server/src/modules/subscription/subscription.routes.js
-- [ ] T066 [US3] Implement admin request list/approve/reject routes in server/src/modules/subscription/subscription.routes.js
-- [ ] T067 [US3] Implement approval activation and renewal-extension rules in server/src/modules/subscription/subscription.service.js
-- [ ] T068 [US3] Emit subscription_tier_changed events and tier-audit records on approval in server/src/modules/subscription/subscription.events.js
-- [ ] T069 [US3] Implement proof-file purge and metadata expiry jobs in server/src/workers/subscription-maintenance.worker.js
-- [ ] T070 [US3] Implement web and mobile upgrade-request submission flows in web/src/pages/settings/SubscriptionPage.tsx and mobile/src/screens/settings/SubscriptionScreen.tsx
+- [X] T063 [US3] Implement transfer-proof multipart upload handling in server/src/modules/subscription/subscription.controller.js
+- [X] T064 [US3] Persist upgrade/renewal request metadata and retention timestamps in server/src/modules/subscription/subscription.service.js
+- [X] T065 [US3] Implement user request create/list/detail routes in server/src/modules/subscription/subscription.routes.js
+- [X] T066 [US3] Implement admin request list/approve/reject routes in server/src/modules/subscription/subscription.routes.js
+- [X] T067 [US3] Implement approval activation and renewal-extension rules in server/src/modules/subscription/subscription.service.js
+- [X] T068 [US3] Emit subscription_tier_changed events and tier-audit records on approval in server/src/modules/subscription/subscription.events.js
+- [X] T069 [US3] Implement proof-file purge and metadata expiry jobs in server/src/workers/subscription-maintenance.worker.js
+- [X] T070 [US3] Implement web and mobile upgrade-request submission flows in web/src/pages/settings/SubscriptionPage.tsx and mobile/src/screens/settings/SubscriptionScreen.tsx
 
 **Checkpoint**: User Story 3 independently functional and testable.
 
@@ -160,20 +160,20 @@
 
 ### Tests for User Story 4
 
-- [ ] T071 [P] [US4] Add integration test for grace eligibility when renewal is submitted before expiry in server/tests/integration/subscription/grace-eligibility.integration.test.js
-- [ ] T072 [P] [US4] Add integration test for automatic downgrade after 72-hour grace timeout in server/tests/integration/subscription/grace-elapse-downgrade.integration.test.js
-- [ ] T073 [P] [US4] Add integration test ensuring downgrade does not delete existing assets in server/tests/integration/subscription/downgrade-no-data-deletion.integration.test.js
-- [ ] T074 [P] [US4] Add integration test ensuring only new restricted actions are blocked after downgrade in server/tests/integration/subscription/downgrade-block-new-actions.integration.test.js
-- [ ] T075 [P] [US4] Add web status-state test for renewal-pending and expired badges in web/tests/integration/subscription/subscription-status-badges.test.tsx
+- [X] T071 [P] [US4] Add integration test for grace eligibility when renewal is submitted before expiry in server/tests/integration/subscription/grace-eligibility.integration.test.js
+- [X] T072 [P] [US4] Add integration test for automatic downgrade after 72-hour grace timeout in server/tests/integration/subscription/grace-elapse-downgrade.integration.test.js
+- [X] T073 [P] [US4] Add integration test ensuring downgrade does not delete existing assets in server/tests/integration/subscription/downgrade-no-data-deletion.integration.test.js
+- [X] T074 [P] [US4] Add integration test ensuring only new restricted actions are blocked after downgrade in server/tests/integration/subscription/downgrade-block-new-actions.integration.test.js
+- [X] T075 [P] [US4] Add web status-state test for renewal-pending and expired badges in web/tests/integration/subscription/subscription-status-badges.test.tsx
 
 ### Implementation for User Story 4
 
-- [ ] T076 [US4] Implement expiry-to-grace transition logic in server/src/modules/subscription/subscription.service.js
-- [ ] T077 [US4] Implement grace-elapse downgrade scheduler logic in server/src/workers/subscription-maintenance.worker.js
-- [ ] T078 [US4] Implement downgrade-safe enforcement with no data deletion in server/src/modules/subscription/subscription.service.js
-- [ ] T079 [US4] Emit downgrade and grace-elapsed tier-change events in server/src/modules/subscription/subscription.events.js
-- [ ] T080 [US4] Implement web renewal-pending and expired state components in web/src/components/subscription/SubscriptionStateBadge.tsx
-- [ ] T081 [US4] Implement mobile renewal-pending and expired state components in mobile/src/components/subscription/SubscriptionStateBadge.tsx
+- [X] T076 [US4] Implement expiry-to-grace transition logic in server/src/modules/subscription/subscription.service.js
+- [X] T077 [US4] Implement grace-elapse downgrade scheduler logic in server/src/workers/subscription-maintenance.worker.js
+- [X] T078 [US4] Implement downgrade-safe enforcement with no data deletion in server/src/modules/subscription/subscription.service.js
+- [X] T079 [US4] Emit downgrade and grace-elapsed tier-change events in server/src/modules/subscription/subscription.events.js
+- [X] T080 [US4] Implement web renewal-pending and expired state components in web/src/components/subscription/SubscriptionStateBadge.tsx
+- [X] T081 [US4] Implement mobile renewal-pending and expired state components in mobile/src/components/subscription/SubscriptionStateBadge.tsx
 
 **Checkpoint**: User Story 4 independently functional and testable.
 
@@ -187,20 +187,20 @@
 
 ### Tests for User Story 5
 
-- [ ] T082 [P] [US5] Add contract test for THEME_TIER_LOCKED on PATCH /api/assets/{id} in server/tests/contract/assets/theme-tier-lock.contract.test.js
-- [ ] T083 [P] [US5] Add integration test for Free selectable presets exactly default+light in server/tests/integration/subscription/free-theme-entitlement.integration.test.js
-- [ ] T084 [P] [US5] Add integration test for VIP full preset access in server/tests/integration/subscription/vip-theme-entitlement.integration.test.js
-- [ ] T085 [P] [US5] Add integration test for downgrade preserving visibility of already-applied VIP themes in server/tests/integration/subscription/theme-downgrade-visibility.integration.test.js
-- [ ] T086 [P] [US5] Add mobile parity test for settings/detail lock indicators in mobile/src/screens/settings/ThemeLockParity.test.tsx
+- [X] T082 [P] [US5] Add contract test for THEME_TIER_LOCKED on PATCH /api/assets/{id} in server/tests/contract/assets/theme-tier-lock.contract.test.js
+- [X] T083 [P] [US5] Add integration test for Free selectable presets exactly default+light in server/tests/integration/subscription/free-theme-entitlement.integration.test.js
+- [X] T084 [P] [US5] Add integration test for VIP full preset access in server/tests/integration/subscription/vip-theme-entitlement.integration.test.js
+- [X] T085 [P] [US5] Add integration test for downgrade preserving visibility of already-applied VIP themes in server/tests/integration/subscription/theme-downgrade-visibility.integration.test.js
+- [X] T086 [P] [US5] Add mobile parity test for settings/detail lock indicators in mobile/src/screens/settings/ThemeLockParity.test.tsx
 
 ### Implementation for User Story 5
 
-- [ ] T087 [US5] Enforce tier-aware preset apply validation in server/src/modules/assets/theme-presets.catalog.js
-- [ ] T088 [US5] Expose selectable and locked preset IDs in subscription status response in server/src/modules/subscription/subscription.controller.js
-- [ ] T089 [US5] Return THEME_TIER_LOCKED error details on blocked apply in server/src/modules/assets/assets.service.js
-- [ ] T090 [US5] Implement web settings theme lock/unlock rendering in web/src/pages/settings/SubscriptionPage.tsx
-- [ ] T091 [US5] Implement web asset-detail theme lock/unlock rendering in web/src/components/assets/ThemeSelector.tsx
-- [ ] T092 [US5] Implement mobile settings and detail theme lock/unlock rendering in mobile/src/screens/settings/SubscriptionScreen.tsx
+- [X] T087 [US5] Enforce tier-aware preset apply validation in server/src/modules/assets/theme-presets.catalog.js
+- [X] T088 [US5] Expose selectable and locked preset IDs in subscription status response in server/src/modules/subscription/subscription.controller.js
+- [X] T089 [US5] Return THEME_TIER_LOCKED error details on blocked apply in server/src/modules/assets/assets.service.js
+- [X] T090 [US5] Implement web settings theme lock/unlock rendering in web/src/pages/settings/SubscriptionPage.tsx
+- [X] T091 [US5] Implement web asset-detail theme lock/unlock rendering in web/src/components/assets/ThemeSelector.tsx
+- [X] T092 [US5] Implement mobile settings and detail theme lock/unlock rendering in mobile/src/screens/settings/SubscriptionScreen.tsx
 
 **Checkpoint**: User Story 5 independently functional and testable.
 
@@ -214,18 +214,18 @@
 
 ### Tests for User Story 6
 
-- [ ] T093 [P] [US6] Add unit test for maintenance EXP multiplier by tier in server/tests/unit/gamification/maintenance-exp-multiplier.test.js
-- [ ] T094 [P] [US6] Add integration test comparing Free and VIP maintenance EXP outcomes in server/tests/integration/gamification/vip-exp-multiplier.integration.test.js
-- [ ] T095 [P] [US6] Add integration test for multiplier reset after downgrade in server/tests/integration/gamification/downgrade-exp-multiplier.integration.test.js
-- [ ] T096 [P] [US6] Add integration test for multiplier and exp-delta audit capture in server/tests/integration/gamification/maintenance-exp-audit.integration.test.js
+- [X] T093 [P] [US6] Add unit test for maintenance EXP multiplier by tier in server/tests/unit/gamification/maintenance-exp-multiplier.test.js
+- [X] T094 [P] [US6] Add integration test comparing Free and VIP maintenance EXP outcomes in server/tests/integration/gamification/vip-exp-multiplier.integration.test.js
+- [X] T095 [P] [US6] Add integration test for multiplier reset after downgrade in server/tests/integration/gamification/downgrade-exp-multiplier.integration.test.js
+- [X] T096 [P] [US6] Add integration test for multiplier and exp-delta audit capture in server/tests/integration/gamification/maintenance-exp-audit.integration.test.js
 
 ### Implementation for User Story 6
 
-- [ ] T097 [US6] Apply subscription-tier EXP multiplier in maintenance domain logic in server/src/modules/gamification/gamification.service.js
-- [ ] T098 [US6] Pass subscription tier snapshot into maintenance action handling in server/src/modules/assets/assets.controller.js
-- [ ] T099 [US6] Persist multiplier and exp-delta audit attributes in maintenance logs in server/src/models/Asset.js
-- [ ] T100 [US6] Emit maintenance reward telemetry with tier context in server/src/modules/gamification/gamification.service.js
-- [ ] T101 [US6] Add VIP x3 EXP reward messaging in mobile maintenance UI in mobile/src/screens/assets/AssetDetailScreen.js
+- [X] T097 [US6] Apply subscription-tier EXP multiplier in maintenance domain logic in server/src/modules/gamification/gamification.service.js
+- [X] T098 [US6] Pass subscription tier snapshot into maintenance action handling in server/src/modules/assets/assets.controller.js
+- [X] T099 [US6] Persist multiplier and exp-delta audit attributes in maintenance logs in server/src/models/Asset.js
+- [X] T100 [US6] Emit maintenance reward telemetry with tier context in server/src/modules/gamification/gamification.service.js
+- [X] T101 [US6] Add VIP x3 EXP reward messaging in mobile maintenance UI in mobile/src/screens/assets/AssetDetailScreen.js
 
 **Checkpoint**: User Story 6 independently functional and testable.
 
@@ -235,15 +235,15 @@
 
 **Purpose**: Final rollout safeguards, migration safety, compatibility checks, and evidence capture.
 
-- [ ] T102 [P] Implement migration to initialize existing users with Free subscriptions in server/src/modules/subscription/subscription.migration.js
-- [ ] T103 [P] Add soft-launch enforcement toggle configuration in server/src/config/subscription.config.js
-- [ ] T104 [P] Add web quota/tier messaging copy map for rollout communication in web/src/lib/subscriptionCopy.ts
-- [ ] T105 [P] Add mobile quota/tier messaging copy map for rollout communication in mobile/src/config/subscriptionCopy.ts
-- [ ] T106 Add end-to-end regression suite for quota reached, upgrade, downgrade, reset, duplicate handling, and failure accounting in server/tests/integration/subscription/subscription-regression.integration.test.js
-- [ ] T107 [P] Add backward-compatibility contract regression for existing realtime/enhancement flows in server/tests/contract/subscription/backward-compatibility.contract.test.js
-- [ ] T108 Update additive contract migration notes and rollout safeguards in specs/001-subscription-mvp-banking/contracts/migration-notes-1.2.0.md
-- [ ] T109 Run and document quickstart validation evidence in specs/001-subscription-mvp-banking/quickstart.md
-- [ ] T110 [P] Add success-criteria evidence index for SC-001..SC-010 in specs/001-subscription-mvp-banking/evidence/README.md
+- [X] T102 [P] Implement migration to initialize existing users with Free subscriptions in server/src/modules/subscription/subscription.migration.js
+- [X] T103 [P] Add soft-launch enforcement toggle configuration in server/src/config/subscription.config.js
+- [X] T104 [P] Add web quota/tier messaging copy map for rollout communication in web/src/lib/subscriptionCopy.ts
+- [X] T105 [P] Add mobile quota/tier messaging copy map for rollout communication in mobile/src/config/subscriptionCopy.ts
+- [X] T106 Add end-to-end regression suite for quota reached, upgrade, downgrade, reset, duplicate handling, and failure accounting in server/tests/integration/subscription/subscription-regression.integration.test.js
+- [X] T107 [P] Add backward-compatibility contract regression for existing realtime/enhancement flows in server/tests/contract/subscription/backward-compatibility.contract.test.js
+- [X] T108 Update additive contract migration notes and rollout safeguards in specs/001-subscription-mvp-banking/contracts/migration-notes-1.2.0.md
+- [X] T109 Run and document quickstart validation evidence in specs/001-subscription-mvp-banking/quickstart.md
+- [X] T110 [P] Add success-criteria evidence index for SC-001..SC-010 in specs/001-subscription-mvp-banking/evidence/README.md
 
 ---
 

@@ -105,3 +105,10 @@ npm test
 - Monthly reset rollover
 - Web/mobile quota state consistency
 - Existing enhancement/theme/realtime compatibility
+
+## 7. Validation evidence
+
+- Local unit validation completed: `server/tests/unit/gamification/maintenance-exp-multiplier.test.js`
+- Server integration validation was blocked in this environment because MongoDB was unreachable.
+- Web and mobile automated validation were blocked in this environment by Windows `spawn EPERM` from the test runners.
+- See `specs/008-subscription-mvp-banking/evidence/README.md` for success-criteria mapping and remaining manual validation gaps.

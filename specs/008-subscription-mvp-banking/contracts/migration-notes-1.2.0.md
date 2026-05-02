@@ -30,3 +30,12 @@
 - Support soft-launch mode where counters and warnings are visible before hard blocking.
 - Monitor quota refund behavior for terminal internal/system failures to ensure exact-once releases.
 - Verify proof-file purge at 30 days and metadata retention at 180 days.
+- Initialize missing `UserSubscription` rows for legacy users with a one-time Free-tier backfill before enabling enforcement.
+- Gate hard enforcement behind `SUBSCRIPTION_ENFORCEMENT_ENABLED` and `SUBSCRIPTION_SOFT_LAUNCH_MODE` so rollout can surface counters before blocking.
+
+## Rollout checklist
+
+1. Run the legacy-user backfill from `server/src/modules/subscription/subscription.migration.js`.
+2. Deploy with `SUBSCRIPTION_SOFT_LAUNCH_MODE=true` and confirm counters/reset dates render on web and mobile.
+3. Review quota blocked/reserved/released audit behavior during pilot traffic.
+4. Flip `SUBSCRIPTION_ENFORCEMENT_ENABLED=true` with `SUBSCRIPTION_SOFT_LAUNCH_MODE=false` after pilot sign-off.
