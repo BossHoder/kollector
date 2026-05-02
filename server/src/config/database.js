@@ -1,5 +1,7 @@
+const path = require('node:path');
 const mongoose = require('mongoose');
 const winston = require('winston');
+const dotenv = require('dotenv');
 
 const logger = winston.createLogger({
   level: 'info',
@@ -17,12 +19,23 @@ const logger = winston.createLogger({
   ]
 });
 
+function ensureDatabaseEnvLoaded() {
+  if (process.env.MONGODB_URI) {
+    return;
+  }
+
+  const envFile = process.env.NODE_ENV === 'test' ? '.env.test' : '.env';
+  dotenv.config({ path: path.resolve(__dirname, `../../${envFile}`) });
+}
+
 /**
  * Connect to MongoDB using Mongoose
  * @returns {Promise<void>}
  */
 async function connectDatabase() {
   try {
+    ensureDatabaseEnvLoaded();
+
     // Check if already connected (readyState: 0=disconnected, 1=connected, 2=connecting, 3=disconnecting)
     if (mongoose.connection.readyState === 1) {
       logger.info('MongoDB already connected');
