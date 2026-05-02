@@ -5,6 +5,7 @@ const { getEnhancementQueueMetrics } = require('./assets.enhancement.queue');
 const logger = require('../../config/logger');
 const { getAssetCategoryOptions } = require('./categories.catalog');
 const subscriptionService = require('../subscription/subscription.service');
+const { shouldEnforceSubscriptionLimits, subscriptionConfig } = require('../../config/subscription.config');
 const {
   buildAssetFilename,
   normalizeAnalyzeQueueCategory,
@@ -140,6 +141,13 @@ class AssetController {
       });
     } catch (error) {
       if (error.code === 'PROCESSING_QUOTA_REACHED') {
+        if (!shouldEnforceSubscriptionLimits()) {
+          logger.info('Processing quota exceeded during soft launch; allowing request', {
+            requestId: req.id,
+            userId: req.user?.id,
+            softLaunchMode: subscriptionConfig.softLaunchMode,
+          });
+        } else {
         return res.status(429).json({
           error: {
             code: error.code,
@@ -147,6 +155,7 @@ class AssetController {
             details: error.details || {},
           },
         });
+        }
       }
 
       await rollbackReservedQuota({
@@ -180,6 +189,13 @@ class AssetController {
       res.status(201).json(asset);
     } catch (error) {
       if (error.code === 'ASSET_LIMIT_REACHED') {
+        if (!shouldEnforceSubscriptionLimits()) {
+          logger.info('Asset cap exceeded during soft launch; allowing create', {
+            requestId: req.id,
+            userId: req.user?.id,
+            softLaunchMode: subscriptionConfig.softLaunchMode,
+          });
+        } else {
         return res.status(429).json({
           error: {
             code: 'ASSET_LIMIT_REACHED',
@@ -187,6 +203,7 @@ class AssetController {
             details: error.details || {},
           },
         });
+        }
       }
 
       next(error);
@@ -271,6 +288,16 @@ class AssetController {
             code: error.code,
             field: error.field,
             message: error.message,
+          },
+        });
+      }
+      if (error.code === 'THEME_TIER_LOCKED') {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: error.code,
+            message: error.message,
+            details: error.details || {},
           },
         });
       }
@@ -489,6 +516,13 @@ class AssetController {
       }
 
       if (error.code === 'PROCESSING_QUOTA_REACHED') {
+        if (!shouldEnforceSubscriptionLimits()) {
+          logger.info('Enhancement quota exceeded during soft launch; allowing request', {
+            requestId: req.id,
+            userId: req.user?.id,
+            softLaunchMode: subscriptionConfig.softLaunchMode,
+          });
+        } else {
         return res.status(429).json({
           success: false,
           error: {
@@ -497,6 +531,7 @@ class AssetController {
             details: error.details || {},
           },
         });
+        }
       }
 
       await rollbackReservedQuota({

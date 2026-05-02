@@ -5,21 +5,46 @@
  */
 
 import { useParams, Link } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAsset } from '@/hooks/useAssets';
 import { useAssetCategories } from '@/hooks/useAssetCategories';
 import { useRetryAsset } from '@/hooks/useRetryAsset';
+import { ThemeSelector } from '@/components/assets/ThemeSelector';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
 import { ConfidenceBar } from '@/components/ui/ConfidenceBar';
 import { ImageToggle } from '@/components/assets/ImageToggle';
 import { ProcessingOverlay } from '@/components/assets/ProcessingOverlay';
+import { apiClient, ApiError } from '@/lib/api-client';
+import { getSubscriptionStatus } from '@/lib/subscriptionApi';
 
 export function AssetDetailPage() {
   const { assetId } = useParams<{ assetId: string }>();
   const { data: asset, isLoading, isError } = useAsset(assetId);
   const { data: categoryOptions = [] } = useAssetCategories();
   const retryMutation = useRetryAsset();
+  const queryClient = useQueryClient();
+  const { data: subscriptionResponse } = useQuery({
+    queryKey: ['subscription-status'],
+    queryFn: getSubscriptionStatus,
+  });
+  const themeMutation = useMutation({
+    mutationFn: async (themeOverrideId: string | null) => {
+      if (!assetId) {
+        throw new Error('Asset ID is required');
+      }
+
+      return apiClient.patch(`/api/assets/${assetId}`, {
+        presentation: {
+          themeOverrideId,
+        },
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['asset', assetId] });
+    },
+  });
 
   const handleRetry = async () => {
     if (!assetId) return;
@@ -77,6 +102,10 @@ export function AssetDetailPage() {
   const categoryLabel =
     categoryOptions.find((option) => option.value === asset.category)?.label ||
     asset.category;
+  const lockedPresetIds = subscriptionResponse?.data.entitlements.theme.lockedPresetIds ?? [];
+  const themeError = themeMutation.error instanceof ApiError
+    ? themeMutation.error.message
+    : null;
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
@@ -243,6 +272,21 @@ export function AssetDetailPage() {
               )}
             </div>
           )}
+
+          <div className="bg-surface-dark border border-border-dark rounded-xl p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Theme Access</h2>
+            <ThemeSelector
+              lockedPresetIds={lockedPresetIds}
+              selectedThemeId={asset.presentation?.themeOverrideId ?? null}
+              disabled={themeMutation.isPending}
+              onSelect={(themeId) => {
+                void themeMutation.mutateAsync(themeId);
+              }}
+            />
+            {themeError ? (
+              <p className="mt-3 text-sm text-amber-200">{themeError}</p>
+            ) : null}
+          </div>
 
           <div className="bg-surface-dark border border-border-dark rounded-xl p-6">
             <h2 className="text-lg font-semibold text-white mb-4">Thông tin file</h2>

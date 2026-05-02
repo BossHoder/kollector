@@ -168,6 +168,16 @@ class AuthController {
           },
         });
       }
+      if (error.code === 'THEME_TIER_LOCKED') {
+        return res.status(403).json({
+          success: false,
+          error: {
+            code: error.code,
+            message: error.message,
+            details: error.details || {},
+          },
+        });
+      }
 
       next(error);
     }

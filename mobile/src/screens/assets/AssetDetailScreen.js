@@ -37,6 +37,7 @@ import {
   updateAsset as updateAssetRequest,
 } from '../../api/assetsApi';
 import { queueAssetMaintenance } from '../../api/gamification';
+import { getSubscriptionStatus } from '../../api/subscriptionApi';
 import AssetMaintenanceRubMask from '../../components/AssetMaintenanceRubMask';
 import ImageToggle from '../../components/assets/ImageToggle';
 import ProcessingOverlay from '../../components/assets/ProcessingOverlay';
@@ -288,6 +289,7 @@ export default function AssetDetailScreen() {
   const [enhancementLoading, setEnhancementLoading] = useState(false);
   const [themeLoading, setThemeLoading] = useState(false);
   const [maintenanceResetKey, setMaintenanceResetKey] = useState(0);
+  const [subscriptionData, setSubscriptionData] = useState(null);
 
   const { asset, isLoading, error, refetch, updateAsset } = useAsset(assetId, {
     enabled: Boolean(assetId),
@@ -299,6 +301,22 @@ export default function AssetDetailScreen() {
     onPoll: refetch,
     onReconnect: refetch,
   });
+
+  useEffect(() => {
+    let active = true;
+
+    getSubscriptionStatus()
+      .then((response) => {
+        if (active) {
+          setSubscriptionData(response?.data || null);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAssetProcessed((payload) => {
@@ -632,6 +650,8 @@ export default function AssetDetailScreen() {
   const enhancementWorkflowBusy = enhancementBusy || enhancementLoading || isProcessing;
   const assetThemeOverrideId = asset.presentation?.themeOverrideId ?? null;
   const userDefaultThemeId = user?.settings?.preferences?.assetTheme?.defaultThemeId ?? null;
+  const lockedPresetIds = subscriptionData?.entitlements?.theme?.lockedPresetIds || [];
+  const maintenanceMultiplier = subscriptionData?.entitlements?.maintenanceExpMultiplier || 1;
   const resolvedThemeId = resolveAssetThemeId(assetThemeOverrideId, userDefaultThemeId);
   const resolvedTheme = getAssetThemePresetById(resolvedThemeId)
     || getAssetThemePresetById(ASSET_THEME_FALLBACK_ID);
@@ -738,6 +758,11 @@ export default function AssetDetailScreen() {
             <Text style={[styles.warningCardMessage, { color: themePalette.textSecondary }]}>
               Một số dữ liệu phân tích có thể không đầy đủ. Bạn có thể thử lại để có kết quả đầy đủ.
             </Text>
+            <Text style={[styles.maintenanceHint, { color: themePalette.textSecondary, marginTop: spacing.sm }]}>
+              {maintenanceMultiplier >= 3
+                ? 'VIP reward active: maintenance grants 3x EXP.'
+                : 'Free reward active: maintenance grants base EXP.'}
+            </Text>
           </Card>
         ) : null}
 
@@ -789,16 +814,21 @@ export default function AssetDetailScreen() {
             {ASSET_THEME_PRESETS.filter((preset) => preset.active).map((preset) => (
               <ThemeChip
                 key={preset.id}
-                label={preset.name}
+                label={lockedPresetIds.includes(preset.id) ? `${preset.name} (VIP)` : preset.name}
                 accentColor={preset.tokenSet.accent}
                 selected={resolvedThemeId === preset.id}
                 onPress={() => handleThemeOverride(preset.id)}
-                disabled={themeLoading}
+                disabled={themeLoading || lockedPresetIds.includes(preset.id)}
                 testID={`asset-theme-${preset.id}`}
                 theme={themePalette}
               />
             ))}
           </View>
+          {lockedPresetIds.length > 0 ? (
+            <Text style={[styles.inlineErrorText, { color: themePalette.textSecondary }]}>
+              VIP-only presets stay visible on downgraded assets but cannot be newly applied.
+            </Text>
+          ) : null}
           <TouchableOpacity
             style={[
               styles.actionButton,

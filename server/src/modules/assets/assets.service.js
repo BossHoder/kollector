@@ -13,6 +13,7 @@ const {
   ENHANCEMENT_STATUS,
 } = require('./enhancement.constants');
 const { assertValidAssetThemePresetId } = require('./theme-presets.catalog');
+const subscriptionService = require('../subscription/subscription.service');
 
 function buildError(message, statusCode, code) {
   const error = new Error(message);
@@ -303,6 +304,10 @@ class AssetService {
           'presentation.themeOverrideId'
         );
 
+        if (themeOverrideId !== asset.presentation?.themeOverrideId) {
+          await subscriptionService.assertThemeSelectionAllowed(userId, themeOverrideId);
+        }
+
         asset.presentation = {
           ...(asset.presentation?.toObject ? asset.presentation.toObject() : asset.presentation || {}),
           themeOverrideId,
@@ -315,7 +320,11 @@ class AssetService {
 
       return this.serializeForUser(asset, userId);
     } catch (error) {
-      if (error.statusCode === 404 || error.code === 'INVALID_THEME_PRESET') {
+      if (
+        error.statusCode === 404
+        || error.code === 'INVALID_THEME_PRESET'
+        || error.code === 'THEME_TIER_LOCKED'
+      ) {
         throw error;
       }
 

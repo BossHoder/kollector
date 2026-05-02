@@ -9,7 +9,7 @@ import type {
 export interface CreateUpgradeRequestInput {
   type: UpgradeRequestType;
   transferReference: string;
-  proofFile: Blob;
+  proofFile: Blob | { uri: string; name: string; type: string };
   amount?: number;
   currency?: string;
 }
@@ -36,7 +36,7 @@ export async function createUpgradeRequest(
   const formData = new FormData();
   formData.append('type', input.type);
   formData.append('transferReference', input.transferReference);
-  formData.append('proofFile', input.proofFile as unknown as File);
+  formData.append('proofFile', input.proofFile as never);
 
   if (input.amount !== undefined) {
     formData.append('amount', String(input.amount));
