@@ -64,8 +64,51 @@ class SubscriptionRepository {
     return SubscriptionUpgradeRequest.find(query).sort({ createdAt: -1 });
   }
 
+  async findPendingRenewalRequestSubmittedBefore(userId, expiresAt) {
+    return SubscriptionUpgradeRequest.findOne({
+      userId: toObjectId(userId),
+      type: 'renewal',
+      status: 'pending',
+      submittedAt: {
+        $lte: expiresAt,
+      },
+    }).sort({ submittedAt: -1 });
+  }
+
+  async listUpgradeRequestsForRetention(now = new Date()) {
+    return SubscriptionUpgradeRequest.find({
+      $or: [
+        {
+          'proofFile.deleteAt': { $lte: now },
+          proofFilePurgedAt: null,
+        },
+        {
+          metadataExpireAt: { $lte: now },
+          metadataPurgedAt: null,
+        },
+      ],
+    }).sort({ createdAt: 1 });
+  }
+
   async findUpgradeRequestById(requestId) {
     return SubscriptionUpgradeRequest.findById(requestId);
+  }
+
+  async listSubscriptionsForLifecycleReview(now = new Date()) {
+    return Subscription.find({
+      $or: [
+        {
+          tier: 'vip',
+          status: 'active',
+          expiresAt: { $lte: now },
+        },
+        {
+          tier: 'vip',
+          status: 'grace_pending_renewal',
+          graceEndsAt: { $lte: now },
+        },
+      ],
+    }).sort({ expiresAt: 1, graceEndsAt: 1 });
   }
 
   async findUpgradeRequestByIdForUser(requestId, userId) {
@@ -83,6 +126,42 @@ class SubscriptionRepository {
       },
       {
         $set: reviewUpdate,
+      },
+      {
+        new: true,
+      }
+    );
+  }
+
+  async purgeUpgradeRequestProofFile(requestId, purgedAt = new Date()) {
+    return SubscriptionUpgradeRequest.findByIdAndUpdate(
+      requestId,
+      {
+        $set: {
+          proofFile: null,
+          proofFilePurgedAt: purgedAt,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+  }
+
+  async purgeUpgradeRequestMetadata(requestId, purgedAt = new Date()) {
+    return SubscriptionUpgradeRequest.findByIdAndUpdate(
+      requestId,
+      {
+        $set: {
+          transferReference: null,
+          proofMetadata: {
+            amount: null,
+            currency: null,
+            bankLabel: null,
+            payerMask: null,
+          },
+          metadataPurgedAt: purgedAt,
+        },
       },
       {
         new: true,

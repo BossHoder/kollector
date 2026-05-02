@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../../models/User');
 const logger = require('../../config/logger');
 const { assertValidAssetThemePresetId } = require('../assets/theme-presets.catalog');
+const subscriptionService = require('../subscription/subscription.service');
 
 function toPlainObject(value) {
   if (!value) {
@@ -227,6 +228,10 @@ class AuthService {
         'settings.preferences.assetTheme.defaultThemeId'
       );
 
+      if (validatedThemeId !== user.settings?.preferences?.assetTheme?.defaultThemeId) {
+        await subscriptionService.assertThemeSelectionAllowed(userId, validatedThemeId);
+      }
+
       user.settings = user.settings || {};
       user.settings.preferences = user.settings.preferences || {};
       user.settings.preferences.assetTheme = {
@@ -255,7 +260,8 @@ class AuthService {
     return jwt.sign(
       {
         userId: user._id.toString(),
-        email: user.email
+        email: user.email,
+        role: user.role || 'user',
       },
       jwtSecret
     );
@@ -275,7 +281,8 @@ class AuthService {
     return jwt.sign(
       {
         userId: user._id.toString(),
-        email: user.email
+        email: user.email,
+        role: user.role || 'user',
       },
       jwtRefreshSecret
     );
@@ -290,6 +297,7 @@ class AuthService {
     return {
       id: user._id.toString(),
       email: user.email,
+      role: user.role || 'user',
       profile: user.profile,
       gamification: user.gamification,
       settings: normalizeUserSettings(user.settings),

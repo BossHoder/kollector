@@ -101,12 +101,22 @@ const subscriptionUpgradeRequestSchema = new mongoose.Schema(
       type: proofMetadataSchema,
       default: () => ({}),
     },
+    proofFilePurgedAt: {
+      type: Date,
+      default: null,
+      index: true,
+    },
     metadataExpireAt: {
       type: Date,
       default: function resolveMetadataExpireAt() {
         return addDays(this.submittedAt || new Date(), METADATA_RETENTION_DAYS);
       },
       required: true,
+      index: true,
+    },
+    metadataPurgedAt: {
+      type: Date,
+      default: null,
       index: true,
     },
   },

@@ -5,23 +5,40 @@ const {
   SUBSCRIPTION_ERROR_CODES,
   SUBSCRIPTION_LIMITS,
   SUBSCRIPTION_REQUEST_STATUS,
+  SUBSCRIPTION_STATUS,
   SUBSCRIPTION_TIERS,
 } = require('./subscription.constants');
 const {
-  buildSubscriptionTierChangedEvent,
-  emitSubscriptionTierChanged,
+  emitApprovedSubscriptionTierChange,
+  emitSubscriptionTierTransition,
 } = require('./subscription.events');
 const { defaultQuotaService, currentUtcMonthKey, nextUtcMonthIso } = require('./quota.service');
 const repository = require('./subscription.repository');
+const { shouldEnforceSubscriptionLimits } = require('../../config/subscription.config');
 
 const FREE_THEME_DEFAULT_ID = 'vault-graphite';
 const FREE_THEME_LIGHT_ID = 'ledger-ivory';
 const VIP_BILLING_DAYS = 30;
+const GRACE_PERIOD_HOURS = 72;
 
 function addDays(baseDate, days) {
   const date = new Date(baseDate);
   date.setUTCDate(date.getUTCDate() + days);
   return date;
+}
+
+function addHours(baseDate, hours) {
+  const date = new Date(baseDate);
+  date.setUTCHours(date.getUTCHours() + hours);
+  return date;
+}
+
+function isDateInFuture(value, now = new Date()) {
+  return value instanceof Date && value.getTime() > now.getTime();
+}
+
+function isDateReached(value, now = new Date()) {
+  return value instanceof Date && value.getTime() <= now.getTime();
 }
 
 function buildError(status, code, message, details = {}) {
@@ -75,15 +92,114 @@ function buildThemeEntitlement(tier) {
   };
 }
 
+function getTierLimits(tier) {
+  return SUBSCRIPTION_LIMITS[tier] || SUBSCRIPTION_LIMITS[SUBSCRIPTION_TIERS.FREE];
+}
+
+function resolveAccessTier(subscription) {
+  if (
+    subscription?.tier === SUBSCRIPTION_TIERS.VIP
+    && subscription?.status !== SUBSCRIPTION_STATUS.EXPIRED
+  ) {
+    return SUBSCRIPTION_TIERS.VIP;
+  }
+
+  return SUBSCRIPTION_TIERS.FREE;
+}
+
 class SubscriptionService {
+  async syncSubscriptionLifecycle(subscriptionOrUserId, now = new Date()) {
+    const subscription = typeof subscriptionOrUserId === 'object' && subscriptionOrUserId !== null
+      ? subscriptionOrUserId
+      : await this.ensureUserSubscription(subscriptionOrUserId, { skipLifecycleSync: true });
+
+    if (
+      subscription.tier === SUBSCRIPTION_TIERS.VIP
+      && subscription.status === SUBSCRIPTION_STATUS.GRACE_PENDING_RENEWAL
+      && isDateReached(subscription.graceEndsAt, now)
+    ) {
+      return this.transitionToFreeTier(subscription, {
+        now,
+        status: SUBSCRIPTION_STATUS.ACTIVE,
+        reason: 'grace_elapsed',
+      });
+    }
+
+    if (
+      subscription.tier === SUBSCRIPTION_TIERS.VIP
+      && subscription.status === SUBSCRIPTION_STATUS.ACTIVE
+      && isDateReached(subscription.expiresAt, now)
+    ) {
+      const pendingRenewal = await repository.findPendingRenewalRequestSubmittedBefore(
+        subscription.userId,
+        subscription.expiresAt
+      );
+
+      if (pendingRenewal) {
+        return repository.upsertSubscription(subscription.userId, {
+          $set: {
+            status: SUBSCRIPTION_STATUS.GRACE_PENDING_RENEWAL,
+            graceEndsAt: addHours(subscription.expiresAt, GRACE_PERIOD_HOURS),
+          },
+        });
+      }
+
+      return this.transitionToFreeTier(subscription, {
+        now,
+        status: SUBSCRIPTION_STATUS.EXPIRED,
+        reason: 'expiry',
+      });
+    }
+
+    return subscription;
+  }
+
+  async transitionToFreeTier(subscription, {
+    now = new Date(),
+    status = SUBSCRIPTION_STATUS.ACTIVE,
+    reason = 'grace_elapsed',
+  } = {}) {
+    const updatedSubscription = await repository.upsertSubscription(subscription.userId, {
+      $set: {
+        tier: SUBSCRIPTION_TIERS.FREE,
+        status,
+        graceEndsAt: null,
+      },
+    });
+
+    await repository.createTierAuditLog({
+      userId: subscription.userId,
+      actorId: subscription.userId,
+      fromTier: subscription.tier,
+      toTier: SUBSCRIPTION_TIERS.FREE,
+      reason,
+      effectiveAt: now,
+      expiresAt: subscription.expiresAt || null,
+    });
+
+    emitSubscriptionTierTransition({
+      occurredAt: now.toISOString(),
+      userId: String(subscription.userId),
+      fromTier: subscription.tier,
+      toTier: SUBSCRIPTION_TIERS.FREE,
+      reason,
+      effectiveAt: now.toISOString(),
+      expiresAt: subscription.expiresAt ? subscription.expiresAt.toISOString() : null,
+      graceEndsAt: null,
+    });
+
+    return updatedSubscription;
+  }
+
   async evaluateAssetCreationEntitlement(userId) {
     const subscription = await this.ensureUserSubscription(userId);
-    const tierLimits = SUBSCRIPTION_LIMITS[subscription.tier] || SUBSCRIPTION_LIMITS[SUBSCRIPTION_TIERS.FREE];
+    const tierLimits = getTierLimits(resolveAccessTier(subscription));
     const used = await Asset.countDocuments({ userId });
     const remaining = Math.max(tierLimits.assetLimit - used, 0);
 
     return {
-      tier: subscription.tier,
+      tier: resolveAccessTier(subscription),
+      status: subscription.status,
       used,
       limit: tierLimits.assetLimit,
       remaining,
@@ -94,6 +210,13 @@ class SubscriptionService {
     const entitlement = await this.evaluateAssetCreationEntitlement(userId);
 
     if (entitlement.used >= entitlement.limit) {
+      if (!shouldEnforceSubscriptionLimits()) {
+        return {
+          ...entitlement,
+          softBlocked: true,
+        };
+      }
+
       throw buildError(
         429,
         'ASSET_LIMIT_REACHED',
@@ -111,7 +234,7 @@ class SubscriptionService {
     return entitlement;
   }
 
-  async ensureUserSubscription(userId) {
+  async ensureUserSubscription(userId, options = {}) {
     let subscription = await repository.findSubscriptionByUserId(userId);
 
     if (!subscription) {
@@ -120,23 +243,29 @@ class SubscriptionService {
       });
     }
 
+    if (!options.skipLifecycleSync) {
+      subscription = await this.syncSubscriptionLifecycle(subscription, options.now || new Date());
+    }
+
     return subscription;
   }
 
   async evaluateProcessingQuota(userId) {
     const subscription = await this.ensureUserSubscription(userId);
-    const tierLimits = SUBSCRIPTION_LIMITS[subscription.tier] || SUBSCRIPTION_LIMITS[SUBSCRIPTION_TIERS.FREE];
+    const accessTier = resolveAccessTier(subscription);
+    const tierLimits = getTierLimits(accessTier);
     const monthKey = currentUtcMonthKey();
     const usage = await defaultQuotaService.getUsageSnapshot({
       userId,
       monthKey,
       allowance: tierLimits.monthlyProcessingLimit,
-      tier: subscription.tier,
+      tier: accessTier,
     });
 
     return {
-      tier: subscription.tier,
+      tier: accessTier,
       limit: tierLimits.monthlyProcessingLimit,
+      status: subscription.status,
       usage,
     };
   }
@@ -154,6 +283,13 @@ class SubscriptionService {
     });
 
     if (result.outcome === QUOTA_OUTCOMES.BLOCKED) {
+      if (!shouldEnforceSubscriptionLimits()) {
+        return {
+          ...result,
+          softBlocked: true,
+        };
+      }
+
       throw buildError(
         429,
         SUBSCRIPTION_ERROR_CODES.PROCESSING_QUOTA_REACHED,
@@ -181,20 +317,20 @@ class SubscriptionService {
 
   async getSubscriptionStatus(userId) {
     const subscription = await this.ensureUserSubscription(userId);
-
-    const tierLimits = SUBSCRIPTION_LIMITS[subscription.tier] || SUBSCRIPTION_LIMITS[SUBSCRIPTION_TIERS.FREE];
+    const accessTier = resolveAccessTier(subscription);
+    const tierLimits = getTierLimits(accessTier);
     const monthKey = currentUtcMonthKey();
     const usageSnapshot = await defaultQuotaService.getUsageSnapshot({
       userId,
       monthKey,
       allowance: tierLimits.monthlyProcessingLimit,
-      tier: subscription.tier,
+      tier: accessTier,
     });
 
     const assetEntitlement = await this.evaluateAssetCreationEntitlement(userId);
 
     return {
-      tier: subscription.tier,
+      tier: accessTier,
       status: subscription.status,
       effectiveAt: (subscription.activatedAt || subscription.createdAt || new Date()).toISOString(),
       expiresAt: subscription.expiresAt ? subscription.expiresAt.toISOString() : null,
@@ -204,7 +340,7 @@ class SubscriptionService {
         processingMonthlyLimit: tierLimits.monthlyProcessingLimit,
         maintenanceExpMultiplier: tierLimits.maintenanceExpMultiplier,
         priceUsdMonthly: tierLimits.priceUsdMonthly || null,
-        theme: buildThemeEntitlement(subscription.tier),
+        theme: buildThemeEntitlement(accessTier),
       },
       usage: {
         processingUsed: usageSnapshot.used,
@@ -217,7 +353,48 @@ class SubscriptionService {
     };
   }
 
+  async assertThemeSelectionAllowed(userId, themeId) {
+    if (themeId === undefined || themeId === null) {
+      return null;
+    }
+
+    const subscription = await this.ensureUserSubscription(userId);
+    const accessTier = resolveAccessTier(subscription);
+    const entitlement = buildThemeEntitlement(accessTier);
+
+    if (entitlement.selectablePresetIds.includes(themeId)) {
+      return themeId;
+    }
+
+    if (!shouldEnforceSubscriptionLimits()) {
+      return themeId;
+    }
+
+    throw buildError(
+      403,
+      SUBSCRIPTION_ERROR_CODES.THEME_TIER_LOCKED,
+      'Selected theme is locked for the current subscription tier',
+      {
+        tier: accessTier,
+        lockedPresetId: themeId,
+        selectablePresetIds: entitlement.selectablePresetIds,
+      }
+    );
+  }
+
+  async getMaintenanceExpMultiplier(userId) {
+    const subscription = await this.ensureUserSubscription(userId);
+    const accessTier = resolveAccessTier(subscription);
+    return getTierLimits(accessTier).maintenanceExpMultiplier;
+  }
+
   async createUpgradeRequest(userId, input) {
+    if (!input.proofFile?.storageUrl) {
+      throw buildError(400, 'VALIDATION_ERROR', 'proofFile is required', {
+        field: 'proofFile',
+      });
+    }
+
     const proofFile = input.proofFile
       ? {
           storageUrl: input.proofFile.storageUrl,
@@ -285,10 +462,21 @@ class SubscriptionService {
     const now = new Date();
     const fromTier = subscription.tier;
     const toTier = SUBSCRIPTION_TIERS.VIP;
-
+    const renewalDuringGrace =
+      existing.type === 'renewal'
+      && subscription.status === 'grace_pending_renewal'
+      && isDateInFuture(subscription.graceEndsAt, now)
+      && subscription.expiresAt instanceof Date;
+    const activeRenewal =
+      existing.type === 'renewal'
+      && isDateInFuture(subscription.expiresAt, now);
+    const renewalBaseDate =
+      renewalDuringGrace || activeRenewal
+        ? subscription.expiresAt
+        : now;
     const expiresAt =
-      subscription.expiresAt && subscription.expiresAt > now
-        ? addDays(subscription.expiresAt, VIP_BILLING_DAYS)
+      existing.type === 'renewal'
+        ? addDays(renewalBaseDate, VIP_BILLING_DAYS)
         : addDays(now, VIP_BILLING_DAYS);
 
     const updatedSubscription = await repository.upsertSubscription(existing.userId, {
@@ -313,19 +501,16 @@ class SubscriptionService {
       expiresAt,
     });
 
-    emitSubscriptionTierChanged(
-      String(existing.userId),
-      buildSubscriptionTierChangedEvent({
-        occurredAt: now.toISOString(),
-        userId: String(existing.userId),
-        fromTier,
-        toTier,
-        reason: existing.type === 'renewal' ? 'renewal_approved' : 'upgrade_approved',
-        effectiveAt: now.toISOString(),
-        expiresAt: expiresAt.toISOString(),
-        graceEndsAt: null,
-      })
-    );
+    emitApprovedSubscriptionTierChange({
+      occurredAt: now.toISOString(),
+      userId: String(existing.userId),
+      fromTier,
+      toTier,
+      reason: existing.type === 'renewal' ? 'renewal_approved' : 'upgrade_approved',
+      effectiveAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString(),
+      graceEndsAt: null,
+    });
 
     return {
       ...mapUpgradeRequest(reviewed),

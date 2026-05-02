@@ -1,6 +1,7 @@
 const express = require('express');
 const { body, param, query } = require('express-validator');
 const authenticate = require('../../middleware/auth.middleware');
+const requireAdmin = require('../../middleware/admin.middleware');
 const validate = require('../../middleware/validate.middleware');
 const { singleImage } = require('../../middleware/upload.middleware');
 const subscriptionController = require('./subscription.controller');
@@ -14,6 +15,7 @@ const adminSubscriptionRouter = express.Router();
 
 subscriptionRouter.use(authenticate);
 adminSubscriptionRouter.use(authenticate);
+adminSubscriptionRouter.use(requireAdmin);
 
 const requestIdValidation = [
   param('requestId').isMongoId().withMessage('Invalid requestId'),

@@ -56,6 +56,56 @@ function emitSubscriptionTierChanged(userId, payload) {
   io.to(`user:${userId}`).emit('subscription_tier_changed', payload);
 }
 
+function emitApprovedSubscriptionTierChange({
+  occurredAt,
+  userId,
+  fromTier,
+  toTier,
+  reason,
+  effectiveAt,
+  expiresAt,
+  graceEndsAt = null,
+}) {
+  const payload = buildSubscriptionTierChangedEvent({
+    occurredAt,
+    userId,
+    fromTier,
+    toTier,
+    reason,
+    effectiveAt,
+    expiresAt,
+    graceEndsAt,
+  });
+
+  emitSubscriptionTierChanged(userId, payload);
+  return payload;
+}
+
+function emitSubscriptionTierTransition({
+  occurredAt,
+  userId,
+  fromTier,
+  toTier,
+  reason,
+  effectiveAt,
+  expiresAt = null,
+  graceEndsAt = null,
+}) {
+  const payload = buildSubscriptionTierChangedEvent({
+    occurredAt,
+    userId,
+    fromTier,
+    toTier,
+    reason,
+    effectiveAt,
+    expiresAt,
+    graceEndsAt,
+  });
+
+  emitSubscriptionTierChanged(userId, payload);
+  return payload;
+}
+
 function emitSubscriptionQuotaUpdated(userId, payload) {
   const io = getIO();
 
@@ -72,6 +122,8 @@ function emitSubscriptionQuotaUpdated(userId, payload) {
 module.exports = {
   buildSubscriptionQuotaUpdatedEvent,
   buildSubscriptionTierChangedEvent,
+  emitApprovedSubscriptionTierChange,
   emitSubscriptionQuotaUpdated,
+  emitSubscriptionTierTransition,
   emitSubscriptionTierChanged,
 };

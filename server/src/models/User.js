@@ -69,6 +69,7 @@ const userSchema = new mongoose.Schema({
     }],
 
     status: { type: String, enum: ['active', 'suspended', 'deleted'], default: 'active' },
+    role: { type: String, enum: ['user', 'admin'], default: 'user' },
     lastLoginAt: Date
 
 }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });

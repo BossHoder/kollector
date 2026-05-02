@@ -31,7 +31,8 @@ async function authenticate(req, res, next) {
       // Attach user info to request
       req.user = {
         id: decoded.userId,
-        email: decoded.email
+        email: decoded.email,
+        role: decoded.role || 'user',
       };
       
       logger.debug('User authenticated', {
