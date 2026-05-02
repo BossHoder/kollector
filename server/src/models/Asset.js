@@ -14,6 +14,8 @@ const maintenanceLogSchema = new mongoose.Schema({
   newHealth: { type: Number, required: true, min: 0, max: 100 },
   healthRestored: { type: Number, required: true, min: 0 },
   xpAwarded: { type: Number, default: MAINTENANCE_XP, min: 0 },
+  expMultiplier: { type: Number, default: 1, min: 1 },
+  xpDelta: { type: Number, default: MAINTENANCE_XP, min: 0 },
 }, { _id: true });
 
 const assetSchema = new mongoose.Schema({

@@ -20,6 +20,14 @@ const MAX_STREAK_BONUS_PERCENT = 15;
 const MAX_HEALTH = 100;
 const MAINTENANCE_XP = 10;
 
+function calculateMaintenanceXpAward(multiplier = 1, baseXp = MAINTENANCE_XP) {
+  const normalizedMultiplier = Number.isFinite(Number(multiplier))
+    ? Math.max(Number(multiplier), 1)
+    : 1;
+
+  return Math.round(Number(baseXp) * normalizedMultiplier);
+}
+
 function roundHealth(value) {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
@@ -121,6 +129,8 @@ function buildMaintenanceLog({
   previousHealth,
   newHealth,
   xpAwarded = MAINTENANCE_XP,
+  expMultiplier = 1,
+  xpDelta = xpAwarded,
   date = new Date(),
 }) {
   const normalizedPreviousHealth = clampHealth(previousHealth);
@@ -132,6 +142,8 @@ function buildMaintenanceLog({
     newHealth: normalizedNewHealth,
     healthRestored: roundHealth(Math.max(0, normalizedNewHealth - normalizedPreviousHealth)),
     xpAwarded,
+    expMultiplier,
+    xpDelta,
   };
 }
 
@@ -176,6 +188,7 @@ module.exports = {
   MAX_STREAK_BONUS_PERCENT,
   STREAK_INCREMENT_PERCENT,
   buildMaintenanceLog,
+  calculateMaintenanceXpAward,
   calculateDailyDecayAmount,
   calculateDecayedHealth,
   calculateNextMaintenanceStreak,

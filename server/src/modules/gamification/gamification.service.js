@@ -4,6 +4,7 @@ const logger = require('../../config/logger');
 const {
   MAINTENANCE_XP,
   buildMaintenanceLog,
+  calculateMaintenanceXpAward,
   calculateNextMaintenanceStreak,
   calculateRestoreAmount,
   computeVisualLayersForHealth,
@@ -11,6 +12,7 @@ const {
   isSameUtcDay,
   roundHealth,
 } = require('./gamification.helpers');
+const subscriptionService = require('../subscription/subscription.service');
 
 function createHttpError(statusCode, code, message, details) {
   const error = new Error(message);
@@ -103,13 +105,17 @@ class GamificationService {
       user.gamification?.lastMaintenanceDate,
       now
     );
+    const expMultiplier = await subscriptionService.getMaintenanceExpMultiplier(userId);
+    const xpAwarded = calculateMaintenanceXpAward(expMultiplier, MAINTENANCE_XP);
     const restoreAmount = calculateRestoreAmount(nextStreakDays);
     const newHealth = roundHealth(Math.min(100, previousHealth + restoreAmount));
     const visualLayers = computeVisualLayersForHealth(newHealth);
     const maintenanceLog = buildMaintenanceLog({
       previousHealth,
       newHealth,
-      xpAwarded: MAINTENANCE_XP,
+      xpAwarded,
+      expMultiplier,
+      xpDelta: xpAwarded,
       date: now,
     });
 
@@ -167,7 +173,7 @@ class GamificationService {
       activeAssets,
     });
 
-    user.gamification.totalXp = Number(user.gamification?.totalXp ?? 0) + MAINTENANCE_XP;
+    user.gamification.totalXp = Number(user.gamification?.totalXp ?? 0) + xpAwarded;
     user.gamification.maintenanceStreak = nextStreakDays;
     user.gamification.lastMaintenanceDate = now;
     user.gamification.badges = [...new Set([...existingBadges, ...badgesUnlocked])];
@@ -180,6 +186,8 @@ class GamificationService {
       userId,
       previousHealth,
       newHealth,
+      expMultiplier,
+      xpAwarded,
       streakDays: nextStreakDays,
       badgesUnlocked,
     });
@@ -187,7 +195,7 @@ class GamificationService {
     return {
       previousHealth: roundHealth(previousHealth),
       newHealth,
-      xpAwarded: MAINTENANCE_XP,
+      xpAwarded,
       streakDays: nextStreakDays,
       badgesUnlocked,
     };
