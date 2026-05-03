@@ -7,7 +7,8 @@
     "test": "jest --runInBand",
     "test:watch": "jest --watch --runInBand",
     "start": "node src/app.js",
-    "dev": "nodemon src/app.js"
+    "dev": "nodemon src/app.js",
+    "seed:realistic:q1-2026": "node scripts/seed-realistic-q1-2026.js"
   },
   "keywords": [],
   "author": "",
