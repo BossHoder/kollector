@@ -63,6 +63,7 @@ const { app } = require('../../../src/app');
 
 describe('GET /api/assets/queue-status', () => {
   let accessToken;
+  let userToken;
 
   beforeAll(async () => {
     await connectDatabase();
@@ -95,8 +96,12 @@ describe('GET /api/assets/queue-status', () => {
     });
     
     // Create and login test user
-    const result = await authService.register('test@example.com', 'TestPass123');
-    accessToken = result.accessToken;
+    const admin = await authService.register('admin-queue@example.com', 'TestPass123');
+    await User.findByIdAndUpdate(admin.user.id, { role: 'admin' });
+    accessToken = admin.accessToken;
+
+    const user = await authService.register('test@example.com', 'TestPass123');
+    userToken = user.accessToken;
   });
 
   /**
@@ -183,6 +188,16 @@ describe('GET /api/assets/queue-status', () => {
 
       expect(response.body).toHaveProperty('error');
       expect(response.body.error).toHaveProperty('code', 'INVALID_TOKEN');
+    });
+
+    it('should return 403 for authenticated non-admin callers', async () => {
+      const response = await request(app)
+        .get('/api/assets/queue-status')
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect('Content-Type', /json/)
+        .expect(403);
+
+      expect(response.body).toHaveProperty('error.code', 'FORBIDDEN');
     });
   });
 });
