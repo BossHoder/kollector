@@ -49,7 +49,7 @@ class AssetService {
 
     if (!originalImageUrl) {
       throw buildError(
-        'Asset has no original image to enhance',
+        'TÃ i sáº£n khÃ´ng cÃ³ áº£nh gá»‘c Ä‘á»ƒ tÄƒng cÆ°á»ng',
         409,
         'ENHANCEMENT_NOT_AVAILABLE'
       );
@@ -267,7 +267,7 @@ class AssetService {
       }).lean();
 
       if (!asset) {
-        throw buildError('Asset not found', 404, 'NOT_FOUND');
+        throw buildError('KhÃ´ng tÃ¬m tháº¥y tÃ i sáº£n', 404, 'NOT_FOUND');
       }
 
       logger.debug('Asset retrieved', { assetId, userId });
@@ -287,7 +287,7 @@ class AssetService {
       const asset = await Asset.findOne({ _id: assetId, userId });
 
       if (!asset) {
-        throw buildError('Asset not found', 404, 'NOT_FOUND');
+        throw buildError('KhÃ´ng tÃ¬m tháº¥y tÃ i sáº£n', 404, 'NOT_FOUND');
       }
 
       if (updates.category !== undefined) {
@@ -341,7 +341,7 @@ class AssetService {
       });
 
       if (!asset) {
-        throw buildError('Asset not found', 404, 'NOT_FOUND');
+        throw buildError('KhÃ´ng tÃ¬m tháº¥y tÃ i sáº£n', 404, 'NOT_FOUND');
       }
 
       const publicIdsToDelete = [
@@ -385,20 +385,20 @@ class AssetService {
     const asset = await Asset.findOne({ _id: assetId, userId });
 
     if (!asset) {
-      throw buildError('Asset not found', 404, 'NOT_FOUND');
+      throw buildError('KhÃ´ng tÃ¬m tháº¥y tÃ i sáº£n', 404, 'NOT_FOUND');
     }
 
     const retryableStatuses = ['failed', 'partial'];
     if (!retryableStatuses.includes(asset.status)) {
       throw buildError(
-        `Asset cannot be retried. Current status: ${asset.status}. Only failed or partial assets can be retried.`,
+        `Cannot retry asset. Current status: ${asset.status}. Only failed or partial assets are retryable.`,
         409,
         'NOT_RETRYABLE'
       );
     }
 
     if (!asset.images?.original?.url) {
-      throw buildError('Asset has no original image to process', 409, 'NOT_RETRYABLE');
+      throw buildError('TÃ i sáº£n khÃ´ng cÃ³ áº£nh gá»‘c Ä‘á»ƒ xá»­ lÃ½', 409, 'NOT_RETRYABLE');
     }
 
     const previousStatus = asset.status;
@@ -422,13 +422,13 @@ class AssetService {
     const asset = await Asset.findOne({ _id: assetId, userId });
 
     if (!asset) {
-      throw buildError('Asset not found', 404, 'NOT_FOUND');
+      throw buildError('KhÃ´ng tÃ¬m tháº¥y tÃ i sáº£n', 404, 'NOT_FOUND');
     }
 
     const enhancementStatus = asset.enhancement?.status || ENHANCEMENT_STATUS.IDLE;
     if (asset.status === 'processing' || ENHANCEMENT_ACTIVE_STATUSES.includes(enhancementStatus)) {
       throw buildError(
-        'Enhancement already queued or processing',
+        'YÃªu cáº§u tÄƒng cÆ°á»ng áº£nh Ä‘Ã£ Ä‘Æ°á»£c xáº¿p hÃ ng hoáº·c Ä‘ang xá»­ lÃ½',
         409,
         'ENHANCEMENT_ALREADY_ACTIVE'
       );
@@ -465,7 +465,7 @@ class AssetService {
         _id: decoded._id,
       };
     } catch (error) {
-      throw buildError('Invalid cursor', 400, 'INVALID_CURSOR');
+      throw buildError('Cursor khÃ´ng há»£p lá»‡', 400, 'INVALID_CURSOR');
     }
   }
 }

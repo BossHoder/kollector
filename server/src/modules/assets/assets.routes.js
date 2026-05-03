@@ -2,6 +2,7 @@ const express = require('express');
 const { body, param, query } = require('express-validator');
 const assetController = require('./assets.controller');
 const authenticate = require('../../middleware/auth.middleware');
+const requireAdmin = require('../../middleware/admin.middleware');
 const validate = require('../../middleware/validate.middleware');
 const { singleImage } = require('../../middleware/upload.middleware');
 const {
@@ -27,7 +28,7 @@ const createAssetValidation = [
   body('status')
     .optional()
     .isIn(['draft', 'processing', 'active', 'archived'])
-    .withMessage('Status must be one of: draft, processing, active, archived')
+    .withMessage('Tráº¡ng thÃ¡i pháº£i lÃ  má»™t trong: draft, processing, active, archived')
 ];
 
 /**
@@ -36,7 +37,7 @@ const createAssetValidation = [
 const updateAssetValidation = [
   param('id')
     .isMongoId()
-    .withMessage('Invalid asset ID'),
+    .withMessage('ID tÃ i sáº£n khÃ´ng há»£p lá»‡'),
   body('category')
     .optional()
     .customSanitizer((value) => normalizeCanonicalAssetCategory(value) || normalizeCategoryKey(value) || value)
@@ -45,11 +46,11 @@ const updateAssetValidation = [
   body('status')
     .optional()
     .isIn(['draft', 'processing', 'active', 'archived'])
-    .withMessage('Status must be one of: draft, processing, active, archived'),
+    .withMessage('Tráº¡ng thÃ¡i pháº£i lÃ  má»™t trong: draft, processing, active, archived'),
   body('presentation.themeOverrideId')
     .optional({ values: 'undefined' })
     .custom((value) => value === null || typeof value === 'string')
-    .withMessage('presentation.themeOverrideId must be a string or null')
+    .withMessage('presentation.themeOverrideId pháº£i lÃ  chuá»—i hoáº·c null')
 ];
 
 /**
@@ -58,23 +59,23 @@ const updateAssetValidation = [
 const assetIdValidation = [
   param('id')
     .isMongoId()
-    .withMessage('Invalid asset ID')
+    .withMessage('ID tÃ i sáº£n khÃ´ng há»£p lá»‡')
 ];
 
 const maintainAssetValidation = [
   param('assetId')
     .isMongoId()
-    .withMessage('Invalid asset ID'),
+    .withMessage('ID tÃ i sáº£n khÃ´ng há»£p lá»‡'),
   body('version')
     .isInt({ min: 1 })
-    .withMessage('Version must be a positive integer'),
+    .withMessage('Version pháº£i lÃ  sá»‘ nguyÃªn dÆ°Æ¡ng'),
   body('cleanedPercentage')
     .isFloat({ min: 80, max: 100 })
-    .withMessage('cleanedPercentage must be between 80 and 100'),
+    .withMessage('cleanedPercentage pháº£i náº±m trong khoáº£ng tá»« 80 Ä‘áº¿n 100'),
   body('durationMs')
     .optional()
     .isInt({ min: 2000 })
-    .withMessage('durationMs must be at least 2000'),
+    .withMessage('durationMs pháº£i Ã­t nháº¥t lÃ  2000'),
 ];
 
 /**
@@ -84,7 +85,7 @@ const listAssetsValidation = [
   query('limit')
     .optional()
     .isInt({ min: 1, max: 100 })
-    .withMessage('Limit must be between 1 and 100'),
+    .withMessage('Giá»›i háº¡n pháº£i náº±m trong khoáº£ng tá»« 1 Ä‘áº¿n 100'),
   query('category')
     .optional()
     .customSanitizer((value) => normalizeCategoryKey(value) || value)
@@ -93,7 +94,7 @@ const listAssetsValidation = [
   query('status')
     .optional()
     .isIn(['draft', 'processing', 'partial', 'active', 'archived', 'failed'])
-    .withMessage('Status must be one of: draft, processing, partial, active, archived, failed')
+    .withMessage('Tráº¡ng thÃ¡i pháº£i lÃ  má»™t trong: draft, processing, partial, active, archived, failed')
 ];
 
 /**
@@ -109,7 +110,8 @@ router.get('/categories', assetController.getCategories.bind(assetController));
  * Submit asset for AI processing (multipart/form-data)
  * Creates draft asset, uploads to configured storage, enqueues AI job
  */
-router.post('/analyze-queue', 
+router.post(
+  '/analyze-queue',
   ...singleImage('image'),
   assetController.analyzeQueue.bind(assetController)
 );
@@ -118,7 +120,7 @@ router.post('/analyze-queue',
  * GET /api/assets/queue-status
  * Get queue metrics for monitoring
  */
-router.get('/queue-status', assetController.getQueueStatus.bind(assetController));
+router.get('/queue-status', requireAdmin, assetController.getQueueStatus.bind(assetController));
 
 /**
  * POST /api/assets/:id/enhance-image

@@ -122,5 +122,6 @@ module.exports = {
   normalizeCategoryKey,
   normalizeOptionalText,
   sanitizeCategoryInput,
+  sanitizeText,
   serializeUploadedAsset,
 };

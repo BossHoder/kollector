@@ -49,7 +49,7 @@ function getQueue() {
   if (!queue) {
     const connection = getConnection();
     queue = new Queue(QUEUE_NAME, { connection });
-    
+
     logger.info('AI processing queue initialized', { queueName: QUEUE_NAME });
   }
   return queue;
@@ -70,7 +70,7 @@ function getQueue() {
  */
 async function addToProcessingQueue(jobData) {
   const q = getQueue();
-  
+
   // Validate required fields per ai-job.schema.json
   const requiredFields = ['assetId', 'userId', 'imageUrl', 'category', 'createdAt'];
   for (const field of requiredFields) {
@@ -91,7 +91,7 @@ async function addToProcessingQueue(jobData) {
   };
 
   const job = await q.add('process-asset', sanitizedData, DEFAULT_JOB_OPTIONS);
-  
+
   logger.info('Job added to AI processing queue', {
     jobId: job.id,
     assetId: sanitizedData.assetId,
@@ -116,7 +116,7 @@ async function getQueueMetrics() {
     'delayed',
     'paused'
   );
-  
+
   return {
     waiting: counts.waiting || 0,
     active: counts.active || 0,
@@ -125,6 +125,24 @@ async function getQueueMetrics() {
     delayed: counts.delayed || 0,
     paused: counts.paused || 0
   };
+}
+
+async function listFailedJobs(limit = 20) {
+  const q = getQueue();
+  const jobs = await q.getJobs(['failed'], 0, Math.max(limit - 1, 0), false);
+
+  return jobs.map((job) => ({
+    id: String(job.id),
+    queueName: QUEUE_NAME,
+    assetId: job.data?.assetId ? String(job.data.assetId) : null,
+    userId: job.data?.userId ? String(job.data.userId) : null,
+    failureReason: job.failedReason || 'Unknown failure',
+    attemptsMade: job.attemptsMade || 0,
+    maxAttempts: job.opts?.attempts || DEFAULT_JOB_OPTIONS.attempts,
+    createdAt: job.timestamp ? new Date(job.timestamp).toISOString() : null,
+    processedAt: job.processedOn ? new Date(job.processedOn).toISOString() : null,
+    failedAt: job.finishedOn ? new Date(job.finishedOn).toISOString() : null,
+  }));
 }
 
 /**
@@ -145,5 +163,6 @@ module.exports = {
   getQueue,
   addToProcessingQueue,
   getQueueMetrics,
+  listFailedJobs,
   closeQueue
 };

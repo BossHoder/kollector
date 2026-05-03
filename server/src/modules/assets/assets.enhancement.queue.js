@@ -105,6 +105,24 @@ async function getEnhancementQueueMetrics() {
   };
 }
 
+async function listEnhancementFailedJobs(limit = 20) {
+  const queue = getEnhancementQueue();
+  const jobs = await queue.getJobs(['failed'], 0, Math.max(limit - 1, 0), false);
+
+  return jobs.map((job) => ({
+    id: String(job.id),
+    queueName: ENHANCEMENT_QUEUE_NAME,
+    assetId: job.data?.assetId ? String(job.data.assetId) : null,
+    userId: job.data?.userId ? String(job.data.userId) : null,
+    failureReason: job.failedReason || 'Unknown failure',
+    attemptsMade: job.attemptsMade || 0,
+    maxAttempts: job.opts?.attempts || ENHANCEMENT_MAX_ATTEMPTS,
+    createdAt: job.timestamp ? new Date(job.timestamp).toISOString() : null,
+    processedAt: job.processedOn ? new Date(job.processedOn).toISOString() : null,
+    failedAt: job.finishedOn ? new Date(job.finishedOn).toISOString() : null,
+  }));
+}
+
 async function closeEnhancementQueue() {
   if (enhancementQueue) {
     await enhancementQueue.close();
@@ -119,5 +137,6 @@ module.exports = {
   closeEnhancementQueue,
   getEnhancementQueue,
   getEnhancementQueueMetrics,
+  listEnhancementFailedJobs,
   sanitizeEnhancementJobData,
 };
