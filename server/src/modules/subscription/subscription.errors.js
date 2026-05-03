@@ -14,7 +14,7 @@ class AssetLimitReachedError extends SubscriptionError {
   constructor(details = {}) {
     super(
       SUBSCRIPTION_ERROR_CODES.ASSET_LIMIT_REACHED,
-      'Asset creation limit reached for current tier',
+      'Đã đạt giới hạn tạo tài sản của gói hiện tại',
       details,
       429
     );
@@ -25,7 +25,7 @@ class ProcessingQuotaReachedError extends SubscriptionError {
   constructor(details = {}) {
     super(
       SUBSCRIPTION_ERROR_CODES.PROCESSING_QUOTA_REACHED,
-      'Monthly image-processing quota reached',
+      'Đã đạt giới hạn xử lý ảnh trong tháng',
       details,
       429
     );
@@ -36,7 +36,7 @@ class ThemeTierLockedError extends SubscriptionError {
   constructor(details = {}) {
     super(
       SUBSCRIPTION_ERROR_CODES.THEME_TIER_LOCKED,
-      'Selected preset requires VIP tier',
+      'Preset đã chọn yêu cầu gói VIP',
       details,
       403
     );
@@ -47,7 +47,7 @@ function toSubscriptionErrorPayload(error) {
   return {
     error: {
       code: error.code || 'SUBSCRIPTION_ERROR',
-      message: error.message || 'Subscription operation failed',
+      message: error.message || 'Thao tác gói đăng ký thất bại',
       details: error.details || {},
     },
   };

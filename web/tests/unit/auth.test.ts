@@ -103,6 +103,7 @@ describe('auth helpers', () => {
       id: 'user-123',
       _id: 'user-123',
       email: 'test@example.com',
+      role: 'user',
       username: 'testuser',
       displayName: 'Test User',
       avatar: undefined,

@@ -1,4 +1,4 @@
-import { apiRequest, uploadFile } from '../services/apiClient';
+import { apiRequest } from '../services/apiClient';
 import type {
   UpgradeRequestListResponse,
   UpgradeRequestResponse,
@@ -9,9 +9,14 @@ import type {
 export interface CreateUpgradeRequestInput {
   type: UpgradeRequestType;
   transferReference: string;
-  proofFile: Blob | { uri: string; name: string; type: string };
   amount?: number;
   currency?: string;
+  bankLabel?: string;
+  payerMask?: string;
+  proofFile?: {
+    storageUrl?: string;
+    uploadedAt?: string;
+  } | null;
 }
 
 export interface AdminDecisionInput {
@@ -33,20 +38,22 @@ export async function getUpgradeRequest(requestId: string): Promise<UpgradeReque
 export async function createUpgradeRequest(
   input: CreateUpgradeRequestInput
 ): Promise<UpgradeRequestResponse> {
-  const formData = new FormData();
-  formData.append('type', input.type);
-  formData.append('transferReference', input.transferReference);
-  formData.append('proofFile', input.proofFile as never);
-
-  if (input.amount !== undefined) {
-    formData.append('amount', String(input.amount));
+  if (!String(input.transferReference || '').trim()) {
+    throw new Error('Vui lòng nhập mã tham chiếu chuyển khoản.');
   }
 
-  if (input.currency) {
-    formData.append('currency', input.currency);
-  }
-
-  return uploadFile('/subscription/upgrade-requests', formData);
+  return apiRequest('/subscription/upgrade-requests', {
+    method: 'POST',
+    body: {
+      type: input.type,
+      transferReference: input.transferReference.trim(),
+      amount: input.amount,
+      currency: input.currency,
+      bankLabel: input.bankLabel,
+      payerMask: input.payerMask,
+      proofFile: input.proofFile ?? null,
+    },
+  });
 }
 
 export async function adminListUpgradeRequests(

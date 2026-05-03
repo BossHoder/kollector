@@ -64,7 +64,6 @@ export function SettingsPage() {
   );
   const [requestType, setRequestType] = useState<'upgrade' | 'renewal'>('upgrade');
   const [transferReference, setTransferReference] = useState('');
-  const [proofFile, setProofFile] = useState<File | null>(null);
 
   const subscriptionQuery = useQuery({
     queryKey: ['subscription-status'],
@@ -92,19 +91,13 @@ export function SettingsPage() {
 
   const requestMutation = useMutation({
     mutationFn: async () => {
-      if (!proofFile) {
-        throw new Error('Proof image is required');
-      }
-
       return createUpgradeRequest({
         type: requestType,
         transferReference,
-        proofFile,
       });
     },
     onSuccess: async () => {
       setTransferReference('');
-      setProofFile(null);
       await requestsQuery.refetch();
       await subscriptionQuery.refetch();
     },
@@ -266,20 +259,10 @@ export function SettingsPage() {
             />
           </label>
 
-          <label className="block">
-            <span className="mb-1 block text-sm font-medium text-gray-600">Proof image</span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => setProofFile(event.target.files?.[0] ?? null)}
-              className="block w-full text-sm text-gray-600"
-            />
-          </label>
-
           <button
             type="button"
             onClick={() => void requestMutation.mutateAsync()}
-            disabled={requestMutation.isPending || !transferReference.trim() || !proofFile}
+            disabled={requestMutation.isPending || !transferReference.trim()}
             className="inline-flex items-center justify-center rounded-lg bg-stitch-blue px-4 py-2 font-medium text-white transition hover:bg-stitch-blue-dark disabled:opacity-60"
           >
             {requestMutation.isPending ? 'Submitting...' : 'Submit bank transfer'}

@@ -30,6 +30,20 @@ describe('SubscriptionUpgradeRequest schema', () => {
     await expect(doc.validate()).rejects.toThrow(/transferReference/i);
   });
 
+  it('allows pending requests without a proof file', async () => {
+    const doc = new SubscriptionUpgradeRequest({
+      userId: new mongoose.Types.ObjectId(),
+      type: 'upgrade',
+      status: 'pending',
+      transferReference: 'BANK-REF-123',
+      submittedAt: new Date(),
+      metadataExpireAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
+      proofFile: null,
+    });
+
+    await expect(doc.validate()).resolves.toBeUndefined();
+  });
+
   it('defaults proof retention and metadata retention windows from submission time', () => {
     const submittedAt = new Date('2026-04-01T00:00:00.000Z');
     const doc = new SubscriptionUpgradeRequest({

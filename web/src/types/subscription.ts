@@ -58,6 +58,28 @@ export interface UpgradeRequestSummary {
   rejectionReason: string | null;
   proofFileDeleteAt: string | null;
   metadataExpireAt: string;
+  user?: {
+    id: string;
+    email: string | null;
+    displayName: string | null;
+    role: 'user' | 'admin';
+  };
+  payment?: {
+    amount: number | null;
+    currency: string | null;
+    bankLabel: string | null;
+    payerMask: string | null;
+  };
+  review?: {
+    reviewedAt: string | null;
+    rejectionReason: string | null;
+    reviewer: {
+      id: string;
+      email: string | null;
+      displayName: string | null;
+      role: 'user' | 'admin';
+    } | null;
+  };
 }
 
 export interface UpgradeRequestResponse {
@@ -73,7 +95,8 @@ export interface CreateUpgradeRequestInput {
   transferReference: string;
   amount?: number;
   currency?: string;
-  proofFile: File;
+  bankLabel?: string;
+  payerMask?: string;
 }
 
 export interface AdminDecisionInput {

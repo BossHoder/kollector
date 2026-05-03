@@ -96,6 +96,7 @@ const subscriptionUpgradeRequestSchema = new mongoose.Schema(
     proofFile: {
       type: proofFileSchema,
       default: null,
+      required: false,
     },
     proofMetadata: {
       type: proofMetadataSchema,

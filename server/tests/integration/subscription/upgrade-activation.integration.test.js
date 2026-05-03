@@ -47,10 +47,12 @@ describe('Subscription upgrade activation integration', () => {
       transferReference: 'VIP-ACTIVATION-REF',
       submittedAt: new Date(),
       metadataExpireAt: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000),
-      proofFile: {
-        storageUrl: 'http://localhost:3000/uploads/subscription-proofs/vip-upgrade-proof.png',
-        uploadedAt: new Date(),
-        deleteAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      proofFile: null,
+      proofMetadata: {
+        amount: 99000,
+        currency: 'VND',
+        bankLabel: 'VPBANK',
+        payerMask: '8938',
       },
     });
 

@@ -88,10 +88,12 @@ const {
   subscriptionRouter,
   adminSubscriptionRouter,
 } = require('./modules/subscription/subscription.routes');
+const { adminRouter } = require('./modules/admin/admin.routes');
 app.use('/api/auth', authRoutes);
 app.use('/api/assets', assetRoutes);
 app.use('/api/subscription', subscriptionRouter);
 app.use('/api/admin/subscription', adminSubscriptionRouter);
+app.use('/api/admin', adminRouter);
 
 // 404 handler (must be after all routes)
 app.use(notFoundHandler);

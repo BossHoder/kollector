@@ -2,12 +2,12 @@
   "openapi": "3.1.0",
   "info": {
     "title": "KLECTR Subscription MVP Banking API",
-    "version": "1.2.0",
+    "version": "1.3.0",
     "description": "Additive contracts for Free/VIP subscription, manual bank-transfer upgrade workflow, quota status visibility, and quota/tier error responses.",
     "x-contract-evolution": {
       "policy": "semver-minor-additive",
       "compatibility": "backward-compatible",
-      "previousVersion": "1.1.0"
+      "previousVersion": "1.2.0"
     }
   },
   "paths": {
@@ -41,6 +41,11 @@
         "requestBody": {
           "required": true,
           "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpgradeRequestCreate"
+              }
+            },
             "multipart/form-data": {
               "schema": {
                 "$ref": "#/components/schemas/UpgradeRequestCreate"
@@ -580,7 +585,7 @@
       },
       "UpgradeRequestCreate": {
         "type": "object",
-        "required": ["type", "transferReference", "proofFile"],
+        "required": ["type", "transferReference"],
         "properties": {
           "type": {
             "type": "string",
@@ -599,6 +604,16 @@
             "type": "string",
             "minLength": 3,
             "maxLength": 3
+          },
+          "bankLabel": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "payerMask": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
           },
           "proofFile": {
             "type": "string",

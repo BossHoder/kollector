@@ -40,9 +40,14 @@ interface AuthProviderProps {
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const queryClient = useQueryClient();
+  const initialStoredUser = getStoredUser();
+  const initialToken = getAccessToken();
 
   // State to track current user - initialized from localStorage
-  const [user, setUser] = useState<User | null>(() => getStoredUser());
+  const [user, setUser] = useState<User | null>(() => initialStoredUser);
+  const [isHydratingUser, setIsHydratingUser] = useState<boolean>(
+    Boolean(initialStoredUser && initialToken)
+  );
 
   // Login mutation
   const loginMutation = useMutation({
@@ -105,7 +110,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Computed authentication state
   const isAuthenticated = !!getAccessToken() && !!user;
-  const isLoading = loginMutation.isPending || registerMutation.isPending;
+  const isLoading = loginMutation.isPending || registerMutation.isPending || isHydratingUser;
   const error =
     (loginMutation.error as ApiError | null) ??
     (registerMutation.error as ApiError | null) ??
@@ -120,6 +125,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
       clearAuthData();
       setUser(null);
     }
+  }, []);
+
+  useEffect(() => {
+    const token = getAccessToken();
+    const storedUser = getStoredUser();
+
+    if (!token || !storedUser) {
+      setIsHydratingUser(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    void apiClient
+      .get<User>('/api/auth/me')
+      .then((freshUser) => {
+        if (cancelled) {
+          return;
+        }
+
+        setStoredUser(freshUser);
+        setUser(freshUser);
+        setIsHydratingUser(false);
+      })
+      .catch(() => {
+        if (cancelled) {
+          return;
+        }
+
+        clearAuthData();
+        setUser(null);
+        setIsHydratingUser(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const value: AuthContextValue = useMemo(

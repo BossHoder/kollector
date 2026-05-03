@@ -205,7 +205,7 @@ export function HomePage() {
                   </dt>
                   <dd className="mt-4 flex flex-auto flex-col text-base leading-7 text-gray-400">
                     <p className="flex-auto">
-                      Cập nhật giá trị thị trường và biến động giá của bộ sưu tập theo thời gian thực mỗi ngày.
+                      Cập nhật giá trị thị trường và biến động giá của bộ sưu tập theo Real-time mỗi ngày.
                     </p>
                   </dd>
                 </div>

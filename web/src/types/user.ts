@@ -7,9 +7,26 @@ export interface User {
   id: string;
   _id?: string; // MongoDB ObjectId alias
   email: string;
+  role: 'user' | 'admin';
+  status?: 'active' | 'suspended' | 'deleted';
   username?: string;
   displayName?: string;
   avatar?: string;
+  lastLoginAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  profile?: {
+    displayName?: string;
+    avatarUrl?: string | null;
+    bio?: string;
+  };
+  settings?: {
+    preferences?: {
+      assetTheme?: {
+        defaultThemeId?: string | null;
+      };
+    };
+  };
   gamification?: {
     totalXp: number;
     rank: 'Bronze' | 'Silver' | 'Gold' | 'Platinum' | 'Diamond';

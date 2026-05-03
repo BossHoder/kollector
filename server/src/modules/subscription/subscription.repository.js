@@ -61,7 +61,10 @@ class SubscriptionRepository {
       query.status = filters.status;
     }
 
-    return SubscriptionUpgradeRequest.find(query).sort({ createdAt: -1 });
+    return SubscriptionUpgradeRequest.find(query)
+      .populate('userId', 'email profile.displayName role')
+      .populate('reviewedBy', 'email profile.displayName role')
+      .sort({ createdAt: -1 });
   }
 
   async findPendingRenewalRequestSubmittedBefore(userId, expiresAt) {

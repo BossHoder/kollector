@@ -1,32 +1,4 @@
-const { uploadImage } = require('../../config/cloudinary');
 const subscriptionService = require('./subscription.service');
-
-function buildValidationError(message, details = {}) {
-  const error = new Error(message);
-  error.statusCode = 400;
-  error.code = 'VALIDATION_ERROR';
-  error.details = details;
-  return error;
-}
-
-async function buildProofMetadataFromUpload(file) {
-  if (!file) {
-    throw buildValidationError('proofFile is required', {
-      field: 'proofFile',
-    });
-  }
-
-  const upload = await uploadImage(file.buffer, {
-    folder: 'subscription-proofs',
-    originalFilename: file.originalname,
-    mimetype: file.mimetype,
-  });
-
-  return {
-    storageUrl: upload.url,
-    uploadedAt: new Date(),
-  };
-}
 
 class SubscriptionController {
   async getMySubscription(req, res, next) {
@@ -47,7 +19,7 @@ class SubscriptionController {
         currency: req.body.currency,
         bankLabel: req.body.bankLabel,
         payerMask: req.body.payerMask,
-        proofFile: await buildProofMetadataFromUpload(req.file),
+        proofFile: req.body.proofFile || null,
       });
 
       res.status(202).json({ data });

@@ -56,11 +56,7 @@ describe('GET /api/subscription/upgrade-requests contracts', () => {
       reviewedAt: new Date('2026-04-03T00:00:00.000Z'),
       reviewedBy: new mongoose.Types.ObjectId(),
       metadataExpireAt: new Date('2026-09-29T00:00:00.000Z'),
-      proofFile: {
-        storageUrl: 'http://localhost:3000/uploads/subscription-proofs/latest-proof.png',
-        uploadedAt: new Date('2026-04-02T00:00:00.000Z'),
-        deleteAt: new Date('2026-05-02T00:00:00.000Z'),
-      },
+      proofFile: null,
     });
 
     const other = await SubscriptionUpgradeRequest.create({
@@ -95,6 +91,7 @@ describe('GET /api/subscription/upgrade-requests contracts', () => {
       ownOlderRequestId,
     ]);
     expect(response.body.data.every((item) => item.userId === userId)).toBe(true);
+    expect(response.body.data[0].proofFileDeleteAt).toBeNull();
   });
 
   it('returns own request details and hides another user request with 404', async () => {
@@ -110,6 +107,7 @@ describe('GET /api/subscription/upgrade-requests contracts', () => {
       type: 'renewal',
       status: 'approved',
       transferReference: 'LATEST-REF',
+      proofFileDeleteAt: null,
     });
 
     const hiddenResponse = await request(app)

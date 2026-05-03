@@ -65,6 +65,56 @@ function mapUpgradeRequest(request) {
   };
 }
 
+function mapAdminUpgradeRequest(request) {
+  const base = mapUpgradeRequest(request);
+  const submitter =
+    request.userId && typeof request.userId === 'object'
+      ? {
+          id: String(request.userId._id || request.userId.id),
+          email: request.userId.email || null,
+          displayName: request.userId.profile?.displayName || null,
+          role: request.userId.role || 'user',
+        }
+      : {
+          id: String(request.userId),
+          email: null,
+          displayName: null,
+          role: 'user',
+        };
+  const reviewer =
+    request.reviewedBy && typeof request.reviewedBy === 'object'
+      ? {
+          id: String(request.reviewedBy._id || request.reviewedBy.id),
+          email: request.reviewedBy.email || null,
+          displayName: request.reviewedBy.profile?.displayName || null,
+          role: request.reviewedBy.role || 'admin',
+        }
+      : request.reviewedBy
+        ? {
+            id: String(request.reviewedBy),
+            email: null,
+            displayName: null,
+            role: 'admin',
+          }
+        : null;
+
+  return {
+    ...base,
+    user: submitter,
+    payment: {
+      amount: request.proofMetadata?.amount ?? null,
+      currency: request.proofMetadata?.currency ?? null,
+      bankLabel: request.proofMetadata?.bankLabel ?? null,
+      payerMask: request.proofMetadata?.payerMask ?? null,
+    },
+    review: {
+      reviewedAt: base.reviewedAt,
+      rejectionReason: base.rejectionReason,
+      reviewer,
+    },
+  };
+}
+
 function buildThemeEntitlement(tier) {
   const allPresetIds = getAssetThemePresets().map((preset) => preset.id);
 
@@ -220,7 +270,7 @@ class SubscriptionService {
       throw buildError(
         429,
         'ASSET_LIMIT_REACHED',
-        'Asset creation limit reached for current tier',
+        'Đã đạt giới hạn tạo tài sản của gói hiện tại',
         {
           tier: entitlement.tier,
           limitType: 'asset',
@@ -293,7 +343,7 @@ class SubscriptionService {
       throw buildError(
         429,
         SUBSCRIPTION_ERROR_CODES.PROCESSING_QUOTA_REACHED,
-        'Monthly image-processing quota reached',
+        'Đã đạt giới hạn xử lý ảnh trong tháng',
         {
           tier: entitlement.tier,
           limitType: 'processing',
@@ -373,7 +423,7 @@ class SubscriptionService {
     throw buildError(
       403,
       SUBSCRIPTION_ERROR_CODES.THEME_TIER_LOCKED,
-      'Selected theme is locked for the current subscription tier',
+      'Giao diện đã chọn bị khóa với gói đăng ký hiện tại',
       {
         tier: accessTier,
         lockedPresetId: themeId,
@@ -389,12 +439,6 @@ class SubscriptionService {
   }
 
   async createUpgradeRequest(userId, input) {
-    if (!input.proofFile?.storageUrl) {
-      throw buildError(400, 'VALIDATION_ERROR', 'proofFile is required', {
-        field: 'proofFile',
-      });
-    }
-
     const proofFile = input.proofFile
       ? {
           storageUrl: input.proofFile.storageUrl,
@@ -429,7 +473,7 @@ class SubscriptionService {
     const request = await repository.findUpgradeRequestByIdForUser(requestId, userId);
 
     if (!request) {
-      throw buildError(404, 'UPGRADE_REQUEST_NOT_FOUND', 'Upgrade request not found');
+      throw buildError(404, 'UPGRADE_REQUEST_NOT_FOUND', 'Không tìm thấy yêu cầu nâng gói');
     }
 
     return mapUpgradeRequest(request);
@@ -437,18 +481,18 @@ class SubscriptionService {
 
   async adminListUpgradeRequests(filters = {}) {
     const requests = await repository.listUpgradeRequests(filters);
-    return requests.map(mapUpgradeRequest);
+    return requests.map(mapAdminUpgradeRequest);
   }
 
   async adminApproveUpgradeRequest(requestId, actorId, decision = {}) {
     const existing = await repository.findUpgradeRequestById(requestId);
 
     if (!existing) {
-      throw buildError(404, 'UPGRADE_REQUEST_NOT_FOUND', 'Upgrade request not found');
+      throw buildError(404, 'UPGRADE_REQUEST_NOT_FOUND', 'Không tìm thấy yêu cầu nâng gói');
     }
 
     if (existing.status !== SUBSCRIPTION_REQUEST_STATUS.PENDING) {
-      throw buildError(409, 'UPGRADE_REQUEST_ALREADY_FINALIZED', 'Upgrade request already finalized');
+      throw buildError(409, 'UPGRADE_REQUEST_ALREADY_FINALIZED', 'Yêu cầu nâng gói đã được xử lý');
     }
 
     const reviewed = await repository.markUpgradeRequestReviewed(requestId, {
@@ -522,16 +566,16 @@ class SubscriptionService {
     const existing = await repository.findUpgradeRequestById(requestId);
 
     if (!existing) {
-      throw buildError(404, 'UPGRADE_REQUEST_NOT_FOUND', 'Upgrade request not found');
+      throw buildError(404, 'UPGRADE_REQUEST_NOT_FOUND', 'Không tìm thấy yêu cầu nâng gói');
     }
 
     if (existing.status !== SUBSCRIPTION_REQUEST_STATUS.PENDING) {
-      throw buildError(409, 'UPGRADE_REQUEST_ALREADY_FINALIZED', 'Upgrade request already finalized');
+      throw buildError(409, 'UPGRADE_REQUEST_ALREADY_FINALIZED', 'Yêu cầu nâng gói đã được xử lý');
     }
 
     const reason = String(decision.reason || '').trim();
     if (!reason) {
-      throw buildError(400, 'VALIDATION_ERROR', 'Rejection reason is required');
+      throw buildError(400, 'VALIDATION_ERROR', 'Lý do từ chối là bắt buộc');
     }
 
     const reviewed = await repository.markUpgradeRequestReviewed(requestId, {
@@ -547,3 +591,4 @@ class SubscriptionService {
 
 module.exports = new SubscriptionService();
 module.exports.SubscriptionService = SubscriptionService;
+

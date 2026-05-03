@@ -22,20 +22,14 @@ export async function getUpgradeRequest(requestId: string): Promise<UpgradeReque
 export async function createUpgradeRequest(
   input: CreateUpgradeRequestInput
 ): Promise<UpgradeRequestResponse> {
-  const formData = new FormData();
-  formData.append('type', input.type);
-  formData.append('transferReference', input.transferReference);
-  formData.append('proofFile', input.proofFile);
-
-  if (input.amount !== undefined) {
-    formData.append('amount', String(input.amount));
-  }
-
-  if (input.currency) {
-    formData.append('currency', input.currency);
-  }
-
-  return apiClient.upload<UpgradeRequestResponse>('/api/subscription/upgrade-requests', formData);
+  return apiClient.post<UpgradeRequestResponse>('/api/subscription/upgrade-requests', {
+    type: input.type,
+    transferReference: input.transferReference,
+    amount: input.amount,
+    currency: input.currency,
+    bankLabel: input.bankLabel,
+    payerMask: input.payerMask,
+  });
 }
 
 export async function adminListUpgradeRequests(

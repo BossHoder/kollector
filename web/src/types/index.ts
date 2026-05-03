@@ -3,3 +3,4 @@ export * from './user';
 export * from './asset';
 export * from './api';
 export * from './socket';
+export * from './admin';

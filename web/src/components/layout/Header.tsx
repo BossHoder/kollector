@@ -44,6 +44,12 @@ function ConnectionStatusIndicator() {
 export function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const location = useLocation();
+  const resolvedNavLinks =
+    user?.role === 'admin'
+      ? [...navLinks, { path: '/admin', label: 'Quản trị', icon: 'shield_person' }]
+      : navLinks;
+  const avatarUrl = user?.profile?.avatarUrl || user?.avatar;
+  const displayName = user?.profile?.displayName || user?.displayName || user?.username || 'U';
 
   return (
     <header className="w-full px-6 py-4 flex justify-between items-center border-b border-border-dark bg-surface-dark/80 backdrop-blur-sm sticky top-0 z-20">
@@ -76,8 +82,10 @@ export function Header() {
         <div className="flex items-center gap-6">
           {/* Nav Links */}
           <nav className="hidden sm:flex items-center gap-1">
-            {navLinks.map(link => {
-              const isActive = location.pathname === link.path;
+            {resolvedNavLinks.map(link => {
+              const isActive =
+                location.pathname === link.path ||
+                location.pathname.startsWith(`${link.path}/`);
               return (
                 <Link
                   key={link.path}
@@ -105,16 +113,16 @@ export function Header() {
 
             {/* User Menu */}
             <div className="flex items-center gap-3">
-              {user?.avatar ? (
+              {avatarUrl ? (
                 <img
-                  src={user.avatar}
-                  alt={user.displayName || user.username}
+                  src={avatarUrl}
+                  alt={displayName}
                   className="w-8 h-8 rounded-full object-cover"
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
                   <span className="text-primary text-sm font-semibold">
-                    {(user?.displayName || user?.username || 'U').charAt(0).toUpperCase()}
+                    {displayName.charAt(0).toUpperCase()}
                   </span>
                 </div>
               )}

@@ -10,6 +10,8 @@ import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute';
+import { AdminRoute } from '@/components/layout/AdminRoute';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 
 // Lazy load pages to improve initial bundle size
 import { lazy, Suspense } from 'react';
@@ -47,6 +49,18 @@ const SettingsPage = lazy(() =>
 );
 const HomePage = lazy(() =>
   import('@/pages/public/HomePage').then(m => ({ default: m.HomePage }))
+);
+const AdminOverviewPage = lazy(() =>
+  import('@/pages/admin/AdminOverviewPage').then(m => ({ default: m.AdminOverviewPage }))
+);
+const AdminSubscriptionsPage = lazy(() =>
+  import('@/pages/admin/AdminSubscriptionsPage').then(m => ({ default: m.AdminSubscriptionsPage }))
+);
+const AdminUsersPage = lazy(() =>
+  import('@/pages/admin/AdminUsersPage').then(m => ({ default: m.AdminUsersPage }))
+);
+const AdminOperationsPage = lazy(() =>
+  import('@/pages/admin/AdminOperationsPage').then(m => ({ default: m.AdminOperationsPage }))
 );
 
 // Wrap lazy components with Suspense
@@ -98,6 +112,34 @@ export const router = createBrowserRouter([
       {
         path: 'settings',
         element: withSuspense(SettingsPage),
+      },
+    ],
+  },
+
+  // Protected admin routes
+  {
+    path: '/admin',
+    element: (
+      <AdminRoute>
+        <AdminLayout />
+      </AdminRoute>
+    ),
+    children: [
+      {
+        index: true,
+        element: withSuspense(AdminOverviewPage),
+      },
+      {
+        path: 'subscriptions',
+        element: withSuspense(AdminSubscriptionsPage),
+      },
+      {
+        path: 'users',
+        element: withSuspense(AdminUsersPage),
+      },
+      {
+        path: 'operations',
+        element: withSuspense(AdminOperationsPage),
       },
     ],
   },
