@@ -31,11 +31,11 @@ def test_analyze_upload_budget_enforced(monkeypatch):
     monkeypatch.setattr(main, '_remove_background', lambda _image_bytes, _budget_ms: b'processed')
 
     def _upload(_image_bytes, _category, _budget_ms):
-        raise main.BudgetExceededError('Upload budget exceeded')
+        raise main.BudgetExceededError('Đã vượt quá ngân sách thời gian cho bước Upload')
 
     monkeypatch.setattr(main, '_upload_processed_image', _upload)
 
     response = client.post('/analyze', json={'image_url': 'https://example.com/image.jpg', 'category': 'sneaker'})
 
     assert response.status_code == 500
-    assert response.json()['error']['message'] == 'Upload budget exceeded'
+    assert response.json()['error']['message'] == 'Đã vượt quá ngân sách thời gian cho bước Upload'

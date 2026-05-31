@@ -79,7 +79,7 @@ export default function UploadScreen() {
 
       Alert.alert(
         'Hủy tải lên?',
-        'Việc rời khỏi trang sẽ hủy quá trình tải lên. Bạn có chắc muốn tiếp tục?',
+        'Rời khỏi màn hình này sẽ hủy quá trình tải lên. Bạn có chắc muốn tiếp tục?',
         [
           { text: 'Tiếp tục tải lên', style: 'cancel' },
           {
@@ -150,7 +150,7 @@ export default function UploadScreen() {
 
       toast.success(
         runAi
-          ? 'Đã tải lên và bắt đầu xử lý AI.'
+          ? 'Đã tải lên và bắt đầu xử lý bằng AI.'
           : 'Đã lưu tài sản thành công.'
       );
 
@@ -214,13 +214,13 @@ export default function UploadScreen() {
               testID="select-image-button"
               accessibilityRole="button"
               accessibilityLabel="Chọn ảnh để tải lên"
-              accessibilityHint="Mở tùy chọn máy ảnh hoặc thư viện"
+              accessibilityHint="Mở tùy chọn chụp ảnh hoặc chọn ảnh từ thư viện"
             >
               <View style={styles.addPhotoContent}>
-                <Text style={styles.addPhotoIcon}>📷</Text>
+                <Text style={styles.addPhotoIcon}>{'\uD83D\uDCF7'}</Text>
                 <Text style={styles.addPhotoText}>Chọn ảnh</Text>
                 <Text style={styles.addPhotoHint}>
-                  {getSupportedTypesText()} • Max {getMaxFileSizeText()}
+                  {getSupportedTypesText()} • Tối đa {getMaxFileSizeText()}
                 </Text>
               </View>
             </TouchableOpacity>
@@ -287,7 +287,7 @@ export default function UploadScreen() {
           <View style={styles.aiToggleContent}>
             <Text style={styles.aiToggleTitle}>Xử lý ảnh bằng AI</Text>
             <Text style={styles.aiToggleDescription}>
-              Có thể tắt nếu bạn chỉ muốn lưu file và metadata ngay.
+              Bạn có thể tắt nếu chỉ muốn lưu tệp và metadata ngay lập tức.
             </Text>
           </View>
           <View style={[styles.aiSwitch, runAi && styles.aiSwitchActive]}>
@@ -315,7 +315,7 @@ export default function UploadScreen() {
             fullWidth
             style={styles.retryUploadButton}
           >
-            Retry Upload
+            Thử tải lên lại
           </Button>
         )}
       </View>
@@ -337,7 +337,7 @@ export default function UploadScreen() {
               accessibilityRole="button"
               accessibilityLabel="Mở máy ảnh"
             >
-              <Text style={styles.sourceOptionIcon}>📸</Text>
+              <Text style={styles.sourceOptionIcon}>{'\uD83D\uDCF8'}</Text>
               <Text style={styles.sourceOptionText}>Máy ảnh</Text>
             </TouchableOpacity>
 
@@ -348,7 +348,7 @@ export default function UploadScreen() {
               accessibilityRole="button"
               accessibilityLabel="Mở thư viện ảnh"
             >
-              <Text style={styles.sourceOptionIcon}>🖼️</Text>
+              <Text style={styles.sourceOptionIcon}>{'\uD83D\uDDBC\uFE0F'}</Text>
               <Text style={styles.sourceOptionText}>Thư viện ảnh</Text>
             </TouchableOpacity>
 

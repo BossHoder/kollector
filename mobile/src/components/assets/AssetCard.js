@@ -1,6 +1,7 @@
 import React from 'react';
 import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { StatusPill } from '../ui/StatusPill';
+import { getStatusDisplay } from '../../utils/statusDisplay';
 import { colors, spacing, borderRadius, typography } from '../../styles/tokens';
 
 function getPreviewImageUri(asset) {
@@ -19,13 +20,19 @@ export default function AssetCard({ asset, onPress, onRetryPending, compact = fa
   const isPendingUpload = asset.status === 'pending_upload';
   const isFailedUpload = asset.status === 'failed_upload';
   const imageUri = getPreviewImageUri(asset);
+  const assetTitle = asset.title || 'Tài sản chưa có tên';
+  const statusLabel = isPendingUpload
+    ? 'Chờ tải lên'
+    : isFailedUpload
+      ? 'Tải lên thất bại'
+      : getStatusDisplay(asset.status).label;
 
   return (
     <TouchableOpacity
       style={styles.card}
       onPress={onPress}
       activeOpacity={0.7}
-      accessibilityLabel={`${asset.title || 'Untitled asset'}, status ${asset.status}`}
+      accessibilityLabel={`${assetTitle}, trạng thái ${statusLabel}`}
       accessibilityRole="button"
     >
       <View style={styles.imageContainer}>
@@ -48,7 +55,7 @@ export default function AssetCard({ asset, onPress, onRetryPending, compact = fa
 
       {!compact && (
         <View style={styles.content}>
-          <Text style={styles.title} numberOfLines={1}>{asset.title || 'Untitled'}</Text>
+          <Text style={styles.title} numberOfLines={1}>{assetTitle}</Text>
           {asset.category ? <Text style={styles.category}>{asset.category}</Text> : null}
 
           {isPendingUpload ? (
@@ -62,9 +69,9 @@ export default function AssetCard({ asset, onPress, onRetryPending, compact = fa
                 onPress={() => onRetryPending?.(asset)}
                 testID={`retry-pending-${asset.localId}`}
                 accessibilityRole="button"
-                accessibilityLabel="Retry Upload"
+                accessibilityLabel="Thử tải lên lại"
               >
-                <Text style={styles.retryText}>Retry Upload</Text>
+                <Text style={styles.retryText}>Thử tải lên lại</Text>
               </TouchableOpacity>
             </>
           ) : null}

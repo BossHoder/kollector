@@ -117,7 +117,7 @@ describe('Socket.io Authentication', () => {
    * T028: Integration test - Socket.io connection without auth.token fails
    */
   describe('Missing Authentication', () => {
-    it('should reject connection without auth.token with "Authentication required"', (done) => {
+    it('should reject connection without auth.token with "Yêu cầu xác thực"', (done) => {
       const client = createClient(null);
       
       client.on('connect', () => {
@@ -126,7 +126,7 @@ describe('Socket.io Authentication', () => {
       });
 
       client.on('connect_error', (err) => {
-        expect(err.message).toBe('Authentication required');
+        expect(err.message).toBe('Yêu cầu xác thực');
         client.disconnect();
         done();
       });
@@ -140,7 +140,7 @@ describe('Socket.io Authentication', () => {
       });
       
       client.on('connect_error', (err) => {
-        expect(err.message).toBe('Authentication required');
+        expect(err.message).toBe('Yêu cầu xác thực');
         client.disconnect();
         done();
       });
@@ -151,7 +151,7 @@ describe('Socket.io Authentication', () => {
    * T029: Integration test - Socket.io connection with invalid JWT fails
    */
   describe('Invalid Authentication', () => {
-    it('should reject connection with invalid JWT with "Invalid token"', (done) => {
+    it('should reject connection with invalid JWT with "Token không hợp lệ"', (done) => {
       const client = createClient('invalid-token-here');
       
       client.on('connect', () => {
@@ -160,7 +160,7 @@ describe('Socket.io Authentication', () => {
       });
 
       client.on('connect_error', (err) => {
-        expect(err.message).toBe('Invalid token');
+        expect(err.message).toBe('Token không hợp lệ');
         client.disconnect();
         done();
       });
@@ -170,7 +170,7 @@ describe('Socket.io Authentication', () => {
       const client = createClient('not.a.valid.jwt.token');
       
       client.on('connect_error', (err) => {
-        expect(err.message).toBe('Invalid token');
+        expect(err.message).toBe('Token không hợp lệ');
         client.disconnect();
         done();
       });
@@ -182,7 +182,7 @@ describe('Socket.io Authentication', () => {
       const client = createClient(token);
       
       client.on('connect_error', (err) => {
-        expect(err.message).toBe('Token expired');
+        expect(err.message).toBe('Token đã hết hạn');
         client.disconnect();
         done();
       });

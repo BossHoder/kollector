@@ -22,28 +22,29 @@ import {
   Pressable,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../ui/Button';
 import { colors, spacing, typography, borderRadius, touchTargetSize } from '../../styles/tokens';
 
 // Status options for filtering
 const STATUS_OPTIONS = [
-  { key: 'all', label: 'All Statuses', value: null },
-  { key: 'active', label: 'Ready', value: 'active' },
-  { key: 'processing', label: 'Processing', value: 'processing' },
-  { key: 'draft', label: 'Draft', value: 'draft' },
-  { key: 'failed', label: 'Failed', value: 'failed' },
-  { key: 'partial', label: 'Partial', value: 'partial' },
-  { key: 'archived', label: 'Archived', value: 'archived' },
+  { key: 'all', label: 'Tất cả trạng thái', value: null },
+  { key: 'active', label: 'Sẵn sàng', value: 'active' },
+  { key: 'processing', label: 'Đang xử lý', value: 'processing' },
+  { key: 'draft', label: 'Bản nháp', value: 'draft' },
+  { key: 'failed', label: 'Thất bại', value: 'failed' },
+  { key: 'partial', label: 'Một phần', value: 'partial' },
+  { key: 'archived', label: 'Đã lưu trữ', value: 'archived' },
 ];
 
 // Category options (could be loaded dynamically)
 const CATEGORY_OPTIONS = [
-  { key: 'all', label: 'All Categories', value: null },
-  { key: 'sneakers', label: 'Sneakers', value: 'sneakers' },
-  { key: 'cards', label: 'Trading Cards', value: 'cards' },
-  { key: 'collectibles', label: 'Collectibles', value: 'collectibles' },
-  { key: 'electronics', label: 'Electronics', value: 'electronics' },
-  { key: 'other', label: 'Other', value: 'other' },
+  { key: 'all', label: 'Tất cả danh mục', value: null },
+  { key: 'sneakers', label: 'Giày sneaker', value: 'sneakers' },
+  { key: 'cards', label: 'Thẻ sưu tầm', value: 'cards' },
+  { key: 'collectibles', label: 'Đồ sưu tầm', value: 'collectibles' },
+  { key: 'electronics', label: 'Thiết bị điện tử', value: 'electronics' },
+  { key: 'other', label: 'Khác', value: 'other' },
 ];
 
 /**
@@ -87,6 +88,7 @@ export function AssetFiltersSheet({
   onApply,
 }) {
   // Coerce to strict boolean — route.params / storage can pass "false" strings
+  const insets = useSafeAreaInsets();
   const visible = coerceBool(rawVisible);
   // Local state for pending filter changes
   const [pendingFilters, setPendingFilters] = useState({
@@ -105,11 +107,11 @@ export function AssetFiltersSheet({
   }, [visible, filters]);
 
   const handleStatusSelect = useCallback((value) => {
-    setPendingFilters(prev => ({ ...prev, status: value }));
+    setPendingFilters((prev) => ({ ...prev, status: value }));
   }, []);
 
   const handleCategorySelect = useCallback((value) => {
-    setPendingFilters(prev => ({ ...prev, category: value }));
+    setPendingFilters((prev) => ({ ...prev, category: value }));
   }, []);
 
   const handleClearAll = useCallback(() => {
@@ -145,10 +147,10 @@ export function AssetFiltersSheet({
         <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>Filters</Text>
+            <Text style={styles.headerTitle}>Bộ lọc</Text>
             {hasActiveFilters && (
               <TouchableOpacity onPress={handleClearAll}>
-                <Text style={styles.clearButton}>Clear All</Text>
+                <Text style={styles.clearButton}>Xóa tất cả</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -156,7 +158,7 @@ export function AssetFiltersSheet({
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
             {/* Status Filter */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Status</Text>
+              <Text style={styles.sectionTitle}>Trạng thái</Text>
               {STATUS_OPTIONS.map((option) => (
                 <FilterOption
                   key={option.key}
@@ -169,7 +171,7 @@ export function AssetFiltersSheet({
 
             {/* Category Filter */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Category</Text>
+              <Text style={styles.sectionTitle}>Danh mục</Text>
               {CATEGORY_OPTIONS.map((option) => (
                 <FilterOption
                   key={option.key}
@@ -182,13 +184,13 @@ export function AssetFiltersSheet({
           </ScrollView>
 
           {/* Footer with Apply button */}
-          <View style={styles.footer}>
+          <View style={[styles.footer, { paddingBottom: spacing.xl + insets.bottom }]}>
             <Button
               onPress={handleApply}
               fullWidth
               testID="apply-filters-button"
             >
-              Apply Filters{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
+              Áp dụng bộ lọc{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}
             </Button>
           </View>
         </Pressable>

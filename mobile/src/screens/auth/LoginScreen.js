@@ -96,7 +96,7 @@ export default function LoginScreen() {
           <View style={styles.form}>
             <Input
               label="Email"
-              placeholder="vidu@email.com"
+              placeholder="vi-du@email.com"
               value={email}
               onChangeText={handleEmailChange}
               keyboardType="email-address"
@@ -124,6 +124,8 @@ export default function LoginScreen() {
               disabled={isLoading}
               fullWidth
               style={styles.submitButton}
+              accessibilityLabel="Đăng nhập"
+              accessibilityHint="Đăng nhập vào tài khoản của bạn"
             >
               Đăng nhập
             </Button>
@@ -134,6 +136,7 @@ export default function LoginScreen() {
             onPress={() => navigation.navigate('Register')}
             testID="register-link"
             accessibilityLabel="Tạo tài khoản"
+            accessibilityHint="Mở màn hình tạo tài khoản mới"
             accessibilityRole="button"
           >
             <Text style={styles.registerText}>

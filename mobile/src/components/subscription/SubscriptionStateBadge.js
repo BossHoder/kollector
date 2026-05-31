@@ -4,19 +4,19 @@ import { borderRadius, colors, spacing, typography } from '../../styles/tokens';
 
 const STATUS_COPY = {
   active: {
-    label: 'ACTIVE',
+    label: 'ĐANG HOẠT ĐỘNG',
     backgroundColor: 'rgba(34, 197, 94, 0.18)',
     borderColor: 'rgba(34, 197, 94, 0.4)',
     color: '#dcfce7',
   },
   grace_pending_renewal: {
-    label: 'RENEWAL PENDING',
+    label: 'CHỜ GIA HẠN',
     backgroundColor: 'rgba(245, 158, 11, 0.18)',
     borderColor: 'rgba(245, 158, 11, 0.4)',
     color: '#fef3c7',
   },
   expired: {
-    label: 'EXPIRED',
+    label: 'ĐÃ HẾT HẠN',
     backgroundColor: 'rgba(244, 63, 94, 0.18)',
     borderColor: 'rgba(244, 63, 94, 0.4)',
     color: '#ffe4e6',

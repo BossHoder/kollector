@@ -93,7 +93,7 @@ export async function queueAssetMaintenance(
   const assetId = resolveAssetId(asset);
 
   if (!assetId) {
-    throw new Error('Asset ID is required for maintenance');
+    throw new Error('Thiếu mã tài sản để thực hiện bảo trì');
   }
 
   const snapshot = buildMaintenanceSnapshot(asset);

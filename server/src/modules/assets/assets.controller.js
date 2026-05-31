@@ -73,11 +73,11 @@ class AssetController {
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Image file is required',
+            message: 'Tệp hình ảnh là bắt buộc',
             details: [
               {
                 field: 'image',
-                message: 'Image file is required'
+                message: 'Tệp hình ảnh là bắt buộc'
               }
             ]
           }
@@ -90,11 +90,11 @@ class AssetController {
           success: false,
           error: {
             code: 'VALIDATION_ERROR',
-            message: 'Category is required',
+            message: 'Danh mục là bắt buộc',
             details: [
               {
                 field: 'category',
-                message: 'Category is required'
+                message: 'Danh mục là bắt buộc'
               }
             ]
           }
@@ -135,7 +135,7 @@ class AssetController {
           assetId: result.assetId,
           jobId: result.jobId,
           status: result.asset.status,
-          message: 'Asset queued for AI analysis',
+          message: 'Tài sản đã được đưa vào hàng chờ để AI phân tích',
           asset: result.asset,
         }
       });
@@ -323,7 +323,7 @@ class AssetController {
       });
 
       res.status(204).json({
-        message: 'Asset deleted successfully'
+        message: 'Đã xóa tài sản thành công'
       });
     } catch (error) {
       next(error);
@@ -396,7 +396,7 @@ class AssetController {
       // Return 202 Accepted per contract spec
       res.status(202).json({
         success: true,
-        message: 'Asset analysis retry queued',
+        message: 'Đã đưa yêu cầu phân tích lại tài sản vào hàng chờ',
         asset: result.asset
       });
     } catch (error) {
@@ -404,13 +404,13 @@ class AssetController {
       if (error.code === 'NOT_RETRYABLE') {
         return res.status(409).json({
           success: false,
-          error: error.message || 'Asset cannot be retried in its current state'
+          error: error.message || 'Không thể phân tích lại tài sản ở trạng thái hiện tại'
         });
       }
       if (error.code === 'NOT_FOUND') {
         return res.status(404).json({
           success: false,
-          error: error.message || 'Asset not found'
+          error: error.message || 'Không tìm thấy tài sản'
         });
       }
       next(error);

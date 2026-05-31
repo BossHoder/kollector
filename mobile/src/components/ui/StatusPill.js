@@ -18,9 +18,9 @@ import { colors, borderRadius, spacing, typography } from '../../styles/tokens';
  */
 export function StatusPill({ status, size = 'default', style }) {
   const statusInfo = getStatusDisplay(status);
-  
+
   const isSmall = size === 'small';
-  
+
   return (
     <View
       style={[
@@ -29,7 +29,7 @@ export function StatusPill({ status, size = 'default', style }) {
         isSmall && styles.pillSmall,
         style,
       ]}
-      accessibilityLabel={`Status: ${statusInfo.label}`}
+      accessibilityLabel={`Trạng thái: ${statusInfo.label}`}
       accessibilityRole="text"
     >
       {statusInfo.animated && (

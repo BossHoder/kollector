@@ -8,7 +8,7 @@ export default function PlaceholderScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Kollector Mobile</Text>
-      <Text style={styles.subtitle}>Setup complete. Waiting for navigation implementation...</Text>
+      <Text style={styles.subtitle}>Thiết lập đã hoàn tất. Đang chờ triển khai điều hướng...</Text>
     </View>
   );
 }

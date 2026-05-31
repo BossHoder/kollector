@@ -32,15 +32,15 @@ export async function uploadAsset({
   notes,
 }) {
   if (!uri) {
-    throw new Error('Image URI is required');
+    throw new Error('Thiếu đường dẫn ảnh để tải lên');
   }
 
   if (!category) {
-    throw new Error('Category is required');
+    throw new Error('Vui lòng chọn danh mục');
   }
 
   if (!assetName) {
-    throw new Error('Asset name is required');
+    throw new Error('Vui lòng nhập tên tài sản');
   }
 
   const formData = new FormData();

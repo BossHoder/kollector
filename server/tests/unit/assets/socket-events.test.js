@@ -226,7 +226,7 @@ describe('Socket Event Emitters', () => {
       emitAssetProcessed(userId, payload);
 
       const emittedPayload = mockEmit.mock.calls[0][1];
-      expect(emittedPayload.error).toBe('Processing failed');
+      expect(emittedPayload.error).toBe('Xử lý thất bại');
     });
 
     it('should include ISO timestamp in failure event', () => {

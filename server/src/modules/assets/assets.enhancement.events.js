@@ -18,7 +18,7 @@ function buildEnhancementFailurePayload(assetId, error, attemptCount) {
     event: ENHANCEMENT_EVENT_NAME,
     assetId: String(assetId),
     status: 'failed',
-    error: error || 'Enhancement failed',
+    error: error || 'Tăng cường ảnh thất bại',
     attemptCount,
     timestamp: new Date().toISOString(),
   };

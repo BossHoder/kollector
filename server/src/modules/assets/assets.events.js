@@ -60,7 +60,7 @@ function emitAssetProcessed(userId, payload) {
       event: 'asset_processed',
       assetId: String(payload.assetId),
       status: 'failed',
-      error: payload.error || 'Processing failed',
+      error: payload.error || 'Xử lý thất bại',
       timestamp
     };
   }

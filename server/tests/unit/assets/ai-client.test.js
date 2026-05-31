@@ -73,7 +73,7 @@ describe('AI Service Client', () => {
       delete process.env.AI_SERVICE_URL;
 
       await expect(callAnalyze('http://test.jpg', 'sneaker'))
-        .rejects.toThrow('AI_SERVICE_URL environment variable is required');
+        .rejects.toThrow('Biến môi trường AI_SERVICE_URL là bắt buộc');
 
       process.env.AI_SERVICE_URL = originalUrl;
     });
@@ -133,7 +133,7 @@ describe('AI Service Client', () => {
         await callAnalyze('http://test.jpg', 'sneaker');
         fail('Should have thrown');
       } catch (error) {
-        expect(error.message).toBe('AI service timeout');
+        expect(error.message).toBe('Dịch vụ AI đã quá thời gian chờ');
         expect(error.retryable).toBe(true);
       }
     });

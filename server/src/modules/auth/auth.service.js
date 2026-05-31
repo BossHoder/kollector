@@ -48,7 +48,7 @@ class AuthService {
       // Check if user already exists
       const existingUser = await User.findOne({ email: email.toLowerCase() });
       if (existingUser) {
-        const error = new Error('Email already in use');
+        const error = new Error('Email đã được sử dụng');
         error.statusCode = 409;
         error.code = 'EMAIL_EXISTS';
         throw error;
@@ -109,7 +109,7 @@ class AuthService {
     try {
       // Find user with password hash
       const user = await User.findOne({ email: email.toLowerCase() }).select('+passwordHash');
-      
+
       if (!user) {
         const error = new Error('Sai tài khoản hoặc mật khẩu');
         error.statusCode = 401;
@@ -119,7 +119,7 @@ class AuthService {
 
       // Verify password using bcrypt via User model method
       const isValidPassword = await user.comparePassword(password);
-      
+
       if (!isValidPassword) {
         const error = new Error('Sai tài khoản hoặc mật khẩu');
         error.statusCode = 401;
@@ -160,7 +160,7 @@ class AuthService {
     try {
       const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
       if (!jwtRefreshSecret) {
-        throw new Error('JWT_REFRESH_SECRET not configured');
+        throw new Error('JWT_REFRESH_SECRET chưa được cấu hình');
       }
 
       // Verify refresh token
@@ -169,7 +169,7 @@ class AuthService {
       // Find user
       const user = await User.findById(decoded.userId);
       if (!user) {
-        const error = new Error('User not found');
+        const error = new Error('Không tìm thấy người dùng');
         error.statusCode = 401;
         error.code = 'INVALID_TOKEN';
         throw error;
@@ -183,7 +183,7 @@ class AuthService {
       return { accessToken };
     } catch (error) {
       if (error.name === 'JsonWebTokenError') {
-        const err = new Error('Invalid refresh token');
+        const err = new Error('Refresh token không hợp lệ');
         err.statusCode = 401;
         err.code = 'INVALID_TOKEN';
         throw err;
@@ -195,7 +195,7 @@ class AuthService {
   async getMe(userId) {
     const user = await User.findById(userId);
     if (!user) {
-      const error = new Error('User not found');
+      const error = new Error('Không tìm thấy người dùng');
       error.statusCode = 404;
       error.code = 'NOT_FOUND';
       throw error;
@@ -207,7 +207,7 @@ class AuthService {
   async patchMe(userId, updates) {
     const user = await User.findById(userId);
     if (!user) {
-      const error = new Error('User not found');
+      const error = new Error('Không tìm thấy người dùng');
       error.statusCode = 404;
       error.code = 'NOT_FOUND';
       throw error;
@@ -254,7 +254,7 @@ class AuthService {
   generateAccessToken(user) {
     const jwtSecret = process.env.JWT_ACCESS_SECRET;
     if (!jwtSecret) {
-      throw new Error('JWT_ACCESS_SECRET not configured');
+      throw new Error('JWT_ACCESS_SECRET chưa được cấu hình');
     }
 
     return jwt.sign(
@@ -275,7 +275,7 @@ class AuthService {
   generateRefreshToken(user) {
     const jwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
     if (!jwtRefreshSecret) {
-      throw new Error('JWT_REFRESH_SECRET not configured');
+      throw new Error('JWT_REFRESH_SECRET chưa được cấu hình');
     }
 
     return jwt.sign(

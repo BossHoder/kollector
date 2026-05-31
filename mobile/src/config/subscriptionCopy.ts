@@ -1,20 +1,20 @@
 export const subscriptionCopy = Object.freeze({
   softLaunch: {
-    title: 'Subscription preview',
-    body: 'Usage counters are visible while hard limits remain disabled during rollout.',
+    title: 'Xem trước gói đăng ký',
+    body: 'Các bộ đếm sử dụng đang hiển thị, còn giới hạn cứng vẫn tạm tắt trong giai đoạn triển khai.',
   },
   quotaWarnings: {
-    asset90: 'You are close to your asset cap. Upgrade to VIP before create actions are blocked.',
-    processing80: 'You have used 80% of this month\'s processing quota.',
-    processing90: 'You have used 90% of this month\'s processing quota.',
+    asset90: 'Bạn sắp chạm giới hạn tài sản. Hãy nâng gói VIP trước khi bị chặn tạo mới.',
+    processing80: 'Bạn đã dùng 80% hạn mức xử lý của tháng này.',
+    processing90: 'Bạn đã dùng 90% hạn mức xử lý của tháng này.',
   },
   quotaBlocked: {
-    asset: 'Asset creation is blocked for your current tier. Existing assets remain available.',
-    processing: 'Processing is blocked until the next UTC monthly reset or a VIP upgrade.',
+    asset: 'Việc tạo tài sản mới đang bị chặn với gói hiện tại. Các tài sản đã có vẫn dùng được.',
+    processing: 'Tính năng xử lý bị chặn cho đến lần đặt lại hằng tháng theo UTC tiếp theo hoặc khi nâng gói VIP.',
   },
   themeLocks: {
-    free: 'Free accounts can apply only the default and light presets.',
-    vip: 'VIP unlocks the full preset catalog and 3x maintenance EXP.',
+    free: 'Tài khoản miễn phí chỉ có thể dùng giao diện mặc định và giao diện sáng.',
+    vip: 'VIP mở khóa toàn bộ bộ sưu tập giao diện và nhận EXP bảo trì gấp 3.',
   },
 });
 

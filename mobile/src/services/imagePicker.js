@@ -35,16 +35,16 @@ const IMAGE_OPTIONS = {
  */
 async function requestCameraPermission() {
   const { status } = await ImagePicker.requestCameraPermissionsAsync();
-  
+
   if (status !== 'granted') {
     Alert.alert(
-      'Camera Permission Required',
-      'Please grant camera access to take photos of your collectibles.',
-      [{ text: 'OK' }]
+      'Cần quyền truy cập máy ảnh',
+      'Vui lòng cấp quyền truy cập máy ảnh để chụp ảnh vật phẩm sưu tầm của bạn.',
+      [{ text: 'Đã hiểu' }]
     );
     return false;
   }
-  
+
   return true;
 }
 
@@ -54,16 +54,16 @@ async function requestCameraPermission() {
  */
 async function requestGalleryPermission() {
   const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-  
+
   if (status !== 'granted') {
     Alert.alert(
-      'Photo Library Permission Required',
-      'Please grant photo library access to select images of your collectibles.',
-      [{ text: 'OK' }]
+      'Cần quyền truy cập thư viện ảnh',
+      'Vui lòng cấp quyền truy cập thư viện ảnh để chọn ảnh vật phẩm sưu tầm của bạn.',
+      [{ text: 'Đã hiểu' }]
     );
     return false;
   }
-  
+
   return true;
 }
 
@@ -78,7 +78,7 @@ function normalizePickerResult(result) {
   }
 
   const asset = result.assets[0];
-  
+
   return {
     uri: asset.uri,
     type: asset.mimeType || asset.type || 'image/jpeg',
@@ -104,7 +104,7 @@ export async function pickImageFromGallery() {
     return normalizePickerResult(result);
   } catch (error) {
     console.error('Error picking image from gallery:', error);
-    Alert.alert('Error', 'Failed to pick image from gallery. Please try again.');
+    Alert.alert('Lỗi', 'Không thể chọn ảnh từ thư viện. Vui lòng thử lại.');
     return null;
   }
 }
@@ -128,11 +128,11 @@ export async function pickImageFromCamera() {
     const isAndroidIntentError = Platform.OS === 'android' && message.toLowerCase().includes('resolve activity');
 
     if (isAndroidIntentError) {
-      Alert.alert('Camera Unavailable', 'Camera is unavailable on this device. Opening gallery instead.');
+      Alert.alert('Không thể dùng máy ảnh', 'Thiết bị này không hỗ trợ máy ảnh. Đang mở thư viện ảnh thay thế.');
       return pickImageFromGallery();
     }
 
-    Alert.alert('Error', 'Failed to capture image. Please try again.');
+    Alert.alert('Lỗi', 'Không thể chụp ảnh. Vui lòng thử lại.');
     return null;
   }
 }
@@ -148,11 +148,11 @@ export async function pickImageFromCamera() {
 export async function pickImageWithSource(options = {}) {
   return new Promise((resolve) => {
     Alert.alert(
-      'Add Photo',
-      'Choose how to add a photo of your collectible',
+      'Thêm ảnh',
+      'Chọn cách thêm ảnh cho vật phẩm sưu tầm của bạn',
       [
         {
-          text: 'Take Photo',
+          text: 'Chụp ảnh',
           onPress: async () => {
             options.onSourceSelected?.('camera');
             const image = await pickImageFromCamera();
@@ -160,7 +160,7 @@ export async function pickImageWithSource(options = {}) {
           },
         },
         {
-          text: 'Choose from Library',
+          text: 'Chọn từ thư viện',
           onPress: async () => {
             options.onSourceSelected?.('gallery');
             const image = await pickImageFromGallery();
@@ -168,7 +168,7 @@ export async function pickImageWithSource(options = {}) {
           },
         },
         {
-          text: 'Cancel',
+          text: 'Hủy',
           style: 'cancel',
           onPress: () => resolve(null),
         },
@@ -186,7 +186,7 @@ export async function isCameraAvailable() {
   if (Platform.OS === 'web') {
     return false;
   }
-  
+
   const { status } = await ImagePicker.getCameraPermissionsAsync();
   // If we can even check status, camera is likely available
   return status !== undefined;

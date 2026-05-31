@@ -22,12 +22,12 @@ export default function AssetCapBanner({
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
-        {atLimit ? 'Asset limit reached' : `${remaining} slots left`}
+        {atLimit ? 'Đã chạm giới hạn tài sản' : `Còn ${remaining} chỗ trống`}
       </Text>
       <Text style={styles.description}>
         {atLimit
-          ? `You are on ${tier.toUpperCase()} and reached ${safeLimit} assets.`
-          : `You are using ${safeUsed}/${safeLimit} assets.`}
+          ? `Bạn đang ở gói ${tier === 'vip' ? 'VIP' : 'Miễn phí'} và đã chạm mốc ${safeLimit} tài sản.`
+          : `Bạn đang dùng ${safeUsed}/${safeLimit} tài sản.`}
       </Text>
       <Pressable
         testID="asset-cap-create"
@@ -40,7 +40,7 @@ export default function AssetCapBanner({
         }}
         style={[styles.button, atLimit ? styles.buttonDisabled : null]}
       >
-        <Text style={styles.buttonLabel}>{atLimit ? 'Upgrade to VIP' : 'Create asset'}</Text>
+        <Text style={styles.buttonLabel}>{atLimit ? 'Nâng gói VIP' : 'Tạo tài sản'}</Text>
       </Pressable>
     </View>
   );

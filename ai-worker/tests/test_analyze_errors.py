@@ -9,7 +9,7 @@ client = TestClient(app)
 
 def test_analyze_unsupported_image_returns_422(monkeypatch):
     def _bad_download(_url, _budget_ms):
-        raise main.UnprocessableImageError('Unsupported image type')
+        raise main.UnprocessableImageError('Định dạng ảnh không được hỗ trợ')
 
     monkeypatch.setattr(main, '_download_image_bytes', _bad_download)
 
@@ -17,12 +17,12 @@ def test_analyze_unsupported_image_returns_422(monkeypatch):
 
     assert response.status_code == 422
     body = response.json()
-    assert body['error']['message'] == 'Unsupported image type'
+    assert body['error']['message'] == 'Định dạng ảnh không được hỗ trợ'
 
 
 def test_analyze_retryable_failure_returns_500(monkeypatch):
     def _fails(_url, _budget_ms):
-        raise main.RetryableServiceError('Transient download failure')
+        raise main.RetryableServiceError('Tải ảnh xuống thất bại tạm thời')
 
     monkeypatch.setattr(main, '_download_image_bytes', _fails)
 
@@ -30,7 +30,7 @@ def test_analyze_retryable_failure_returns_500(monkeypatch):
 
     assert response.status_code == 500
     body = response.json()
-    assert body['error']['message'] == 'Transient download failure'
+    assert body['error']['message'] == 'Tải ảnh xuống thất bại tạm thời'
     assert body['error']['code'] == 'retryable_error'
 
 
@@ -46,5 +46,5 @@ def test_analyze_requires_cloudinary_configuration(monkeypatch):
 
     assert response.status_code == 500
     body = response.json()
-    assert body['error']['message'] == 'Cloudinary credentials are not configured'
+    assert body['error']['message'] == 'Thông tin xác thực Cloudinary chưa được cấu hình'
     assert body['error']['code'] == 'retryable_error'

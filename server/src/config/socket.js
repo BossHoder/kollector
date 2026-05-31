@@ -47,13 +47,13 @@ function initSocket(httpServer) {
       logger.warn('Socket connection rejected: no token', {
         socketId: socket.id
       });
-      return next(new Error('Authentication required'));
+      return next(new Error('Yêu cầu xác thực'));
     }
 
     const jwtSecret = process.env.JWT_ACCESS_SECRET;
     if (!jwtSecret) {
       logger.error('JWT_ACCESS_SECRET not configured');
-      return next(new Error('Server configuration error'));
+      return next(new Error('Lỗi cấu hình máy chủ'));
     }
 
     try {
@@ -76,10 +76,10 @@ function initSocket(httpServer) {
       });
       
       if (err.name === 'TokenExpiredError') {
-        return next(new Error('Token expired'));
+        return next(new Error('Token đã hết hạn'));
       }
       
-      return next(new Error('Invalid token'));
+      return next(new Error('Token không hợp lệ'));
     }
   });
 

@@ -36,7 +36,7 @@ export default function RegisterScreen() {
   const navigation = useNavigation();
   const { register, isLoading: authLoading } = useAuth();
   const toast = useToast();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -76,7 +76,7 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     setApiError(null);
-    
+
     if (!validateForm()) {
       return;
     }
@@ -97,7 +97,7 @@ export default function RegisterScreen() {
 
   const clearFieldError = (field) => {
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: null }));
+      setErrors((prev) => ({ ...prev, [field]: null }));
     }
     if (apiError) {
       setApiError(null);
@@ -120,7 +120,7 @@ export default function RegisterScreen() {
           <View style={styles.form}>
             <Input
               label="Email"
-              placeholder="you@example.com"
+              placeholder="vi-du@email.com"
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
@@ -173,6 +173,8 @@ export default function RegisterScreen() {
               disabled={isLoading}
               fullWidth
               style={styles.submitButton}
+              accessibilityLabel="Tạo tài khoản"
+              accessibilityHint="Tạo tài khoản mới bằng email và mật khẩu"
             >
               Tạo tài khoản
             </Button>
@@ -183,6 +185,7 @@ export default function RegisterScreen() {
             onPress={() => navigation.goBack()}
             testID="login-link"
             accessibilityLabel="Quay lại đăng nhập"
+            accessibilityHint="Quay lại màn hình đăng nhập"
             accessibilityRole="button"
           >
             <Text style={styles.loginText}>

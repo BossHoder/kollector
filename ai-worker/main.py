@@ -197,35 +197,35 @@ def _python_supported() -> bool:
 def _ensure_supported_python() -> None:
     if not _python_supported():
         raise RetryableServiceError(
-            "Python 3.11 or 3.12 is required for the ai-worker ML dependencies"
+            "Cần Python 3.11 hoặc 3.12 để dùng các phụ thuộc ML của ai-worker"
         )
 
 
 def _require_pillow() -> None:
     if Image is None:
         raise RetryableServiceError(
-            "Pillow is not installed. Reinstall ai-worker requirements with Python 3.11 or 3.12."
+            "Pillow chưa được cài đặt. Hãy cài lại các phụ thuộc của ai-worker bằng Python 3.11 hoặc 3.12."
         )
 
 
 def _require_numpy() -> None:
     if np is None:
         raise RetryableServiceError(
-            "NumPy is not installed. Reinstall ai-worker requirements with Python 3.11 or 3.12."
+            "NumPy chưa được cài đặt. Hãy cài lại các phụ thuộc của ai-worker bằng Python 3.11 hoặc 3.12."
         )
 
 
 def _stage_budget(remaining_ms: int, stage_limit_ms: int, stage_name: str) -> int:
     budget_ms = min(remaining_ms, stage_limit_ms)
     if budget_ms <= 0:
-        raise BudgetExceededError(f"{stage_name} budget exceeded")
+        raise BudgetExceededError(f"Đã vượt quá ngân sách thời gian cho bước {stage_name}")
     return budget_ms
 
 
 def _enforce_stage_budget(start_monotonic: float, budget_ms: int, stage_name: str) -> None:
     elapsed_ms = int((time.monotonic() - start_monotonic) * 1000)
     if elapsed_ms > budget_ms:
-        raise BudgetExceededError(f"{stage_name} budget exceeded")
+        raise BudgetExceededError(f"Đã vượt quá ngân sách thời gian cho bước {stage_name}")
 
 
 def _empty_metadata() -> dict[str, Any]:
@@ -240,17 +240,17 @@ def _download_image_bytes(image_url: str, budget_ms: int) -> bytes:
         with httpx.Client(timeout=timeout, follow_redirects=True) as client:
             response = client.get(image_url)
     except httpx.TimeoutException as exc:
-        raise RetryableServiceError("Image download timed out") from exc
+        raise RetryableServiceError("Tải ảnh xuống bị quá thời gian chờ") from exc
     except httpx.RequestError as exc:
-        raise RetryableServiceError(f"Image download failed: {exc.__class__.__name__}") from exc
+        raise RetryableServiceError(f"Tải ảnh xuống thất bại: {exc.__class__.__name__}") from exc
 
     if response.status_code >= 500:
         raise RetryableServiceError(
-            f"Image download failed with status {response.status_code}"
+            f"Tải ảnh xuống thất bại với mã {response.status_code}"
         )
     if response.status_code >= 400:
         raise UnprocessableImageError(
-            f"Image URL is not accessible: {response.status_code}"
+            f"Không thể truy cập URL ảnh: {response.status_code}"
         )
 
     content_type = (
@@ -260,13 +260,13 @@ def _download_image_bytes(image_url: str, budget_ms: int) -> bytes:
         .lower()
     )
     if content_type not in ALLOWED_IMAGE_CONTENT_TYPES:
-        raise UnprocessableImageError("Unsupported image type")
+        raise UnprocessableImageError("Định dạng ảnh không được hỗ trợ")
 
     content = response.content
     if not content:
-        raise UnprocessableImageError("Downloaded image is empty")
+        raise UnprocessableImageError("Ảnh tải xuống bị trống")
     if len(content) > MAX_DOWNLOAD_BYTES:
-        raise UnprocessableImageError("Image exceeds maximum allowed size")
+        raise UnprocessableImageError("Ảnh vượt quá kích thước tối đa cho phép")
 
     return content
 
@@ -279,7 +279,7 @@ def _load_image(image_bytes: bytes, mode: str = "RGBA") -> Any:
             image.load()
             return image.convert(mode)
     except Exception as exc:
-        raise UnprocessableImageError("Downloaded file is not a valid image") from exc
+        raise UnprocessableImageError("Tệp đã tải xuống không phải là ảnh hợp lệ") from exc
 
 
 def _image_to_png_bytes(image: Any) -> bytes:
@@ -322,7 +322,7 @@ def _storage_configured() -> bool:
 def _sanitize_storage_relative_path(relative_path: str) -> str:
     normalized = posixpath.normpath(str(relative_path).replace("\\", "/")).lstrip("/")
     if not normalized or normalized == "." or normalized.startswith("../"):
-        raise RetryableServiceError("Invalid storage path")
+        raise RetryableServiceError("Đường dẫn lưu trữ không hợp lệ")
     return normalized
 
 
@@ -346,7 +346,7 @@ def _rewrite_download_url(image_url: str) -> str:
 
 def _require_cloudinary_config() -> None:
     if not _cloudinary_configured():
-        raise RetryableServiceError("Cloudinary credentials are not configured")
+        raise RetryableServiceError("Thông tin xác thực Cloudinary chưa được cấu hình")
 
 
 def _upload_processed_image_cloudinary(
@@ -368,13 +368,13 @@ def _upload_processed_image_cloudinary(
             overwrite=True,
         )
     except Exception as exc:
-        raise RetryableServiceError(f"Cloudinary upload failed: {exc}") from exc
+        raise RetryableServiceError(f"Tải ảnh lên Cloudinary thất bại: {exc}") from exc
 
     _enforce_stage_budget(start_monotonic, budget_ms, "Upload")
 
     secure_url = result.get("secure_url")
     if not secure_url:
-        raise RetryableServiceError("Cloudinary upload failed to return URL")
+        raise RetryableServiceError("Cloudinary không trả về URL sau khi tải ảnh lên")
     return secure_url
 
 
@@ -418,13 +418,13 @@ def _upload_enhanced_image_cloudinary(image_bytes: bytes, budget_ms: int) -> str
             overwrite=True,
         )
     except Exception as exc:
-        raise RetryableServiceError(f"Cloudinary upload failed: {exc}") from exc
+        raise RetryableServiceError(f"Tải ảnh lên Cloudinary thất bại: {exc}") from exc
 
     _enforce_stage_budget(start_monotonic, budget_ms, "Upload")
 
     secure_url = result.get("secure_url")
     if not secure_url:
-        raise RetryableServiceError("Cloudinary upload failed to return URL")
+        raise RetryableServiceError("Cloudinary không trả về URL sau khi tải ảnh lên")
     return secure_url
 
 
@@ -457,7 +457,7 @@ def _lanczos_resample() -> Any:
 
 def _unsharp_filter() -> Any:
     if ImageFilter is None:
-        raise RetryableServiceError("Pillow image filters are not available")
+        raise RetryableServiceError("Không có bộ lọc ảnh Pillow")
     return ImageFilter.UnsharpMask(radius=2, percent=140, threshold=3)
 
 
@@ -566,7 +566,7 @@ def _get_torch_module() -> Any:
         import torch
     except ImportError as exc:
         raise RetryableServiceError(
-            "PyTorch is not installed. Reinstall ai-worker requirements with Python 3.11 or 3.12."
+            "PyTorch chưa được cài đặt. Hãy cài lại các phụ thuộc của ai-worker bằng Python 3.11 hoặc 3.12."
         ) from exc
 
     return torch
@@ -623,9 +623,9 @@ def _get_remove_bg_model() -> dict[str, Any]:
             }
             return _remove_bg_model
         except Exception as pipeline_exc:
-            raise RetryableServiceError(
-                f"Failed to load background removal model {MODEL_REMOVE_BG}: {pipeline_exc}"
-            ) from auto_model_exc
+                raise RetryableServiceError(
+                    f"Không thể tải mô hình tách nền {MODEL_REMOVE_BG}: {pipeline_exc}"
+                ) from auto_model_exc
 
 
 def _iter_tensors(value: Any) -> Any:
@@ -998,7 +998,7 @@ def _get_vision_model() -> dict[str, Any]:
                 return _vision_model
             except Exception as pipeline_exc:
                 raise RetryableServiceError(
-                    f"Failed to load metadata model {MODEL_VISION}: {pipeline_exc}"
+                    f"Không thể tải mô hình trích xuất metadata {MODEL_VISION}: {pipeline_exc}"
                 ) from causal_lm_exc
 
 
@@ -1054,7 +1054,7 @@ def _run_causal_lm_prompt(image: Any, prompt: str, model_bundle: dict[str, Any])
         return _coerce_model_text(model.caption(image))
 
     raise RetryableServiceError(
-        f"Metadata model {MODEL_VISION} does not expose a supported inference API"
+        f"Mô hình metadata {MODEL_VISION} không cung cấp API suy luận được hỗ trợ"
     )
 
 
@@ -1190,6 +1190,36 @@ _configure_cloudinary()
 app = FastAPI(title="Klectr AI Processing Service", version="0.2.0")
 
 
+def _localize_validation_errors(errors: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    localized: list[dict[str, Any]] = []
+
+    for item in errors:
+        localized_item = dict(item)
+        error_type = str(item.get("type") or "")
+        context = item.get("ctx") or {}
+
+        if error_type == "missing":
+            message = "Trường này là bắt buộc"
+        elif error_type == "extra_forbidden":
+            message = "Không cho phép trường bổ sung"
+        elif error_type == "url_parsing":
+            message = "URL không hợp lệ"
+        elif error_type == "string_too_short":
+            min_length = context.get("min_length")
+            message = (
+                f"Chuỗi phải có ít nhất {min_length} ký tự"
+                if min_length is not None
+                else "Chuỗi quá ngắn"
+            )
+        else:
+            message = "Giá trị không hợp lệ"
+
+        localized_item["msg"] = message
+        localized.append(localized_item)
+
+    return localized
+
+
 def warm_models() -> None:
     _get_remove_bg_model()
     _get_vision_model()
@@ -1233,7 +1263,7 @@ def analyze(
             status_code=400,
             detail=ErrorResponse(
                 error=ErrorPayload(
-                    message="Invalid request: category is required",
+                    message="Yêu cầu không hợp lệ: category là bắt buộc",
                     code="invalid_request",
                 )
             ).model_dump(),
@@ -1286,7 +1316,7 @@ def analyze(
         )
 
         if not processed_image_url:
-            raise RetryableServiceError("Processed image URL is missing")
+            raise RetryableServiceError("Thiếu URL ảnh đã xử lý")
 
         metadata = _empty_metadata()
         try:
@@ -1368,7 +1398,7 @@ def analyze(
             status_code=500,
             detail=ErrorResponse(
                 error=ErrorPayload(
-                    message=f"Internal processing error: {exc}",
+                    message=f"Lỗi xử lý nội bộ: {exc}",
                     code="retryable_error",
                 )
             ).model_dump(),
@@ -1411,7 +1441,7 @@ def enhance_image(
         enhanced_image_url = _upload_enhanced_image(enhanced_bytes, upload_budget)
 
         if not enhanced_image_url:
-            raise RetryableServiceError("Enhanced image URL is missing")
+            raise RetryableServiceError("Thiếu URL ảnh đã tăng cường")
 
         duration_ms = int((time.monotonic() - start_monotonic) * 1000)
         logger.info(
@@ -1474,7 +1504,7 @@ def enhance_image(
             status_code=500,
             detail=ErrorResponse(
                 error=ErrorPayload(
-                    message=f"Internal enhancement error: {exc}",
+                    message=f"Lỗi tăng cường nội bộ: {exc}",
                     code="retryable_error",
                 )
             ).model_dump(),
@@ -1499,9 +1529,9 @@ async def validation_exception_handler(
 ) -> JSONResponse:
     payload = ErrorResponse(
         error=ErrorPayload(
-            message="Invalid request",
+            message="Yêu cầu không hợp lệ",
             code="invalid_request",
-            details=exc.errors(),
+            details=_localize_validation_errors(exc.errors()),
         )
     ).model_dump()
     return JSONResponse(status_code=422, content=payload)

@@ -464,7 +464,7 @@ describe('AssetDetailScreen', () => {
 
       await waitFor(() => {
         expect(screen.queryByText('Không')).toBeNull();
-        expect(screen.getAllByText('Museum Forest').length).toBeGreaterThan(1);
+        expect(screen.getAllByText(/museum forest/i).length).toBeGreaterThan(1);
       });
     });
   });

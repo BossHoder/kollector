@@ -12,10 +12,10 @@ import type { UpgradeRequestStatus, UpgradeRequestSummary } from '@/types/subscr
 type RequestFilter = 'pending' | 'approved' | 'rejected' | 'expired';
 
 const FILTERS: Array<{ value: RequestFilter; label: string; hint: string }> = [
-  { value: 'pending', label: 'Pending', hint: 'Needs admin review' },
-  { value: 'approved', label: 'Approved', hint: 'Granted VIP access' },
-  { value: 'rejected', label: 'Rejected', hint: 'Rejected with reason' },
-  { value: 'expired', label: 'Expired', hint: 'No longer actionable' },
+  { value: 'pending', label: 'Chờ duyệt', hint: 'Cần quản trị viên xem & xử lý' },
+  { value: 'approved', label: 'Đã duyệt', hint: 'Đã cấp quyền VIP' },
+  { value: 'rejected', label: 'Đã từ chối', hint: 'Đã từ chối kèm lý do' },
+  { value: 'expired', label: 'Hết hạn', hint: 'Không còn xử lý được' },
 ];
 
 export function AdminSubscriptionsPage() {
@@ -33,7 +33,7 @@ export function AdminSubscriptionsPage() {
       const response = await adminListUpgradeRequests(filter);
       setRequests(response.data || []);
     } catch (error) {
-      setLoadError('Could not load VIP requests.');
+      setLoadError('Không tải được danh sách yêu cầu VIP.');
     } finally {
       setLoading(false);
     }
@@ -46,11 +46,11 @@ export function AdminSubscriptionsPage() {
   const approveMutation = useMutation({
     mutationFn: (requestId: string) => adminApproveUpgradeRequest(requestId),
     onSuccess: async () => {
-      showSuccess('The request was approved and the list has been refreshed.');
+      showSuccess('Đã duyệt yêu cầu và làm mới danh sách.');
       await loadRequests();
     },
     onError: () => {
-      showError('The VIP request could not be approved.');
+      showError('Không thể duyệt yêu cầu VIP.');
     },
   });
 
@@ -59,11 +59,11 @@ export function AdminSubscriptionsPage() {
       adminRejectUpgradeRequest(requestId, { reason }),
     onSuccess: async (_, variables) => {
       setRejectReasons((current) => ({ ...current, [variables.requestId]: '' }));
-      showSuccess('The rejection reason has been saved.');
+      showSuccess('Đã lưu lý do từ chối.');
       await loadRequests();
     },
     onError: () => {
-      showError('The VIP request could not be rejected.');
+      showError('Không thể từ chối yêu cầu VIP.');
     },
   });
 
@@ -79,7 +79,7 @@ export function AdminSubscriptionsPage() {
   const handleReject = (requestId: string) => {
     const reason = (rejectReasons[requestId] || '').trim();
     if (!reason) {
-      showWarning('Enter a rejection note before rejecting this transfer.');
+      showWarning('Hãy nhập lý do trước khi từ chối yêu cầu này.');
       return;
     }
 
@@ -89,11 +89,11 @@ export function AdminSubscriptionsPage() {
   return (
     <div className="space-y-6">
       <section className="rounded-3xl border border-border-dark bg-[radial-gradient(circle_at_top_left,_rgba(37,244,209,0.14),_transparent_38%),linear-gradient(180deg,_rgba(22,40,37,0.98),_rgba(11,22,20,0.98))] p-6 sm:p-8">
-        <p className="text-xs uppercase tracking-[0.18em] text-primary/70">Admin subscriptions</p>
-        <h2 className="mt-3 text-3xl font-semibold text-white">VIP request review board</h2>
+        <p className="text-xs uppercase tracking-[0.18em] text-primary/70">Quản trị • Subscriptions</p>
+        <h2 className="mt-3 text-3xl font-semibold text-white">Bảng duyệt yêu cầu VIP</h2>
         <p className="mt-3 max-w-3xl text-sm text-text-secondary">
-          Review bank transfer references, spot weak proofs quickly, and push clean approve or
-          reject decisions without leaving the admin area.
+          Đối soát nội dung chuyển khoản, nhìn nhanh chứng từ chưa thuyết phục, và duyệt/từ chối
+          ngay trong khu vực quản trị.
         </p>
       </section>
 
@@ -123,11 +123,11 @@ export function AdminSubscriptionsPage() {
         </div>
 
         <div className="rounded-2xl border border-border-dark bg-surface-dark/80 p-5">
-          <p className="text-xs uppercase tracking-[0.14em] text-text-muted">Current view</p>
+          <p className="text-xs uppercase tracking-[0.14em] text-text-muted">Tổng quan</p>
           <div className="mt-4 grid gap-4 sm:grid-cols-3 md:grid-cols-1">
-            <MetricCard label="Requests" value={String(summary.total)} />
-            <MetricCard label="Upgrade" value={String(summary.upgrades)} />
-            <MetricCard label="Renewal" value={String(summary.renewals)} />
+            <MetricCard label="Yêu cầu" value={String(summary.total)} />
+            <MetricCard label="Nâng cấp" value={String(summary.upgrades)} />
+            <MetricCard label="Gia hạn" value={String(summary.renewals)} />
           </div>
         </div>
       </section>
@@ -135,26 +135,26 @@ export function AdminSubscriptionsPage() {
       <section className="rounded-3xl border border-border-dark bg-surface-dark/80">
         <div className="flex items-center justify-between gap-4 border-b border-border-dark px-6 py-5">
           <div>
-            <h3 className="text-lg font-semibold text-white">Requests in {labelForStatus(filter)}</h3>
+            <h3 className="text-lg font-semibold text-white">Yêu cầu: {labelForStatus(filter)}</h3>
             <p className="mt-1 text-sm text-text-secondary">
-              Keep the admin list tight and action-focused.
+              Giữ danh sách gọn và tập trung vào thao tác xử lý.
             </p>
           </div>
           <span className="rounded-full border border-border-dark px-3 py-1 text-sm text-text-secondary">
-            {summary.total} items
+            {summary.total} mục
           </span>
         </div>
 
         <div className="space-y-4 p-6">
           {loading ? (
-            <p className="text-text-secondary">Loading VIP requests...</p>
+            <p className="text-text-secondary">Đang tải yêu cầu VIP...</p>
           ) : null}
           {loadError ? (
             <p className="text-red-400">{loadError}</p>
           ) : null}
           {!loading && !loadError && requests.length === 0 ? (
             <p className="rounded-2xl border border-dashed border-border-dark bg-[#0d1b19] px-5 py-6 text-sm text-text-secondary">
-              No requests in this state.
+              Không có yêu cầu ở trạng thái này.
             </p>
           ) : null}
 
@@ -179,7 +179,7 @@ export function AdminSubscriptionsPage() {
                         {labelForStatus(request.status)}
                       </span>
                       <span className="rounded-full border border-border-dark px-3 py-1 text-xs uppercase tracking-[0.14em] text-text-secondary">
-                        {request.type}
+                        {labelForRequestType(request.type)}
                       </span>
                     </div>
 
@@ -188,24 +188,24 @@ export function AdminSubscriptionsPage() {
                         {request.user?.displayName || request.user?.email || request.userId}
                       </h4>
                       <p className="mt-1 text-sm text-text-secondary">
-                        {request.user?.email || 'Unknown email'}
+                        {request.user?.email || 'Chưa có email'}
                       </p>
                     </div>
 
                     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                      <InfoPill label="Transfer Ref" value={request.transferReference} mono />
+                      <InfoPill label="Nội dung chuyển khoản" value={request.transferReference} mono />
                       <InfoPill
-                        label="Submitted"
+                        label="Gửi lúc"
                         value={formatDateTime(request.submittedAt)}
                       />
                       <InfoPill
-                        label="Payment"
+                        label="Số tiền"
                         value={formatMoney(request.payment?.amount, request.payment?.currency)}
                       />
-                      <InfoPill label="Bank" value={request.payment?.bankLabel || 'n/a'} />
-                      <InfoPill label="Payer Mask" value={request.payment?.payerMask || 'n/a'} />
+                      <InfoPill label="Ngân hàng" value={request.payment?.bankLabel || '—'} />
+                      <InfoPill label="Người chuyển (ẩn)" value={request.payment?.payerMask || '—'} />
                       <InfoPill
-                        label="Metadata Expires"
+                        label="Metadata hết hạn"
                         value={formatDateTime(request.metadataExpireAt)}
                       />
                     </div>
@@ -213,14 +213,14 @@ export function AdminSubscriptionsPage() {
                     {request.review?.reviewedAt || request.review?.rejectionReason ? (
                       <div className="rounded-2xl border border-border-dark bg-surface-dark/60 px-4 py-3">
                         <p className="text-xs uppercase tracking-[0.14em] text-text-muted">
-                          Review note
+                          Ghi chú xử lý
                         </p>
                         <p className="mt-2 text-sm text-white">
-                          {request.review?.rejectionReason || request.rejectionReason || 'Approved'}
+                          {request.review?.rejectionReason || request.rejectionReason || 'Đã duyệt'}
                         </p>
                         {request.review?.reviewedAt ? (
                           <p className="mt-1 text-xs text-text-secondary">
-                            Reviewed {formatDateTime(request.review.reviewedAt)}
+                            Xử lý lúc {formatDateTime(request.review.reviewedAt)}
                           </p>
                         ) : null}
                       </div>
@@ -229,7 +229,7 @@ export function AdminSubscriptionsPage() {
 
                   <div className="w-full max-w-xl space-y-3 lg:min-w-[320px]">
                     <label className="block text-sm font-medium text-white" htmlFor={`reject-${request.id}`}>
-                      Reject reason
+                      Lý do từ chối
                     </label>
                     <textarea
                       id={`reject-${request.id}`}
@@ -240,7 +240,7 @@ export function AdminSubscriptionsPage() {
                           [request.id]: event.target.value,
                         }))
                       }
-                      placeholder="Explain why this transfer should be rejected"
+                      placeholder="Nhập lý do vì sao cần từ chối yêu cầu này"
                       rows={4}
                       className="w-full rounded-2xl border border-border-dark bg-surface-dark px-4 py-3 text-white placeholder:text-text-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                     />
@@ -252,7 +252,7 @@ export function AdminSubscriptionsPage() {
                         isLoading={busy === 'approve'}
                         disabled={request.status !== 'pending' || Boolean(busy)}
                       >
-                        Approve
+                        Duyệt
                       </Button>
                       <Button
                         type="button"
@@ -261,7 +261,7 @@ export function AdminSubscriptionsPage() {
                         isLoading={busy === 'reject'}
                         disabled={request.status !== 'pending' || Boolean(busy)}
                       >
-                        Reject
+                        Từ chối
                       </Button>
                     </div>
                   </div>
@@ -304,15 +304,26 @@ function InfoPill({
 function labelForStatus(status: UpgradeRequestStatus) {
   switch (status) {
     case 'pending':
-      return 'Pending';
+      return 'Chờ duyệt';
     case 'approved':
-      return 'Approved';
+      return 'Đã duyệt';
     case 'rejected':
-      return 'Rejected';
+      return 'Đã từ chối';
     case 'expired':
-      return 'Expired';
+      return 'Hết hạn';
     default:
       return status;
+  }
+}
+
+function labelForRequestType(type: UpgradeRequestSummary['type']) {
+  switch (type) {
+    case 'upgrade':
+      return 'nâng cấp';
+    case 'renewal':
+      return 'gia hạn';
+    default:
+      return type;
   }
 }
 
@@ -333,7 +344,7 @@ function badgeClassForStatus(status: UpgradeRequestStatus) {
 
 function formatDateTime(value: string | null | undefined) {
   if (!value) {
-    return 'n/a';
+    return '—';
   }
 
   return new Date(value).toLocaleString();
@@ -341,7 +352,7 @@ function formatDateTime(value: string | null | undefined) {
 
 function formatMoney(amount: number | null | undefined, currency: string | null | undefined) {
   if (amount == null) {
-    return 'n/a';
+    return '—';
   }
 
   return `${amount.toLocaleString()} ${currency || ''}`.trim();

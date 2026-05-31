@@ -18,7 +18,7 @@ function errorHandler(err, req, res, next) {
   // Default to 500 server error
   const statusCode = err.statusCode || err.status || 500;
   const code = err.code || 'INTERNAL_SERVER_ERROR';
-  const message = err.message || 'An unexpected error occurred';
+  const message = err.message || 'Đã xảy ra lỗi không mong muốn';
   const details = err.details || {};
 
   // Send standardized error response
@@ -35,7 +35,7 @@ function errorHandler(err, req, res, next) {
  * 404 Not Found handler
  */
 function notFoundHandler(req, res, next) {
-  const error = new Error(`Route not found: ${req.method} ${req.path}`);
+  const error = new Error(`Không tìm thấy đường dẫn: ${req.method} ${req.path}`);
   error.statusCode = 404;
   error.code = 'NOT_FOUND';
   next(error);

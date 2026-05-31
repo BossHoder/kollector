@@ -134,7 +134,7 @@ describe('AssetDetailScreen maintenance flow', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('maintenance-disabled-message')).toBeTruthy();
-      expect(screen.getByText(/Maintenance is disabled/i)).toBeTruthy();
+      expect(screen.getByText(/Bảo trì sẽ khả dụng/i)).toBeTruthy();
     });
   });
 });

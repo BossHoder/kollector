@@ -15,7 +15,7 @@ async function callAIService(endpointPath, payload, options = {}) {
   const aiServiceUrl = process.env.AI_SERVICE_URL;
 
   if (!aiServiceUrl) {
-    throw new Error('AI_SERVICE_URL environment variable is required');
+    throw new Error('Biến môi trường AI_SERVICE_URL là bắt buộc');
   }
 
   const endpoint = `${aiServiceUrl}${endpointPath}`;
@@ -54,7 +54,7 @@ async function callAIService(endpointPath, payload, options = {}) {
         duration
       });
       
-      const error = new Error(`AI service returned ${response.status}`);
+      const error = new Error(`Dịch vụ AI trả về mã ${response.status}`);
       error.statusCode = response.status;
       error.retryable = response.status >= 500;
       throw error;
@@ -74,7 +74,7 @@ async function callAIService(endpointPath, payload, options = {}) {
 
     if (error.name === 'AbortError') {
       logger.error('AI service timeout', { duration, timeout: AI_SERVICE_TIMEOUT });
-      const timeoutError = new Error('AI service timeout');
+      const timeoutError = new Error('Dịch vụ AI đã quá thời gian chờ');
       timeoutError.retryable = true;
       throw timeoutError;
     }

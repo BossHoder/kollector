@@ -12,11 +12,11 @@ const router = express.Router();
 const registerValidation = [
   body('email')
     .isEmail()
-    .withMessage('Please provide a valid email address')
+    .withMessage('Vui lòng nhập địa chỉ email hợp lệ')
     .normalizeEmail(),
   body('password')
     .isLength({ min: 8 })
-    .withMessage('Password must be at least 8 characters long')
+    .withMessage('Mật khẩu phải có ít nhất 8 ký tự')
 ];
 
 /**
@@ -25,11 +25,11 @@ const registerValidation = [
 const loginValidation = [
   body('email')
     .isEmail()
-    .withMessage('Please provide a valid email address')
+    .withMessage('Vui lòng nhập địa chỉ email hợp lệ')
     .normalizeEmail(),
   body('password')
     .notEmpty()
-    .withMessage('Password is required')
+    .withMessage('Mật khẩu là bắt buộc')
 ];
 
 /**
@@ -56,7 +56,7 @@ const patchMeValidation = [
   body('settings.preferences.assetTheme.defaultThemeId')
     .optional({ values: 'undefined' })
     .custom((value) => value === null || typeof value === 'string')
-    .withMessage('settings.preferences.assetTheme.defaultThemeId must be a string or null'),
+    .withMessage('settings.preferences.assetTheme.defaultThemeId phải là chuỗi hoặc null'),
 ];
 
 router.get('/me', authController.getMe.bind(authController));

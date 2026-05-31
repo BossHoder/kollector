@@ -16,7 +16,7 @@ describe('AssetCapBanner (mobile)', () => {
       />
     );
 
-    expect(screen.getByText(/2 slots left/i)).toBeTruthy();
+    expect(screen.getByText(/còn 2 chỗ trống/i)).toBeTruthy();
 
     const createButton = screen.getByTestId('asset-cap-create');
     fireEvent.press(createButton);
@@ -36,7 +36,7 @@ describe('AssetCapBanner (mobile)', () => {
       />
     );
 
-    expect(screen.getByText(/asset limit reached/i)).toBeTruthy();
+    expect(screen.getByText(/đã chạm giới hạn tài sản/i)).toBeTruthy();
 
     const createButton = screen.getByTestId('asset-cap-create');
     expect(createButton.props.accessibilityState.disabled).toBe(true);

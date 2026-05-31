@@ -276,7 +276,7 @@ describe('POST /api/assets/analyze-queue', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.error.code).toBe('VALIDATION_ERROR');
-      expect(response.body.error.message).toBe('Category is required');
+      expect(response.body.error.message).toBe('Danh mục là bắt buộc');
     });
   });
 

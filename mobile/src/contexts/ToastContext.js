@@ -55,9 +55,9 @@ export function ToastProvider({ children }) {
       if (value && typeof value === 'object') {
         if (typeof value.message === 'string') return value.message;
         if (typeof value.error === 'string') return value.error;
-        try { return JSON.stringify(value); } catch { return 'An error occurred'; }
+        try { return JSON.stringify(value); } catch { return 'Đã xảy ra lỗi'; }
       }
-      return String(value ?? 'An error occurred');
+      return String(value ?? 'Đã xảy ra lỗi');
     };
 
     const normalizedMessage = toReadableString(message);
@@ -106,7 +106,7 @@ export function ToastProvider({ children }) {
 export function useToast() {
   const context = useContext(ToastContext);
   if (!context) {
-    throw new Error('useToast must be used within a ToastProvider');
+    throw new Error('useToast phải được dùng bên trong ToastProvider');
   }
   return context;
 }

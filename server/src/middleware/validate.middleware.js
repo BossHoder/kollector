@@ -8,7 +8,7 @@ function validate(req, res, next) {
   const errors = validationResult(req);
   
   if (!errors.isEmpty()) {
-    const error = new Error('Validation failed');
+    const error = new Error('Dữ liệu gửi lên không hợp lệ');
     error.statusCode = 400;
     error.code = 'VALIDATION_ERROR';
     error.details = {

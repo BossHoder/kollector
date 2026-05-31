@@ -4,14 +4,14 @@
  * Maps backend asset status values to UI display properties.
  * Single source of truth for status display, mirroring web/src/lib/status-display.ts
  *
- * | BE Status   | UI Label     | UI Color    | Icon             |
- * |-------------|--------------|-------------|------------------|
- * | draft       | Bản nháp     | gray        | edit             |
- * | processing  | Đang xử lý   | primary     | auto_awesome     |
- * | active      | Sẵn sàng     | emerald     | check_circle     |
- * | archived    | Đã lưu trữ   | gray        | archive          |
- * | failed      | Thất bại     | red         | error            |
- * | partial     | Một phần     | warning     | warning          |
+ * | BE Status   | UI Label    | UI Color    | Icon             |
+ * |-------------|-------------|-------------|------------------|
+ * | draft       | Bản nháp    | gray        | edit             |
+ * | processing  | Đang xử lý  | primary     | auto_awesome     |
+ * | active      | Sẵn sàng    | emerald     | check_circle     |
+ * | archived    | Đã lưu trữ  | gray        | archive          |
+ * | failed      | Thất bại    | red         | error            |
+ * | partial     | Một phần    | warning     | warning          |
  */
 
 import { colors } from '../styles/tokens';

@@ -13,10 +13,10 @@ function formatResetDate(nextResetAt: string) {
   const parsedDate = new Date(nextResetAt);
 
   if (Number.isNaN(parsedDate.getTime())) {
-    return 'soon';
+    return 'sớm';
   }
 
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat('vi-VN', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
@@ -40,20 +40,20 @@ export default function ProcessingQuotaBanner({
   return (
     <View style={styles.container}>
       <Text style={styles.title}>
-        {atLimit ? 'Monthly processing quota reached' : `${remaining} processing uses left`}
+        {atLimit ? 'Đã chạm giới hạn lượt xử lý trong tháng' : `Còn ${remaining} lượt xử lý`}
       </Text>
       <Text style={styles.description}>
         {atLimit
-          ? `You are on ${tier.toUpperCase()} and reached ${safeLimit}/${safeLimit} processing uses this month.`
-          : `You are using ${safeUsed}/${safeLimit} processing uses this month.`}
+          ? `Bạn đang ở gói ${tier === 'vip' ? 'VIP' : 'Miễn phí'} và đã dùng ${safeLimit}/${safeLimit} lượt xử lý trong tháng này.`
+          : `Bạn đã dùng ${safeUsed}/${safeLimit} lượt xử lý trong tháng này.`}
       </Text>
-      <Text style={styles.description}>{`Resets ${formattedResetDate}`}</Text>
+      <Text style={styles.description}>{`Đặt lại vào ${formattedResetDate}`}</Text>
       <Pressable
         testID="processing-quota-action"
         onPress={onAction}
         style={styles.button}
       >
-        <Text style={styles.buttonLabel}>{atLimit ? 'Upgrade to VIP' : 'Analyze asset'}</Text>
+        <Text style={styles.buttonLabel}>{atLimit ? 'Nâng gói VIP' : 'Phân tích tài sản'}</Text>
       </Pressable>
     </View>
   );

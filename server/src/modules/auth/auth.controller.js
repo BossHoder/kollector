@@ -112,7 +112,7 @@ class AuthController {
       }
 
       if (!refreshToken) {
-        const error = new Error('No refresh token provided');
+        const error = new Error('Không có refresh token');
         error.statusCode = 401;
         error.code = 'NO_REFRESH_TOKEN';
         throw error;

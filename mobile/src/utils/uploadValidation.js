@@ -36,9 +36,9 @@ const TYPE_DESCRIPTIONS = {
  * @returns {string}
  */
 function formatBytes(bytes) {
-  if (bytes === 0) return '0 Bytes';
+  if (bytes === 0) return '0 B';
   const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 }
@@ -57,7 +57,7 @@ export function validateFileType(mimeType) {
   }
 
   const normalizedType = mimeType.toLowerCase();
-  
+
   if (ACCEPTED_MIME_TYPES.includes(normalizedType)) {
     return { valid: true };
   }
@@ -92,7 +92,7 @@ export function validateFileSize(sizeInBytes) {
   if (sizeInBytes > MAX_FILE_SIZE) {
     return {
       valid: false,
-      error: `Kích thước tệp (${formatBytes(sizeInBytes)}) vượt quá 10MB tối đa`,
+      error: `Kích thước tệp (${formatBytes(sizeInBytes)}) vượt quá giới hạn tối đa 10MB`,
     };
   }
 

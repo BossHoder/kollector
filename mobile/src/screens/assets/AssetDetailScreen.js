@@ -493,7 +493,7 @@ export default function AssetDetailScreen() {
       toast.success(
         themeOverrideId
           ? 'Đã cập nhật theme cho tài sản'
-          : 'Đã xóa theme override của tài sản'
+          : 'Đã xóa theme tùy chỉnh của tài sản'
       );
     } catch (error) {
       toast.error(error?.message || 'Không thể cập nhật theme tài sản');
@@ -652,6 +652,13 @@ export default function AssetDetailScreen() {
   const userDefaultThemeId = user?.settings?.preferences?.assetTheme?.defaultThemeId ?? null;
   const lockedPresetIds = subscriptionData?.entitlements?.theme?.lockedPresetIds || [];
   const maintenanceMultiplier = subscriptionData?.entitlements?.maintenanceExpMultiplier || 1;
+  const enhancementStatusLabels = {
+    idle: 'Chưa bắt đầu',
+    queued: 'Đang chờ',
+    processing: 'Đang xử lý',
+    completed: 'Hoàn tất',
+    failed: 'Thất bại',
+  };
   const resolvedThemeId = resolveAssetThemeId(assetThemeOverrideId, userDefaultThemeId);
   const resolvedTheme = getAssetThemePresetById(resolvedThemeId)
     || getAssetThemePresetById(ASSET_THEME_FALLBACK_ID);
@@ -675,7 +682,7 @@ export default function AssetDetailScreen() {
   const canMaintain = status === 'active' && maintenanceHealth < 80;
   const maintenanceDisabled = status !== 'active';
   const fileMetadata = normalizeMetadata(asset);
-  const assetTitle = getDisplayText(asset.title) || 'Asset detail';
+  const assetTitle = getDisplayText(asset.title) || 'Chi tiết tài sản';
   const errorMessage = getDisplayText(asset.error) || getDisplayText(asset.aiMetadata?.error);
   const brandValue = getDisplayText(analysis.brand) || getDisplayText(analysis.details?.brand);
   const modelValue = getDisplayText(analysis.model) || getDisplayText(analysis.details?.model);
@@ -760,14 +767,14 @@ export default function AssetDetailScreen() {
             </Text>
             <Text style={[styles.maintenanceHint, { color: themePalette.textSecondary, marginTop: spacing.sm }]}>
               {maintenanceMultiplier >= 3
-                ? 'VIP reward active: maintenance grants 3x EXP.'
-                : 'Free reward active: maintenance grants base EXP.'}
+                ? 'Đang áp dụng thưởng VIP: bảo trì nhận 3x EXP.'
+                : 'Đang áp dụng thưởng miễn phí: bảo trì nhận EXP cơ bản.'}
             </Text>
           </Card>
         ) : null}
 
         <Card title="Tăng cường và tái xử lý ảnh">
-          <InfoRow label="Trạng thái" value={enhancementStatus} />
+          <InfoRow label="Trạng thái" value={enhancementStatusLabels[enhancementStatus] || enhancementStatus} />
           {typeof enhancement.attemptCount === 'number' ? (
             <InfoRow label="Số lần thử" value={String(enhancement.attemptCount)} />
           ) : null}
@@ -804,7 +811,7 @@ export default function AssetDetailScreen() {
         <Card title="Theme tài sản">
           <InfoRow
             label="Theme đang áp dụng"
-            value={resolvedTheme?.name || 'Vault Graphite'}
+            value={resolvedTheme?.name || 'Mặc định'}
           />
           <InfoRow
             label="Override riêng"
@@ -826,7 +833,7 @@ export default function AssetDetailScreen() {
           </View>
           {lockedPresetIds.length > 0 ? (
             <Text style={[styles.inlineErrorText, { color: themePalette.textSecondary }]}>
-              VIP-only presets stay visible on downgraded assets but cannot be newly applied.
+              Preset chỉ dành cho VIP vẫn được hiển thị trên tài sản đã hạ gói nhưng không thể áp dụng mới.
             </Text>
           ) : null}
           <TouchableOpacity
@@ -843,12 +850,12 @@ export default function AssetDetailScreen() {
             onPress={() => handleThemeOverride(null)}
             disabled={themeLoading}
             accessibilityRole="button"
-            accessibilityLabel="Xóa theme override"
+            accessibilityLabel="Xóa theme tùy chỉnh"
           >
             {themeLoading ? (
               <ActivityIndicator size="small" color={themePalette.textSecondary} />
             ) : (
-              <Text style={styles.archiveActionText}>Xóa theme override</Text>
+              <Text style={styles.archiveActionText}>Xóa theme tùy chỉnh</Text>
             )}
           </TouchableOpacity>
         </Card>
@@ -860,10 +867,10 @@ export default function AssetDetailScreen() {
         ) : null}
 
         {!isProcessing && !canMaintain ? (
-          <Card title="Maintenance">
+          <Card title="Bảo trì">
             <Text style={[styles.maintenanceHint, { color: themePalette.textSecondary }]} testID="maintenance-disabled-message">
               {maintenanceDisabled
-                ? 'Maintenance is disabled until this asset becomes active.'
+                ? 'Bảo trì sẽ khả dụng khi tài sản chuyển sang trạng thái sẵn sàng.'
                 : 'Tài sản đang còn mới, trên 80 điểm sạch sẽ. Chưa cần lau chùi..'}
             </Text>
           </Card>

@@ -2,9 +2,9 @@ export const CANONICAL_CATEGORIES = ['sneaker', 'lego', 'camera', 'other'];
 
 // Display labels — must stay in sync with web/src/components/forms/UploadForm.tsx
 export const CATEGORY_LABELS = {
-  sneaker: 'Giày Sneaker',
+  sneaker: 'Giày sneaker',
   lego: 'LEGO',
-  camera: 'Máy Ảnh',
+  camera: 'Máy ảnh',
   other: 'Khác',
 };
 

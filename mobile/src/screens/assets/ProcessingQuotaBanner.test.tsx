@@ -17,8 +17,8 @@ describe('ProcessingQuotaBanner (mobile)', () => {
       />
     );
 
-    expect(screen.getByText(/2 processing uses left/i)).toBeTruthy();
-    expect(screen.getByText(/resets may 1, 2026/i)).toBeTruthy();
+    expect(screen.getByText(/còn 2 lượt xử lý/i)).toBeTruthy();
+    expect(screen.getByText(/đặt lại vào 1 tháng 5, 2026/i)).toBeTruthy();
 
     const button = screen.getByTestId('processing-quota-action');
     fireEvent.press(button);
@@ -39,8 +39,8 @@ describe('ProcessingQuotaBanner (mobile)', () => {
       />
     );
 
-    expect(screen.getByText(/monthly processing quota reached/i)).toBeTruthy();
-    expect(screen.getByText(/resets may 1, 2026/i)).toBeTruthy();
+    expect(screen.getByText(/đã chạm giới hạn lượt xử lý trong tháng/i)).toBeTruthy();
+    expect(screen.getByText(/đặt lại vào 1 tháng 5, 2026/i)).toBeTruthy();
 
     const button = screen.getByTestId('processing-quota-action');
     fireEvent.press(button);

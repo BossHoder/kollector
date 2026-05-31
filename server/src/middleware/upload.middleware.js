@@ -33,7 +33,7 @@ function fileFilter(req, file, cb) {
   if (ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    const error = new Error('Invalid file type. Only image files are allowed.');
+    const error = new Error('Định dạng tệp không hợp lệ. Chỉ chấp nhận tệp hình ảnh.');
     error.code = 'INVALID_FILE_TYPE';
     cb(error, false);
   }
@@ -76,11 +76,11 @@ function handleUploadError(err, req, res, next) {
         success: false,
         error: {
           code: 'VALIDATION_ERROR',
-          message: 'File too large',
+          message: 'Tệp quá lớn',
           details: [
             {
               field: 'image',
-              message: 'Maximum file size is 10MB'
+              message: 'Kích thước tệp tối đa là 10MB'
             }
           ]
         }
@@ -107,11 +107,11 @@ function handleUploadError(err, req, res, next) {
       success: false,
       error: {
         code: 'VALIDATION_ERROR',
-        message: 'Invalid file type',
+        message: 'Định dạng tệp không hợp lệ',
         details: [
           {
             field: 'image',
-            message: 'Only image files (JPEG, PNG, WebP, GIF) are allowed'
+            message: 'Chỉ chấp nhận tệp hình ảnh (JPEG, PNG, WebP, GIF)'
           }
         ]
       }

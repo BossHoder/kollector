@@ -42,7 +42,7 @@ class GamificationService {
       throw createHttpError(
         400,
         'CLEAN_THRESHOLD_NOT_MET',
-        'cleanedPercentage must be at least 80'
+        'cleanedPercentage phải ít nhất là 80'
       );
     }
 
@@ -50,22 +50,22 @@ class GamificationService {
       throw createHttpError(
         400,
         'DURATION_TOO_SHORT',
-        'Maintenance gestures must last at least 2000ms'
+        'Thao tác bảo trì phải kéo dài ít nhất 2000ms'
       );
     }
 
     const asset = await Asset.findById(assetId).lean();
 
     if (!asset) {
-      throw createHttpError(404, 'NOT_FOUND', 'Asset not found');
+      throw createHttpError(404, 'NOT_FOUND', 'Không tìm thấy tài sản');
     }
 
     if (String(asset.userId) !== String(userId)) {
-      throw createHttpError(403, 'FORBIDDEN', 'You do not own this asset');
+      throw createHttpError(403, 'FORBIDDEN', 'Bạn không sở hữu tài sản này');
     }
 
     if (asset.status !== 'active') {
-      throw createHttpError(404, 'NOT_FOUND', 'Asset is not active');
+      throw createHttpError(404, 'NOT_FOUND', 'Tài sản hiện không ở trạng thái active');
     }
 
     const previousHealth = Number(asset.condition?.health ?? 100);
@@ -74,7 +74,7 @@ class GamificationService {
       throw createHttpError(
         400,
         'MAINTENANCE_NOT_REQUIRED',
-        'Maintenance is only available for assets below 80 health'
+        'Chỉ có thể bảo trì tài sản có độ bền dưới 80'
       );
     }
 
@@ -82,7 +82,7 @@ class GamificationService {
       throw createHttpError(
         409,
         'VERSION_CONFLICT',
-        'Asset version does not match the current document version'
+        'Phiên bản tài sản không khớp với phiên bản hiện tại'
       );
     }
 
@@ -97,7 +97,7 @@ class GamificationService {
     const user = await User.findById(userId);
 
     if (!user) {
-      throw createHttpError(404, 'USER_NOT_FOUND', 'User not found');
+      throw createHttpError(404, 'USER_NOT_FOUND', 'Không tìm thấy người dùng');
     }
 
     const nextStreakDays = calculateNextMaintenanceStreak(
@@ -153,7 +153,7 @@ class GamificationService {
       throw createHttpError(
         409,
         'VERSION_CONFLICT',
-        'The asset changed before maintenance could be persisted'
+        'Tài sản đã thay đổi trước khi thao tác bảo trì được lưu'
       );
     }
 
