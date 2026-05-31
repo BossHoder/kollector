@@ -25,7 +25,7 @@ function LoadingScreen() {
   return (
     <View style={styles.loading}>
       <ActivityIndicator size="large" color={colors.primary} />
-      <Text style={styles.loadingText}>Loading...</Text>
+      <Text style={styles.loadingText}>Đang tải...</Text>
     </View>
   );
 }

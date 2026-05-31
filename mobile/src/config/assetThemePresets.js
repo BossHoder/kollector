@@ -3,7 +3,7 @@ export const ASSET_THEME_FALLBACK_ID = 'vault-graphite';
 export const ASSET_THEME_PRESETS = Object.freeze([
   {
     id: 'vault-graphite',
-    name: 'Vault Graphite',
+    name: 'vault graphite',
     active: true,
     tokenSet: {
       surface: '#111817',
@@ -14,7 +14,7 @@ export const ASSET_THEME_PRESETS = Object.freeze([
   },
   {
     id: 'ledger-ivory',
-    name: 'Ledger Ivory',
+    name: 'ledger ivory',
     active: true,
     tokenSet: {
       surface: '#f4efe4',
@@ -25,7 +25,7 @@ export const ASSET_THEME_PRESETS = Object.freeze([
   },
   {
     id: 'museum-forest',
-    name: 'Museum Forest',
+    name: 'museum forest',
     active: true,
     tokenSet: {
       surface: '#15211b',
@@ -36,7 +36,7 @@ export const ASSET_THEME_PRESETS = Object.freeze([
   },
   {
     id: 'archive-cobalt',
-    name: 'Archive Cobalt',
+    name: 'archive cobalt',
     active: true,
     tokenSet: {
       surface: '#101a2f',

@@ -24,11 +24,16 @@ export default function AppStack() {
         animation: 'slide_from_right',
       }}
     >
-      <Stack.Screen name="Tabs" component={TabsNavigator} />
+      <Stack.Screen
+        name="Tabs"
+        component={TabsNavigator}
+        options={{ title: 'Kollector' }}
+      />
       <Stack.Screen
         name="AssetDetail"
         component={AssetDetailScreen}
         options={{
+          title: 'Chi tiết tài sản',
           presentation: 'card',
           animation: 'slide_from_right',
         }}
