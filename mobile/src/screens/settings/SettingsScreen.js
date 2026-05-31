@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
-import { useSocket } from '../../contexts/SocketContext';
 import { useToast } from '../../contexts/ToastContext';
 import { updateDefaultAssetTheme } from '../../api/authApi';
 import {
@@ -16,6 +16,7 @@ import {
   getSubscriptionStatus,
   listUpgradeRequests,
 } from '../../api/subscriptionApi';
+import VipUpgradeModal from '../../components/subscription/VipUpgradeModal';
 import SubscriptionStateBadge from '../../components/subscription/SubscriptionStateBadge';
 import {
   ASSET_THEME_FALLBACK_ID,
@@ -23,7 +24,19 @@ import {
   getAssetThemePresetById,
   resolveAssetThemeId,
 } from '../../config/assetThemePresets';
-import { pickImageFromGallery } from '../../services/imagePicker';
+import {
+  VIP_UPGRADE_ACCOUNT_NUMBER,
+  VIP_UPGRADE_AMOUNT_VND,
+  VIP_UPGRADE_BANK_NAME,
+  VIP_UPGRADE_CURRENCY,
+} from '../../config/vipUpgrade';
+import { copyToClipboard } from '../../services/clipboard';
+import {
+  clearVipUpgradeSession,
+  getOrCreateVipUpgradeSession,
+  refreshVipUpgradeSession,
+  VIP_UPGRADE_REFRESH_COOLDOWN_MS,
+} from '../../services/vipUpgradeSession';
 import {
   borderRadius,
   colors,
@@ -61,16 +74,20 @@ function ThemeChip({
 }
 
 export default function SettingsScreen() {
+  const insets = useSafeAreaInsets();
   const { user, logout, updateUser } = useAuth();
-  const { connectionState, isFallbackActive, reconnectAttempts } = useSocket();
   const toast = useToast();
   const [themeLoading, setThemeLoading] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
   const [subscriptionData, setSubscriptionData] = useState(null);
   const [upgradeRequests, setUpgradeRequests] = useState([]);
-  const [requestType, setRequestType] = useState('upgrade');
+  const [vipUpgradeModalVisible, setVipUpgradeModalVisible] = useState(false);
   const [transferReference, setTransferReference] = useState('');
-  const [proofImage, setProofImage] = useState(null);
+  const [transferReferenceExpiresAt, setTransferReferenceExpiresAt] = useState(null);
+  const [transferReferenceLastRefreshedAt, setTransferReferenceLastRefreshedAt] = useState(null);
+  const [referenceClock, setReferenceClock] = useState(Date.now());
+  const [referenceHydrating, setReferenceHydrating] = useState(false);
+  const [referenceRefreshing, setReferenceRefreshing] = useState(false);
   const [requestSubmitting, setRequestSubmitting] = useState(false);
 
   const defaultThemeId = user?.settings?.preferences?.assetTheme?.defaultThemeId ?? null;
@@ -79,13 +96,22 @@ export default function SettingsScreen() {
     || getAssetThemePresetById(ASSET_THEME_FALLBACK_ID);
   const defaultTheme = getAssetThemePresetById(defaultThemeId);
   const lockedPresetIds = subscriptionData?.entitlements?.theme?.lockedPresetIds || [];
+  const latestRequest = upgradeRequests[0] || null;
+  const transferReferenceExpiresInMs = Math.max(
+    0,
+    (transferReferenceExpiresAt || 0) - referenceClock
+  );
+  const transferReferenceRefreshCooldownMs = Math.max(
+    0,
+    ((transferReferenceLastRefreshedAt || 0) + VIP_UPGRADE_REFRESH_COOLDOWN_MS) - referenceClock
+  );
 
   const themeDescription = useMemo(() => {
     if (defaultTheme) {
-      return `Current default: ${defaultTheme.name}`;
+      return `Giao diện mặc định hiện tại: ${defaultTheme.name}`;
     }
 
-    return `Fallback preset: ${resolvedTheme?.name || 'Vault Graphite'}`;
+    return `Đang dùng giao diện: ${resolvedTheme?.name || 'Kho Lưu Trữ Than Chì'}`;
   }, [defaultTheme, resolvedTheme]);
 
   const loadSubscriptionState = useCallback(async () => {
@@ -94,7 +120,7 @@ export default function SettingsScreen() {
       const statusResponse = await getSubscriptionStatus();
       setSubscriptionData(statusResponse?.data || null);
     } catch (error) {
-      toast.error(error?.message || 'Unable to load subscription data');
+      toast.error(error?.message || 'Không thể tải dữ liệu gói đăng ký');
     } finally {
       setSubscriptionLoading(false);
     }
@@ -103,7 +129,7 @@ export default function SettingsScreen() {
       const requestsResponse = await listUpgradeRequests();
       setUpgradeRequests(requestsResponse?.data || []);
     } catch (error) {
-      toast.error(error?.message || 'Unable to load upgrade requests');
+      toast.error(error?.message || 'Không thể tải danh sách yêu cầu nâng gói');
     }
   }, [toast]);
 
@@ -111,12 +137,46 @@ export default function SettingsScreen() {
     void loadSubscriptionState();
   }, [loadSubscriptionState]);
 
+  useEffect(() => {
+    if (!vipUpgradeModalVisible) {
+      return undefined;
+    }
+
+    const intervalId = setInterval(() => {
+      setReferenceClock(Date.now());
+    }, 1000);
+
+    return () => clearInterval(intervalId);
+  }, [vipUpgradeModalVisible]);
+
+  useEffect(() => {
+    if (!vipUpgradeModalVisible || transferReferenceExpiresInMs > 0 || referenceHydrating) {
+      return;
+    }
+
+    const hydrateFreshSession = async () => {
+      setReferenceHydrating(true);
+      try {
+        const session = await getOrCreateVipUpgradeSession();
+        setTransferReference(session.reference);
+        setTransferReferenceExpiresAt(session.expiresAt);
+        setTransferReferenceLastRefreshedAt(session.lastRefreshedAt);
+      } catch (error) {
+        toast.error(error?.message || 'Không thể làm mới mã chuyển khoản đã hết hạn');
+      } finally {
+        setReferenceHydrating(false);
+      }
+    };
+
+    void hydrateFreshSession();
+  }, [referenceHydrating, toast, transferReferenceExpiresInMs, vipUpgradeModalVisible]);
+
   const handleLogout = async () => {
     try {
       await logout();
-      toast.success('Logged out');
+      toast.success('Đã đăng xuất thành công');
     } catch {
-      toast.error('Logout failed');
+      toast.error('Đăng xuất thất bại');
     }
   };
 
@@ -150,88 +210,153 @@ export default function SettingsScreen() {
           },
         };
       });
-      toast.success(nextThemeId ? 'Default theme updated' : 'Default theme cleared');
+      toast.success(nextThemeId ? 'Đã cập nhật giao diện mặc định' : 'Đã xóa giao diện mặc định');
     } catch (error) {
-      toast.error(error?.message || 'Unable to update default theme');
+      toast.error(error?.message || 'Không thể cập nhật giao diện mặc định');
     } finally {
       setThemeLoading(false);
     }
   }, [toast, updateUser]);
 
-  const handlePickProof = useCallback(async () => {
-    const image = await pickImageFromGallery();
-    if (image) {
-      setProofImage(image);
+  const handleOpenVipUpgradeModal = useCallback(async () => {
+    try {
+      setReferenceHydrating(true);
+      const session = await getOrCreateVipUpgradeSession();
+      setTransferReference(session.reference);
+      setTransferReferenceExpiresAt(session.expiresAt);
+      setTransferReferenceLastRefreshedAt(session.lastRefreshedAt);
+      setReferenceClock(Date.now());
+      setVipUpgradeModalVisible(true);
+    } catch (error) {
+      toast.error(error?.message || 'Không thể khởi tạo mã chuyển khoản');
+    } finally {
+      setReferenceHydrating(false);
     }
-  }, []);
+  }, [toast]);
+
+  const handleCloseVipUpgradeModal = useCallback(() => {
+    if (requestSubmitting) {
+      return;
+    }
+
+    setVipUpgradeModalVisible(false);
+  }, [requestSubmitting]);
+
+  const handleRefreshVipUpgradeReference = useCallback(async () => {
+    try {
+      setReferenceRefreshing(true);
+      const { session, refreshed, retryAfterMs } = await refreshVipUpgradeSession();
+      setTransferReference(session.reference);
+      setTransferReferenceExpiresAt(session.expiresAt);
+      setTransferReferenceLastRefreshedAt(session.lastRefreshedAt);
+      setReferenceClock(Date.now());
+
+      if (!refreshed) {
+        toast.error(`Bạn chỉ có thể làm mới mã sau ${Math.ceil(retryAfterMs / 1000)} giây nữa`);
+        return;
+      }
+
+      toast.success('Đã làm mới mã chuyển khoản');
+    } catch (error) {
+      toast.error(error?.message || 'Không thể làm mới mã chuyển khoản');
+    } finally {
+      setReferenceRefreshing(false);
+    }
+  }, [toast]);
+
+  const handleCopyVipUpgradeField = useCallback(async (fieldLabel, value) => {
+    try {
+      await copyToClipboard(value);
+      toast.success(`Đã sao chép ${fieldLabel.toLowerCase()}`);
+    } catch (error) {
+      toast.error(error?.message || `Không thể sao chép ${fieldLabel.toLowerCase()}`);
+    }
+  }, [toast]);
 
   const handleSubmitUpgradeRequest = useCallback(async () => {
-    if (!transferReference.trim() || !proofImage) {
-      toast.error('Transfer reference and proof image are required');
+    if (!transferReference.trim()) {
+      toast.error('Không thể tạo mã tham chiếu chuyển khoản');
       return;
     }
 
     try {
       setRequestSubmitting(true);
       await createUpgradeRequest({
-        type: requestType,
+        type: 'upgrade',
         transferReference: transferReference.trim(),
-        proofFile: {
-          uri: proofImage.uri,
-          name: proofImage.fileName || 'subscription-proof.jpg',
-          type: proofImage.type || 'image/jpeg',
-        },
+        amount: VIP_UPGRADE_AMOUNT_VND,
+        currency: VIP_UPGRADE_CURRENCY,
+        bankLabel: VIP_UPGRADE_BANK_NAME,
+        payerMask: VIP_UPGRADE_ACCOUNT_NUMBER.slice(-4),
       });
+      await clearVipUpgradeSession();
+      setVipUpgradeModalVisible(false);
       setTransferReference('');
-      setProofImage(null);
-      toast.success('Upgrade request submitted');
+      setTransferReferenceExpiresAt(null);
+      setTransferReferenceLastRefreshedAt(null);
+      toast.success('Chuyển khoản đã được ghi nhận, vui lòng chờ duyệt.');
       await loadSubscriptionState();
     } catch (error) {
-      toast.error(error?.message || 'Unable to submit upgrade request');
+      toast.error(error?.message || 'Không thể gửi yêu cầu nâng gói');
     } finally {
       setRequestSubmitting(false);
     }
-  }, [loadSubscriptionState, proofImage, requestType, toast, transferReference]);
+  }, [loadSubscriptionState, toast, transferReference]);
+
+  const latestRequestTypeLabel = latestRequest?.type === 'renewal' ? 'Gia hạn VIP' : 'Nâng gói VIP';
+  const latestRequestStatusLabel = {
+    pending: 'Đang chờ',
+    approved: 'Đã duyệt',
+    rejected: 'Đã từ chối',
+    expired: 'Đã hết hạn',
+  }[latestRequest?.status] || latestRequest?.status;
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>Cài đặt</Text>
       </View>
-      <View style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={[
+          styles.contentContainer,
+          { paddingBottom: spacing.lg + insets.bottom },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Subscription</Text>
+          <Text style={styles.sectionTitle}>Gói đăng ký</Text>
           <View style={[styles.row, styles.columnRow]}>
-            <Text style={styles.label}>Current status</Text>
+            <Text style={styles.label}>Trạng thái hiện tại</Text>
             {subscriptionData ? (
               <>
                 <SubscriptionStateBadge status={subscriptionData.status} />
-                <Text style={styles.value}>Tier: {String(subscriptionData.tier || 'free').toUpperCase()}</Text>
+                <Text style={styles.value}>Gói: {subscriptionData.tier === 'vip' ? 'VIP' : 'Free'}</Text>
                 <Text style={styles.value}>
-                  Assets: {subscriptionData.usage.assetUsed}/{subscriptionData.usage.assetLimit}
+                  Tài sản: {subscriptionData.usage.assetUsed}/{subscriptionData.usage.assetLimit}
                 </Text>
                 <Text style={styles.value}>
-                  Processing: {subscriptionData.usage.processingUsed}/{subscriptionData.usage.processingLimit}
+                  Lượt xử lý: {subscriptionData.usage.processingUsed}/{subscriptionData.usage.processingLimit}
                 </Text>
               </>
             ) : (
-              <Text style={styles.value}>{subscriptionLoading ? 'Loading...' : 'Unavailable'}</Text>
+              <Text style={styles.value}>{subscriptionLoading ? 'Đang tải...' : 'Không khả dụng'}</Text>
             )}
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
+          <Text style={styles.sectionTitle}>Thông tin tài khoản</Text>
           <View style={styles.row}>
             <Text style={styles.label}>Email</Text>
-            <Text style={styles.value}>{user?.email || 'Not signed in'}</Text>
+            <Text style={styles.value}>{user?.email || 'Chưa đăng nhập'}</Text>
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Asset Theme</Text>
+          <Text style={styles.sectionTitle}>Theme tài sản</Text>
           <View style={[styles.row, styles.columnRow]}>
-            <Text style={styles.label}>Default theme</Text>
+            <Text style={styles.label}>Theme mặc định</Text>
             <Text style={styles.value}>{themeDescription}</Text>
           </View>
           <View style={styles.themeList}>
@@ -256,109 +381,61 @@ export default function SettingsScreen() {
             onPress={() => handleThemeChange(null)}
             disabled={themeLoading}
             accessibilityRole="button"
-            accessibilityLabel="Clear default theme"
+            accessibilityLabel="Xóa giao diện mặc định"
           >
             {themeLoading ? (
               <ActivityIndicator size="small" color={colors.textPrimary} />
             ) : (
-              <Text style={styles.clearButtonText}>Clear default theme</Text>
+              <Text style={styles.clearButtonText}>Xóa giao diện mặc định</Text>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Bank Transfer Upgrade</Text>
+          <Text style={styles.sectionTitle}>Nâng gói VIP</Text>
           <View style={[styles.row, styles.columnRow]}>
-            <Text style={styles.label}>Request type</Text>
-            <View style={styles.themeList}>
-              {['upgrade', 'renewal'].map((type) => (
-                <ThemeChip
-                  key={type}
-                  label={type === 'upgrade' ? 'Upgrade VIP' : 'Renew VIP'}
-                  accentColor={type === 'upgrade' ? colors.primary : colors.warning}
-                  selected={requestType === type}
-                  disabled={requestSubmitting}
-                  onPress={() => setRequestType(type)}
-                  testID={`request-type-${type}`}
-                />
-              ))}
-            </View>
-            <Text style={styles.label}>Transfer reference</Text>
-            <Text style={styles.value}>{transferReference || 'Not set'}</Text>
+            <Text style={styles.label}>Thanh toán qua chuyển khoản</Text>
+            <Text style={styles.value}>
+              Mở mã QR chuyển khoản, sao chép thông tin nhanh và xác nhận sau khi đã chuyển.
+            </Text>
           </View>
           <TouchableOpacity
             style={styles.clearButton}
-            onPress={() => setTransferReference(`BANK-${Date.now()}`)}
+            onPress={handleOpenVipUpgradeModal}
             disabled={requestSubmitting}
             accessibilityRole="button"
+            testID="open-vip-upgrade-button"
           >
-            <Text style={styles.clearButtonText}>Generate quick reference</Text>
+            <Text style={styles.clearButtonText}>Nâng gói lên VIP</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={handlePickProof}
-            disabled={requestSubmitting}
-            accessibilityRole="button"
-          >
-            <Text style={styles.clearButtonText}>
-              {proofImage ? `Selected: ${proofImage.fileName || 'proof image'}` : 'Pick proof image'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.logoutButton, requestSubmitting && styles.themeChipDisabled]}
-            onPress={handleSubmitUpgradeRequest}
-            disabled={requestSubmitting}
-            accessibilityRole="button"
-          >
-            {requestSubmitting ? (
-              <ActivityIndicator size="small" color={colors.textPrimary} />
-            ) : (
-              <Text style={styles.logoutText}>Submit request</Text>
-            )}
-          </TouchableOpacity>
-          {upgradeRequests.length > 0 ? (
+          {latestRequest ? (
             <Text style={[styles.value, styles.requestHistoryText]}>
-              Latest: {upgradeRequests[0].type} / {upgradeRequests[0].status}
+              Yêu cầu gần nhất: {latestRequestTypeLabel} / {latestRequestStatusLabel}
             </Text>
           ) : null}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Connection</Text>
-          <View style={styles.row}>
-            <Text style={styles.label}>Realtime</Text>
-            <Text
-              style={[
-                styles.value,
-                connectionState === 'connected' && styles.connected,
-                connectionState === 'disconnected' && styles.disconnected,
-                connectionState === 'reconnecting' && styles.reconnecting,
-              ]}
-            >
-              {connectionState}
-            </Text>
-          </View>
-          <View style={[styles.row, styles.rowSecondary]}>
-            <Text style={styles.label}>Polling fallback</Text>
-            <Text style={[styles.value, isFallbackActive ? styles.reconnecting : styles.connected]}>
-              {isFallbackActive ? 'Enabled (12s)' : 'Off'}
-            </Text>
-          </View>
-          <View style={[styles.row, styles.rowSecondary]}>
-            <Text style={styles.label}>Reconnect attempts</Text>
-            <Text style={styles.value}>{reconnectAttempts}</Text>
-          </View>
         </View>
 
         <TouchableOpacity
           style={styles.logoutButton}
           onPress={handleLogout}
-          accessibilityLabel="Log out"
+          accessibilityLabel="Đăng xuất"
           accessibilityRole="button"
         >
-          <Text style={styles.logoutText}>Log out</Text>
+          <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
+      <VipUpgradeModal
+        visible={vipUpgradeModalVisible}
+        transferReference={transferReference}
+        submitting={requestSubmitting}
+        expiresInMs={transferReferenceExpiresInMs}
+        refreshCooldownMs={transferReferenceRefreshCooldownMs}
+        refreshingReference={referenceRefreshing || referenceHydrating}
+        onClose={handleCloseVipUpgradeModal}
+        onConfirm={handleSubmitUpgradeRequest}
+        onRefreshReference={handleRefreshVipUpgradeReference}
+        onCopyField={handleCopyVipUpgradeField}
+      />
     </SafeAreaView>
   );
 }
@@ -381,6 +458,8 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
     padding: spacing.lg,
   },
   section: {
@@ -406,9 +485,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing.xs,
   },
-  rowSecondary: {
-    marginTop: spacing.sm,
-  },
   label: {
     fontSize: typography.fontSize.base,
     color: colors.textPrimary,
@@ -416,15 +492,6 @@ const styles = StyleSheet.create({
   value: {
     fontSize: typography.fontSize.base,
     color: colors.textSecondary,
-  },
-  connected: {
-    color: colors.success,
-  },
-  disconnected: {
-    color: colors.error,
-  },
-  reconnecting: {
-    color: colors.warning,
   },
   themeList: {
     flexDirection: 'row',
@@ -485,7 +552,7 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     alignItems: 'center',
     minHeight: touchTargetSize,
-    marginTop: 'auto',
+    marginTop: spacing.md,
   },
   logoutText: {
     fontSize: typography.fontSize.base,

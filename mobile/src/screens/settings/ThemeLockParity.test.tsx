@@ -21,6 +21,21 @@ jest.mock('../../contexts/ToastContext', () => ({
 
 jest.mock('../../api/authApi');
 jest.mock('../../api/subscriptionApi');
+jest.mock('expo-clipboard', () => ({
+  setStringAsync: jest.fn(),
+}), { virtual: true });
+jest.mock('react-native-safe-area-context', () => ({
+  SafeAreaView: ({ children, ...props }: any) => {
+    const { View } = require('react-native');
+    return <View {...props}>{children}</View>;
+  },
+  useSafeAreaInsets: () => ({
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+  }),
+}));
 
 describe('Theme lock parity', () => {
   beforeEach(() => {
@@ -92,8 +107,8 @@ describe('Theme lock parity', () => {
     const { getByText } = render(<SettingsScreen />);
 
     await waitFor(() => {
-      expect(getByText('Museum Forest (VIP)')).toBeTruthy();
-      expect(getByText('Archive Cobalt (VIP)')).toBeTruthy();
+      expect(getByText('museum forest (VIP)')).toBeTruthy();
+      expect(getByText('archive cobalt (VIP)')).toBeTruthy();
     });
   });
 });
