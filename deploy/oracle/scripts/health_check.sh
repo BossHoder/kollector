@@ -12,12 +12,33 @@ read_env_value() {
 EDGE_HTTP_PORT="${EDGE_HTTP_PORT:-$(read_env_value EDGE_HTTP_PORT)}"
 EDGE_HTTP_PORT="${EDGE_HTTP_PORT:-8080}"
 
+wait_for_url() {
+  local url="$1"
+  local attempts="${2:-15}"
+  local delay_seconds="${3:-2}"
+  local attempt=1
+
+  while [ "${attempt}" -le "${attempts}" ]; do
+    if curl -fsS "${url}" >/dev/null; then
+      return 0
+    fi
+
+    if [ "${attempt}" -eq "${attempts}" ]; then
+      echo "Health check failed for ${url} after ${attempts} attempts." >&2
+      return 1
+    fi
+
+    sleep "${delay_seconds}"
+    attempt=$((attempt + 1))
+  done
+}
+
 docker compose \
   --env-file "${ENV_FILE}" \
   -f "${RELEASE_DIR}/docker-compose.prod.yml" \
   ps
 
-curl -fsS "http://127.0.0.1:${EDGE_HTTP_PORT}/health" >/dev/null
-curl -fsS "http://127.0.0.1:${EDGE_HTTP_PORT}/ai/health" >/dev/null
+wait_for_url "http://127.0.0.1:${EDGE_HTTP_PORT}/health"
+wait_for_url "http://127.0.0.1:${EDGE_HTTP_PORT}/ai/health"
 
 echo "Health checks passed on port ${EDGE_HTTP_PORT}."

@@ -29,6 +29,10 @@ rollback() {
       --env-file "${ENV_FILE}" \
       -f "${PREVIOUS_RELEASE}/docker-compose.prod.yml" \
       up -d --build --remove-orphans || true
+    docker compose \
+      --env-file "${ENV_FILE}" \
+      -f "${PREVIOUS_RELEASE}/docker-compose.prod.yml" \
+      up -d --no-deps --force-recreate nginx || true
   fi
 }
 
@@ -40,6 +44,13 @@ docker compose \
   --env-file "${ENV_FILE}" \
   -f "${CURRENT_LINK}/docker-compose.prod.yml" \
   up -d --build --remove-orphans
+
+# Recreate the edge proxy so it picks up the current release bind mount and
+# refreshes Docker DNS lookups for recreated upstream containers.
+docker compose \
+  --env-file "${ENV_FILE}" \
+  -f "${CURRENT_LINK}/docker-compose.prod.yml" \
+  up -d --no-deps --force-recreate nginx
 
 WARM_MODELS_REQUIRED="${WARM_MODELS_REQUIRED:-$(read_env_value WARM_MODELS_REQUIRED)}"
 WARM_MODELS_REQUIRED="${WARM_MODELS_REQUIRED:-false}"
