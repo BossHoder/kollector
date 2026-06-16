@@ -1,8 +1,25 @@
+export function formatFileSizeBytes(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
+    return '-';
+  }
+
+  if (value < 1024) {
+    return `${value} B`;
+  }
+
+  if (value < 1024 * 1024) {
+    return `${(value / 1024).toFixed(2)} KB`;
+  }
+
+  return `${(value / 1024 / 1024).toFixed(2)} MB`;
+}
+
 export function formatFileSizeMB(value) {
   if (typeof value !== 'number' || Number.isNaN(value)) {
     return '-';
   }
-  return `${value.toFixed(2)} MB`;
+
+  return formatFileSizeBytes(value * 1024 * 1024);
 }
 
 export function formatUploadedAt(value) {
@@ -58,16 +75,19 @@ export function getDisplayText(value) {
 }
 
 export function normalizeMetadata(asset) {
-  // fileSizeMB may come pre-computed (number) or as raw bytes via fileSizeBytes
-  const sizeMB = typeof asset?.fileSizeMB === 'number'
-    ? asset.fileSizeMB
-    : typeof asset?.fileSizeBytes === 'number'
-      ? asset.fileSizeBytes / (1024 * 1024)
-      : null;
+  const sizeBytes = typeof asset?.images?.processed?.bytes === 'number'
+    ? asset.images.processed.bytes
+    : typeof asset?.images?.enhanced?.bytes === 'number'
+      ? asset.images.enhanced.bytes
+      : typeof asset?.fileSizeBytes === 'number'
+        ? asset.fileSizeBytes
+        : typeof asset?.fileSizeMB === 'number'
+          ? asset.fileSizeMB * 1024 * 1024
+          : null;
 
   return {
     originalFilename: asset?.originalFilename || '-',
-    fileSizeMB: formatFileSizeMB(sizeMB),
+    fileSizeMB: formatFileSizeBytes(sizeBytes),
     mimeType: asset?.mimeType || '-',
     uploadedAt: formatUploadedAt(
       asset?.uploadedAt

@@ -68,6 +68,8 @@ class AnalyzeRequest(BaseModel):
 class AnalyzeResponse(BaseModel):
     processed_image_url: str | None = None
     processedImageUrl: str | None = None
+    processed_bytes: int | None = None
+    processedBytes: int | None = None
     brand: str | MetadataValue | None = None
     model: str | MetadataValue | None = None
     colorway: str | MetadataValue | None = None
@@ -106,6 +108,8 @@ class EnhanceImageRequest(BaseModel):
 class EnhanceImageResponse(BaseModel):
     enhanced_image_url: str | None = None
     enhancedImageUrl: str | None = None
+    enhanced_bytes: int | None = None
+    enhancedBytes: int | None = None
     width: int | None = None
     height: int | None = None
 
@@ -133,6 +137,8 @@ UPLOAD_BUDGET_MS = int(os.getenv("ANALYZE_UPLOAD_BUDGET_MS", "15000"))
 MAX_DOWNLOAD_BYTES = int(os.getenv("MAX_DOWNLOAD_BYTES", "15728640"))
 ALLOWED_IMAGE_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 MIN_MASK_ALPHA = 8
+DEFAULT_IMAGE_TARGET_BYTES = int(os.getenv("IMAGE_TARGET_BYTES", str(750 * 1024)))
+DEFAULT_IMAGE_MIN_LONG_EDGE = int(os.getenv("IMAGE_MIN_LONG_EDGE", "1280"))
 
 MODEL_REMOVE_BG = os.getenv("MODEL_REMOVE_BG", "briaai/RMBG-1.4")
 MODEL_REMOVE_BG_REVISION = os.getenv("MODEL_REMOVE_BG_REVISION", "")
@@ -287,6 +293,49 @@ def _image_to_png_bytes(image: Any) -> bytes:
     image.save(output, format="PNG")
     return output.getvalue()
 
+def _image_to_webp_bytes(image: Any, quality: int = 82) -> bytes:
+    output = io.BytesIO()
+    image.save(output, format="WEBP", quality=quality, method=6)
+    return output.getvalue()
+
+def _resize_for_compression(image: Any, scale: float, min_long_edge: int) -> Any:
+    if scale >= 1.0:
+        return image
+
+    width, height = image.size
+    long_edge = max(width, height)
+    if long_edge <= min_long_edge:
+        return image
+
+    target_long_edge = max(min_long_edge, int(round(long_edge * scale)))
+    ratio = target_long_edge / long_edge
+    new_size = (
+        max(1, int(round(width * ratio))),
+        max(1, int(round(height * ratio))),
+    )
+    if new_size == image.size:
+        return image
+
+    return image.resize(new_size, resample=_lanczos_resample())
+
+def _image_to_compressed_webp_bytes(
+    image: Any,
+    target_bytes: int = DEFAULT_IMAGE_TARGET_BYTES,
+    min_long_edge: int = DEFAULT_IMAGE_MIN_LONG_EDGE,
+) -> bytes:
+    best_bytes: bytes | None = None
+
+    for scale in (1.0, 0.9, 0.8, 0.7):
+        candidate_image = _resize_for_compression(image, scale, min_long_edge)
+        for quality in (86, 82, 78, 74, 70):
+            candidate_bytes = _image_to_webp_bytes(candidate_image, quality=quality)
+            if best_bytes is None or len(candidate_bytes) < len(best_bytes):
+                best_bytes = candidate_bytes
+            if len(candidate_bytes) <= target_bytes:
+                return candidate_bytes
+
+    return best_bytes or _image_to_webp_bytes(image)
+
 
 def _slugify(value: str) -> str:
     slug = re.sub(r"[^a-zA-Z0-9_-]+", "-", value.strip().lower()).strip("-")
@@ -356,7 +405,7 @@ def _upload_processed_image_cloudinary(
     _require_cloudinary_config()
 
     file_obj = io.BytesIO(image_bytes)
-    file_obj.name = "processed.png"
+    file_obj.name = "processed.webp"
 
     try:
         result = cloudinary.uploader.upload(
@@ -364,7 +413,7 @@ def _upload_processed_image_cloudinary(
             resource_type="image",
             folder=f"assets/processed/{_slugify(category)}",
             public_id=f"processed-{uuid.uuid4().hex}",
-            format="png",
+            format="webp",
             overwrite=True,
         )
     except Exception as exc:
@@ -385,7 +434,7 @@ def _upload_processed_image_local(
     _ensure_storage_root()
 
     relative_path = _sanitize_storage_relative_path(
-        f"assets/processed/{_slugify(category)}/processed-{uuid.uuid4().hex}.png"
+        f"assets/processed/{_slugify(category)}/processed-{uuid.uuid4().hex}.webp"
     )
     absolute_path = _get_storage_root() / Path(relative_path)
     absolute_path.parent.mkdir(parents=True, exist_ok=True)
@@ -406,7 +455,7 @@ def _upload_enhanced_image_cloudinary(image_bytes: bytes, budget_ms: int) -> str
     _require_cloudinary_config()
 
     file_obj = io.BytesIO(image_bytes)
-    file_obj.name = "enhanced.png"
+    file_obj.name = "enhanced.webp"
 
     try:
         result = cloudinary.uploader.upload(
@@ -414,7 +463,7 @@ def _upload_enhanced_image_cloudinary(image_bytes: bytes, budget_ms: int) -> str
             resource_type="image",
             folder="assets/enhanced",
             public_id=f"enhanced-{uuid.uuid4().hex}",
-            format="png",
+            format="webp",
             overwrite=True,
         )
     except Exception as exc:
@@ -433,7 +482,7 @@ def _upload_enhanced_image_local(image_bytes: bytes, budget_ms: int) -> str:
     _ensure_storage_root()
 
     relative_path = _sanitize_storage_relative_path(
-        f"assets/enhanced/enhanced-{uuid.uuid4().hex}.png"
+        f"assets/enhanced/enhanced-{uuid.uuid4().hex}.webp"
     )
     absolute_path = _get_storage_root() / Path(relative_path)
     absolute_path.parent.mkdir(parents=True, exist_ok=True)
@@ -549,7 +598,7 @@ def _enhance_image(image_bytes: bytes, options: EnhancementOptions, budget_ms: i
     image = _apply_resize(image, options.resize)
     image = _apply_sharpen(image, options.sharpen)
     _enforce_stage_budget(start_monotonic, budget_ms, "Enhancement")
-    return _image_to_png_bytes(image), image.size
+    return _image_to_compressed_webp_bytes(image), image.size
 
 
 def _transformers_common_kwargs(revision: str) -> dict[str, Any]:
@@ -841,7 +890,7 @@ def _remove_background(image_bytes: bytes, budget_ms: int) -> bytes:
                 outputs = model_bundle["pipeline"](pipeline_image)
 
                 if hasattr(Image, "Image") and isinstance(outputs, Image.Image):
-                    output_bytes = _image_to_png_bytes(outputs.convert("RGBA"))
+                    output_bytes = _image_to_compressed_webp_bytes(outputs.convert("RGBA"))
                     if not output_bytes:
                         raise UnprocessableImageError(
                             "Background removal produced empty output"
@@ -863,7 +912,7 @@ def _remove_background(image_bytes: bytes, budget_ms: int) -> bytes:
         )
 
     processed_image = _apply_mask(image, mask)
-    output_bytes = _image_to_png_bytes(processed_image)
+    output_bytes = _image_to_compressed_webp_bytes(processed_image)
     if not output_bytes:
         raise UnprocessableImageError("Background removal produced empty output")
 
@@ -925,7 +974,7 @@ def _zoom_background_removed_image(image_bytes: bytes, budget_ms: int) -> bytes:
     zoomed_image = image.crop(crop_box).resize(image.size, resample=_lanczos_resample())
 
     _enforce_stage_budget(start_monotonic, budget_ms, "Foreground zoom")
-    return _image_to_png_bytes(zoomed_image)
+    return _image_to_compressed_webp_bytes(zoomed_image)
 
 
 def _get_vision_model() -> dict[str, Any]:
@@ -1351,6 +1400,8 @@ def analyze(
         return AnalyzeResponse(
             processed_image_url=processed_image_url,
             processedImageUrl=processed_image_url,
+            processed_bytes=len(processed_bytes),
+            processedBytes=len(processed_bytes),
             brand=metadata.get("brand"),
             model=metadata.get("model"),
             colorway=metadata.get("colorway"),
@@ -1458,6 +1509,8 @@ def enhance_image(
         return EnhanceImageResponse(
             enhanced_image_url=enhanced_image_url,
             enhancedImageUrl=enhanced_image_url,
+            enhanced_bytes=len(enhanced_bytes),
+            enhancedBytes=len(enhanced_bytes),
             width=int(size[0]),
             height=int(size[1]),
         )

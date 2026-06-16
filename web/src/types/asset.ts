@@ -15,6 +15,7 @@ export interface AssetImages {
   processed?: {
     url: string;
     publicId?: string;
+    bytes?: number;
   };
   thumbnail?: {
     url: string;
@@ -26,6 +27,7 @@ export interface AssetImages {
   enhanced?: {
     url: string;
     publicId?: string;
+    bytes?: number;
     width?: number;
     height?: number;
     generatedAt?: string;

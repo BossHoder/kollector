@@ -125,6 +125,7 @@ async function processJob(job) {
     asset.images.processed = {
       url: aiResult.processedImageUrl,
       publicId: extractPublicIdFromUrl(aiResult.processedImageUrl),
+      bytes: aiResult.processedBytes || undefined,
       processedAt: new Date()
     };
 

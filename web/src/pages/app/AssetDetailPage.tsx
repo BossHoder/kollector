@@ -19,6 +19,22 @@ import { ProcessingOverlay } from '@/components/assets/ProcessingOverlay';
 import { apiClient, ApiError } from '@/lib/api-client';
 import { getSubscriptionStatus } from '@/lib/subscriptionApi';
 
+function formatBytes(bytes?: number | null) {
+  if (typeof bytes !== 'number' || !Number.isFinite(bytes) || bytes < 0) {
+    return '-';
+  }
+
+  if (bytes < 1024) {
+    return `${bytes} B`;
+  }
+
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(2)} KB`;
+  }
+
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
 export function AssetDetailPage() {
   const { assetId } = useParams<{ assetId: string }>();
   const { data: asset, isLoading, isError } = useAsset(assetId);
@@ -95,7 +111,12 @@ export function AssetDetailPage() {
   const isFailed = asset.status === 'failed';
   const hasAiMetadata = asset.aiMetadata && !asset.aiMetadata.error;
   const uploadedAt = asset.uploadedAt || asset.createdAt;
-  const formattedSize = typeof asset.fileSizeMB === 'number' ? `${asset.fileSizeMB.toFixed(2)} MB` : '-';
+  const preferredImageBytes =
+    asset.images?.processed?.bytes
+    ?? asset.images?.enhanced?.bytes
+    ?? asset.fileSizeBytes
+    ?? (typeof asset.fileSizeMB === 'number' ? asset.fileSizeMB * 1024 * 1024 : undefined);
+  const formattedSize = formatBytes(preferredImageBytes);
   const formattedUploadedAt = uploadedAt
     ? new Date(uploadedAt).toLocaleString('vi-VN')
     : '-';

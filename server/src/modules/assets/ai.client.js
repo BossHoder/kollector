@@ -155,21 +155,35 @@ function parseAIResponse(response) {
     return null;
   };
 
-  return {
+  const parsed = {
     brand: normalizeMetadataField(response.brand, 0.8),
     model: normalizeMetadataField(response.model, 0.8),
     colorway: normalizeMetadataField(response.colorway, 0.7),
     processedImageUrl: response.processed_image_url ?? response.processedImageUrl ?? null
   };
+
+  const processedBytes = response.processed_bytes ?? response.processedBytes;
+  if (typeof processedBytes === 'number') {
+    parsed.processedBytes = processedBytes;
+  }
+
+  return parsed;
 }
 
 function parseEnhancementResponse(response) {
-  return {
+  const parsed = {
     enhancedImageUrl:
       response.enhanced_image_url ?? response.enhancedImageUrl ?? null,
     width: response.width ?? null,
     height: response.height ?? null,
   };
+
+  const enhancedBytes = response.enhanced_bytes ?? response.enhancedBytes;
+  if (typeof enhancedBytes === 'number') {
+    parsed.enhancedBytes = enhancedBytes;
+  }
+
+  return parsed;
 }
 
 module.exports = {

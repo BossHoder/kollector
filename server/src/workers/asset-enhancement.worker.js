@@ -125,6 +125,7 @@ async function processEnhancementJob(job) {
     asset.images.enhanced = {
       url: enhancementResult.enhancedImageUrl,
       publicId: extractPublicIdFromUrl(enhancementResult.enhancedImageUrl),
+      bytes: enhancementResult.enhancedBytes || undefined,
       width: enhancementResult.width || undefined,
       height: enhancementResult.height || undefined,
       generatedAt: new Date(),
