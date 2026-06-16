@@ -27,11 +27,6 @@ const createAssetValidation = [
     .withMessage(ASSET_CATEGORY_VALIDATION_MESSAGE),
   body('status')
     .optional()
-.isIn(['draft', 'processing', 'active'])
-    .withMessage('Tráº¡ng thÃ¡i pháº£i lÃ  má»™t trong: draft, processing, active')
-  ],
-  body('status')
-    .optional()
     .isIn(['draft', 'processing', 'active'])
     .withMessage('Tráº¡ng thÃ¡i pháº£i lÃ  má»™t trong: draft, processing, active'),
   body('presentation.themeOverrideId')
@@ -47,6 +42,23 @@ const assetIdValidation = [
   param('id')
     .isMongoId()
     .withMessage('ID tÃ i sáº£n khÃ´ng há»£p lá»‡')
+];
+
+const updateAssetValidation = [
+  ...assetIdValidation,
+  body('category')
+    .optional()
+    .customSanitizer((value) => normalizeCanonicalAssetCategory(value) || normalizeCategoryKey(value) || value)
+    .isIn(ASSET_CATEGORIES)
+    .withMessage(ASSET_CATEGORY_VALIDATION_MESSAGE),
+  body('status')
+    .optional()
+    .isIn(['draft', 'processing', 'active'])
+    .withMessage('Status must be one of: draft, processing, active'),
+  body('presentation.themeOverrideId')
+    .optional({ values: 'undefined' })
+    .custom((value) => value === null || typeof value === 'string')
+    .withMessage('presentation.themeOverrideId must be a string or null')
 ];
 
 const maintainAssetValidation = [
