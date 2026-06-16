@@ -34,7 +34,6 @@ const STATUS_OPTIONS = [
   { key: 'draft', label: 'Bản nháp', value: 'draft' },
   { key: 'failed', label: 'Thất bại', value: 'failed' },
   { key: 'partial', label: 'Một phần', value: 'partial' },
-  { key: 'archived', label: 'Đã lưu trữ', value: 'archived' },
 ];
 
 // Category options (could be loaded dynamically)

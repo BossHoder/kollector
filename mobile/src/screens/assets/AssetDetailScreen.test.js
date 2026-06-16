@@ -4,7 +4,7 @@
  * Component tests for asset detail screen:
  * - Status-based rendering (Ready/Processing/Failed/Partial/Archived)
  * - Image toggle (Processed/Original)
- * - Archive action
+ * - Delete action
  * - Retry action
  */
 
@@ -94,16 +94,6 @@ const mockAssets = {
     },
     createdAt: '2024-01-12T07:00:00Z',
   },
-  archived: {
-    id: 'asset-archived',
-    title: 'Archived Asset',
-    status: 'archived',
-    category: 'sneakers',
-    primaryImage: { url: 'https://example.com/original.jpg' },
-    processedImage: { url: 'https://example.com/processed.jpg' },
-    aiAnalysis: { condition: 'Fair' },
-    createdAt: '2024-01-11T06:00:00Z',
-  },
 };
 
 describe('AssetDetailScreen', () => {
@@ -182,11 +172,11 @@ describe('AssetDetailScreen', () => {
       });
     });
 
-    it('should show Archive button', async () => {
+    it('should show Delete button', async () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getByTestId('archive-button')).toBeTruthy();
+        expect(screen.getByTestId('delete-button')).toBeTruthy();
       });
     });
   });
@@ -323,66 +313,43 @@ describe('AssetDetailScreen', () => {
     });
   });
 
-  describe('Status: Archived', () => {
-    beforeEach(() => {
-      useRoute.mockReturnValue({ params: { assetId: 'asset-archived' } });
-      assetsApi.getAsset.mockResolvedValue(mockAssets.archived);
-    });
-
-    it('should show Archived status pill', async () => {
-      render(<AssetDetailScreen />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Đã lưu trữ')).toBeTruthy();
-      });
-    });
-
-    it('should show archived indicator', async () => {
-      render(<AssetDetailScreen />);
-
-      await waitFor(() => {
-        expect(screen.getAllByText(/đã lưu trữ/i).length).toBeGreaterThanOrEqual(1);
-      });
-    });
-  });
-
-  describe('Archive Action', () => {
+describe('Delete Action', () => {
     beforeEach(() => {
       useRoute.mockReturnValue({ params: { assetId: 'asset-ready' } });
       assetsApi.getAsset.mockResolvedValue(mockAssets.ready);
-      assetsApi.archiveAsset.mockResolvedValue({ ...mockAssets.ready, status: 'archived' });
+      assetsApi.deleteAsset.mockResolvedValue(undefined);
     });
 
-    it('should call archive API when Archive pressed', async () => {
+    it('should call delete API when Delete pressed', async () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getByTestId('archive-button')).toBeTruthy();
+        expect(screen.getByTestId('delete-button')).toBeTruthy();
       });
 
-      fireEvent.press(screen.getByTestId('archive-button'));
+      fireEvent.press(screen.getByTestId('delete-button'));
 
-      // Should show confirmation or directly archive
+      // Should show confirmation or directly delete
       await waitFor(() => {
-        expect(assetsApi.archiveAsset).toHaveBeenCalledWith('asset-ready');
+        expect(assetsApi.deleteAsset).toHaveBeenCalledWith('asset-ready');
       });
     });
 
-    it('should show success toast after archive', async () => {
+    it('should show success toast after delete', async () => {
       render(<AssetDetailScreen />);
 
       await waitFor(() => {
-        expect(screen.getByTestId('archive-button')).toBeTruthy();
+        expect(screen.getByTestId('delete-button')).toBeTruthy();
       });
 
-      fireEvent.press(screen.getByTestId('archive-button'));
+      fireEvent.press(screen.getByTestId('delete-button'));
 
       await waitFor(() => {
         expect(mockToast.success).toHaveBeenCalled();
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Đã lưu trữ')).toBeTruthy();
+expect(screen.getByText('Tài sản đã xoá')).toBeTruthy();
       });
     });
   });

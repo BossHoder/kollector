@@ -41,7 +41,6 @@ const FILTER_OPTIONS = [
   { key: 'partial', label: 'Xử lý một phần', status: 'partial' },
   { key: 'draft', label: 'Bản nháp', status: 'draft' },
   { key: 'failed', label: 'Thất bại', status: 'failed' },
-  { key: 'archived', label: 'Đã lưu trữ', status: 'archived' },
 ];
 
 function GridIcon({ cols, color }) {

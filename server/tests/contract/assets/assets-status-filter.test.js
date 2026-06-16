@@ -38,7 +38,7 @@ describe('GET /api/assets - Status Filter Validation', () => {
   });
 
   describe('Valid Status Filters', () => {
-    const validStatuses = ['draft', 'processing', 'active', 'archived', 'failed', 'partial'];
+    const validStatuses = ['draft', 'processing', 'active', 'failed', 'partial'];
 
     validStatuses.forEach((status) => {
       it(`should accept status filter: ${status}`, async () => {

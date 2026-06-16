@@ -18,7 +18,6 @@ const statusOptions: { value: AssetStatus | ''; label: string }[] = [
   { value: 'failed', label: 'Thất bại' },
   { value: 'partial', label: 'Một phần' },
   { value: 'draft', label: 'Bản nháp' },
-  { value: 'archived', label: 'Đã lưu trữ' },
 ];
 
 export function AssetFilters({

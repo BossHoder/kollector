@@ -27,26 +27,13 @@ const createAssetValidation = [
     .withMessage(ASSET_CATEGORY_VALIDATION_MESSAGE),
   body('status')
     .optional()
-    .isIn(['draft', 'processing', 'active', 'archived'])
-    .withMessage('Tráº¡ng thÃ¡i pháº£i lÃ  má»™t trong: draft, processing, active, archived')
-];
-
-/**
- * Validation rules for updating an asset
- */
-const updateAssetValidation = [
-  param('id')
-    .isMongoId()
-    .withMessage('ID tÃ i sáº£n khÃ´ng há»£p lá»‡'),
-  body('category')
-    .optional()
-    .customSanitizer((value) => normalizeCanonicalAssetCategory(value) || normalizeCategoryKey(value) || value)
-    .isIn(ASSET_CATEGORIES)
-    .withMessage(ASSET_CATEGORY_VALIDATION_MESSAGE),
+.isIn(['draft', 'processing', 'active'])
+    .withMessage('Tráº¡ng thÃ¡i pháº£i lÃ  má»™t trong: draft, processing, active')
+  ],
   body('status')
     .optional()
-    .isIn(['draft', 'processing', 'active', 'archived'])
-    .withMessage('Tráº¡ng thÃ¡i pháº£i lÃ  má»™t trong: draft, processing, active, archived'),
+    .isIn(['draft', 'processing', 'active'])
+    .withMessage('Tráº¡ng thÃ¡i pháº£i lÃ  má»™t trong: draft, processing, active'),
   body('presentation.themeOverrideId')
     .optional({ values: 'undefined' })
     .custom((value) => value === null || typeof value === 'string')
@@ -93,8 +80,8 @@ const listAssetsValidation = [
     .withMessage(`Category query must be one of: ${ASSET_CATEGORIES.join(', ')}`),
   query('status')
     .optional()
-    .isIn(['draft', 'processing', 'partial', 'active', 'archived', 'failed'])
-    .withMessage('Tráº¡ng thÃ¡i pháº£i lÃ  má»™t trong: draft, processing, partial, active, archived, failed')
+    .isIn(['draft', 'processing', 'partial', 'active', 'failed'])
+    .withMessage('Tráº¡ng thÃ¡i pháº£i lÃ  má»™t trong: draft, processing, partial, active, failed')
 ];
 
 /**

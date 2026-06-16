@@ -119,8 +119,8 @@ describe('AssetDetailScreen maintenance flow', () => {
   it('shows a disabled maintenance message when the asset is not active', async () => {
     assetsApi.getAsset.mockResolvedValue({
       id: 'asset-maintain',
-      title: 'Archived Asset',
-      status: 'archived',
+      title: 'Draft Asset',
+      status: 'draft',
       category: 'sneaker',
       condition: {
         health: 40,

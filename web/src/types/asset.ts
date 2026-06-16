@@ -4,7 +4,7 @@
  */
 
 export type AssetCategory = string;
-export type AssetStatus = 'draft' | 'processing' | 'partial' | 'active' | 'archived' | 'failed';
+export type AssetStatus = 'draft' | 'processing' | 'partial' | 'active' | 'failed';
 
 export interface AssetImages {
   original?: {

@@ -4,7 +4,7 @@
  * API functions for asset operations:
  * - listAssets: Paginated list with filtering
  * - getAsset: Single asset detail
- * - archiveAsset: Archive an asset
+ * - deleteAsset: Delete an asset
  * - retryAsset: Retry failed analysis
  */
 
@@ -66,17 +66,14 @@ export async function getAsset(assetId) {
   return mapAsset(response.asset || response);
 }
 
-export async function archiveAsset(assetId) {
+export async function deleteAsset(assetId) {
   if (!assetId) {
     throw new Error('Asset ID is required');
   }
 
-  const response = await apiRequest(`/assets/${assetId}`, {
-    method: 'PATCH',
-    body: { status: 'archived' },
+  await apiRequest(`/assets/${assetId}`, {
+    method: 'DELETE',
   });
-
-  return mapAsset(response.asset || response);
 }
 
 export async function retryAsset(assetId) {
@@ -117,7 +114,7 @@ export async function updateAsset(assetId, updates) {
 export default {
   listAssets,
   getAsset,
-  archiveAsset,
+  deleteAsset,
   retryAsset,
   triggerEnhancement,
   updateAsset,

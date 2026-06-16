@@ -9,7 +9,6 @@
  * | draft       | Bản nháp    | gray        | edit             |
  * | processing  | Đang xử lý  | primary     | auto_awesome     |
  * | active      | Sẵn sàng    | emerald     | check_circle     |
- * | archived    | Đã lưu trữ  | gray        | archive          |
  * | failed      | Thất bại    | red         | error            |
  * | partial     | Một phần    | warning     | warning          |
  */
@@ -17,7 +16,7 @@
 import { colors } from '../styles/tokens';
 
 /**
- * @typedef {'draft' | 'processing' | 'active' | 'archived' | 'failed' | 'partial'} AssetStatus
+ * @typedef {'draft' | 'processing' | 'active' | 'failed' | 'partial'} AssetStatus
  */
 
 /**
@@ -53,13 +52,6 @@ export const STATUS_DISPLAY = {
     color: colors.statusReady,
     backgroundColor: 'rgba(16, 185, 129, 0.15)',
     icon: 'check_circle',
-    animated: false,
-  },
-  archived: {
-    label: 'Đã lưu trữ',
-    color: colors.statusArchived,
-    backgroundColor: 'rgba(107, 114, 128, 0.15)',
-    icon: 'archive',
     animated: false,
   },
   failed: {

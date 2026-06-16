@@ -68,7 +68,6 @@ describe('AssetDetailScreen status matrix', () => {
     ['processing', 'Đang xử lý'],
     ['failed', 'Thất bại'],
     ['partial', 'Một phần'],
-    ['archived', 'Đã lưu trữ'],
   ])('renders expected status label for %s', async (status, expectedLabel) => {
     useRoute.mockReturnValue({ params: { assetId: 'asset-1' } });
     assetsApi.getAsset.mockResolvedValue({ ...baseAsset, status, error: 'failed reason' });

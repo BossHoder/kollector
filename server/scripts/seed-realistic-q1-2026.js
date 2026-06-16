@@ -486,9 +486,6 @@ function determineAssetStatus(createdAt, rng) {
   if (chance(rng, 0.08)) {
     return 'partial';
   }
-  if (chance(rng, 0.1)) {
-    return 'archived';
-  }
   return 'active';
 }
 
@@ -539,9 +536,6 @@ function buildCondition(status, createdAt, rng) {
   const decayBase = 1 + Math.floor(ageDays / 50);
   const maintenanceCount = status === 'processing' ? 0 : randInt(rng, 0, clamp(Math.floor(ageDays / 12), 1, 12));
   let health = 97 - Math.floor(ageDays * 0.14) + maintenanceCount * 2 - randInt(rng, 0, 8);
-  if (status === 'archived') {
-    health -= randInt(rng, 8, 18);
-  }
   if (status === 'failed') {
     health -= randInt(rng, 4, 12);
   }
@@ -781,7 +775,7 @@ function buildAssetPlan(blueprint, assetIndex, tier) {
         uploadedAt: createdAt,
       },
       processed:
-        status === 'active' || status === 'partial' || status === 'archived'
+        status === 'active' || status === 'partial'
           ? {
               url: remoteImageUrl(`${originalSeed}-processed`),
               publicId: `seed/${slug}/${String(assetIndex + 1).padStart(2, '0')}/processed`,
@@ -851,7 +845,7 @@ function buildLegacyAssetDefaults(asset, owner, tier) {
     new Set([...existingTags, category, slugify(catalogEntry.brand), LEGACY_MIGRATION_TAG].filter(Boolean))
   );
   const aiMetadata = asset.aiMetadata || {};
-  if ((asset.status === 'active' || asset.status === 'partial' || asset.status === 'archived') && !aiMetadata.brand?.value) {
+  if ((asset.status === 'active' || asset.status === 'partial') && !aiMetadata.brand?.value) {
     const seededMetadata = buildAiMetadata(asset.status, asset.createdAt || NOW, catalogEntry, rng);
     Object.assign(aiMetadata, seededMetadata);
   }
@@ -1294,7 +1288,7 @@ async function migrateLegacyAssets(allUsersById, vipEmails) {
       };
     }
     if (
-      (asset.status === 'active' || asset.status === 'partial' || asset.status === 'archived')
+      (asset.status === 'active' || asset.status === 'partial')
       && !asset.images?.processed?.url
       && asset.images?.original?.url
     ) {

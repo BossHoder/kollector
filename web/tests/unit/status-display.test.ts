@@ -39,13 +39,6 @@ describe('status-display', () => {
       expect(STATUS_DISPLAY.active.icon).toBe('check_circle');
     });
 
-    it('should have mapping for archived status', () => {
-      expect(STATUS_DISPLAY.archived).toBeDefined();
-      expect(STATUS_DISPLAY.archived.label).toBe('Archived');
-      expect(STATUS_DISPLAY.archived.color).toBe('gray');
-      expect(STATUS_DISPLAY.archived.icon).toBe('archive');
-    });
-
     it('should have mapping for failed status', () => {
       expect(STATUS_DISPLAY.failed).toBeDefined();
       expect(STATUS_DISPLAY.failed.label).toBe('Failed');
@@ -90,7 +83,6 @@ describe('status-display', () => {
         'draft',
         'processing',
         'active',
-        'archived',
         'failed',
         'partial',
       ];

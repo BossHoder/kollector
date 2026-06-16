@@ -15,7 +15,7 @@ import {
 describe('statusDisplay', () => {
   describe('STATUS_DISPLAY mapping', () => {
     it('should have mappings for all valid backend statuses', () => {
-      const expectedStatuses = ['draft', 'processing', 'active', 'archived', 'failed', 'partial'];
+      const expectedStatuses = ['draft', 'processing', 'active', 'failed', 'partial'];
       
       expectedStatuses.forEach((status) => {
         expect(STATUS_DISPLAY).toHaveProperty(status);
@@ -42,11 +42,6 @@ describe('statusDisplay', () => {
       expect(STATUS_DISPLAY.partial.label).toBe('Một phần');
     });
 
-    it('should map "archived" to "Đã lưu trữ" label', () => {
-      expect(STATUS_DISPLAY.archived.label).toBe('Đã lưu trữ');
-    });
-  });
-
   describe('Color assignments', () => {
     it('should assign success/emerald color to "active" (Ready)', () => {
       expect(STATUS_DISPLAY.active.color).toBe('#10b981');
@@ -68,11 +63,6 @@ describe('statusDisplay', () => {
       expect(STATUS_DISPLAY.draft.color).toBe('#9ca3af');
     });
 
-    it('should assign gray color to "archived"', () => {
-      expect(STATUS_DISPLAY.archived.color).toBe('#6b7280');
-    });
-  });
-
   describe('Animation flags', () => {
     it('should mark "processing" as animated', () => {
       expect(STATUS_DISPLAY.processing.animated).toBe(true);
@@ -83,7 +73,6 @@ describe('statusDisplay', () => {
       expect(STATUS_DISPLAY.active.animated).toBe(false);
       expect(STATUS_DISPLAY.failed.animated).toBe(false);
       expect(STATUS_DISPLAY.partial.animated).toBe(false);
-      expect(STATUS_DISPLAY.archived.animated).toBe(false);
     });
   });
 
@@ -115,10 +104,8 @@ describe('statusDisplay', () => {
       expect(statuses).toContain('draft');
       expect(statuses).toContain('processing');
       expect(statuses).toContain('active');
-      expect(statuses).toContain('archived');
-      expect(statuses).toContain('failed');
-      expect(statuses).toContain('partial');
-      expect(statuses).toHaveLength(6);
+expect(statuses).toContain('partial');
+      expect(statuses).toHaveLength(5);
     });
   });
 
@@ -127,7 +114,6 @@ describe('statusDisplay', () => {
       expect(isValidStatus('draft')).toBe(true);
       expect(isValidStatus('processing')).toBe(true);
       expect(isValidStatus('active')).toBe(true);
-      expect(isValidStatus('archived')).toBe(true);
       expect(isValidStatus('failed')).toBe(true);
       expect(isValidStatus('partial')).toBe(true);
     });

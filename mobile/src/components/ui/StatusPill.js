@@ -12,7 +12,7 @@ import { colors, borderRadius, spacing, typography } from '../../styles/tokens';
 
 /**
  * @param {Object} props
- * @param {string} props.status - Asset status (active, draft, processing, failed, partial, archived)
+ * @param {string} props.status - Asset status (active, draft, processing, failed, partial)
  * @param {'small' | 'default'} [props.size='default'] - Pill size variant
  * @param {Object} [props.style] - Additional style overrides
  */

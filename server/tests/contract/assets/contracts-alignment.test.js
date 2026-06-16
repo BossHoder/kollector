@@ -92,7 +92,7 @@ describe('assets contract alignment (server/web/mobile)', () => {
     const webStatuses = extractStatusUnionFromWebType(webAssetTypesText);
     const mobileStatuses = extractStatusKeysFromMobileDisplay(mobileStatusDisplayText);
 
-    const expected = ['draft', 'processing', 'partial', 'active', 'archived', 'failed'];
+    const expected = ['draft', 'processing', 'partial', 'active', 'failed'];
 
     expect(sortValues(openApiStatuses)).toEqual(sortValues(expected));
     expect(sortValues(serverStatuses)).toEqual(sortValues(expected));

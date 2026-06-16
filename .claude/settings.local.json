@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git add mobile/package.json mobile/package-lock.json mobile/src/components/subscription/VipUpgradeModal.js mobile/src/config/vipUpgrade.js mobile/src/services/clipboard.js mobile/src/services/vipUpgradeSession.js mobile/src/screens/settings/SettingsScreen.js mobile/src/screens/settings/SettingsScreen.test.js mobile/src/screens/settings/ThemeLockParity.test.tsx)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfeat\\(subscription\\): add VIP transfer upgrade modal\n\nMove VIP upgrade requests into a bank transfer modal with reusable reference sessions and clipboard support for payment details.\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git add mobile/src/config/assetThemePresets.js mobile/src/navigation/AppStack.js mobile/src/navigation/AuthStack.js mobile/src/navigation/RootNavigator.js mobile/src/navigation/TabsNavigator.js mobile/src/screens/assets/AssetsLibraryScreen.realtime.test.js mobile/src/screens/upload/UploadScreen.navigation.test.js)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix\\(mobile\\): polish navigation safe area labels\n\nAdd localized stack and tab labels while accounting for safe-area insets so navigation remains accessible on inset devices.\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n\\)\")"
+    ]
+  }
+}

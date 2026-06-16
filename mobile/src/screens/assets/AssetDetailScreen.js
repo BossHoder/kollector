@@ -8,7 +8,7 @@
  * - Condition meter (when available)
  * - Maintenance interaction for eligible active assets
  * - Metadata card
- * - Actions: Archive (for active), Retry (for failed)
+ * - Actions: Delete (for active), Retry (for failed)
  * - Realtime updates via socket
  */
 
@@ -31,7 +31,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import {
-  archiveAsset,
+  deleteAsset,
   retryAsset,
   triggerEnhancement,
   updateAsset as updateAssetRequest,
@@ -398,22 +398,18 @@ export default function AssetDetailScreen() {
     return unsubscribe;
   }, [assetId, onAssetImageEnhanced, updateAsset]);
 
-  const handleArchive = useCallback(async () => {
+  const handleDelete = useCallback(async () => {
     try {
       setActionLoading(true);
-      const updated = await archiveAsset(assetId);
-      updateAsset((prev) => ({
-        ...prev,
-        ...updated,
-        status: updated?.status || 'archived',
-      }));
-      toast.success('Tài sản đã lưu trữ');
+      await deleteAsset(assetId);
+      toast.success('Tài sản đã xoá');
+      navigation.goBack();
     } catch {
-      toast.error('Không thể lưu trữ tài sản');
+      toast.error('Không thể xoá tài sản');
     } finally {
       setActionLoading(false);
     }
-  }, [assetId, toast, updateAsset]);
+  }, [assetId, toast, navigation]);
 
   const handleRetry = useCallback(async () => {
     try {
@@ -642,7 +638,7 @@ export default function AssetDetailScreen() {
   const isProcessing = status === 'processing';
   const isFailed = status === 'failed';
   const isPartial = status === 'partial';
-  const canArchive = ['active', 'partial', 'failed'].includes(status);
+  const canDelete = ['active', 'partial', 'failed'].includes(status);
   const canRetry = isFailed || isPartial;
   const enhancement = asset.enhancement || {};
   const enhancementStatus = enhancement.status || 'idle';
@@ -831,15 +827,9 @@ export default function AssetDetailScreen() {
               />
             ))}
           </View>
-          {lockedPresetIds.length > 0 ? (
-            <Text style={[styles.inlineErrorText, { color: themePalette.textSecondary }]}>
-              Preset chỉ dành cho VIP vẫn được hiển thị trên tài sản đã hạ gói nhưng không thể áp dụng mới.
-            </Text>
-          ) : null}
           <TouchableOpacity
             style={[
               styles.actionButton,
-              styles.archiveActionButton,
               styles.clearThemeButton,
               {
                 backgroundColor: themePalette.chipBackground,
@@ -855,7 +845,7 @@ export default function AssetDetailScreen() {
             {themeLoading ? (
               <ActivityIndicator size="small" color={themePalette.textSecondary} />
             ) : (
-              <Text style={styles.archiveActionText}>Xóa theme tùy chỉnh</Text>
+              <Text style={styles.clearThemeText}>Xóa theme tùy chỉnh</Text>
             )}
           </TouchableOpacity>
         </Card>
@@ -933,31 +923,31 @@ export default function AssetDetailScreen() {
             </TouchableOpacity>
           ) : null}
 
-          {canArchive ? (
+          {canDelete ? (
             <TouchableOpacity
               style={[
                 styles.actionButton,
-                styles.archiveActionButton,
+                styles.deleteActionButton,
                 {
-                  backgroundColor: canRetry ? 'transparent' : themePalette.chipBackground,
-                  borderColor: themePalette.border,
+                  backgroundColor: canRetry ? 'transparent' : colors.error,
+                  borderColor: colors.error,
                 },
                 canRetry && styles.secondaryAction,
               ]}
-              onPress={handleArchive}
+              onPress={handleDelete}
               disabled={actionLoading}
-              accessibilityLabel="Lưu trữ tài sản"
+              accessibilityLabel="Xoá tài sản"
               accessibilityRole="button"
-              testID="archive-button"
+              testID="delete-button"
             >
               <Text
                 style={[
-                  styles.archiveActionText,
-                  { color: themePalette.textSecondary },
+                  styles.deleteActionText,
+                  { color: canRetry ? colors.error : themePalette.accentText },
                   canRetry && styles.secondaryActionText,
                 ]}
               >
-                Lưu trữ
+                Xoá
               </Text>
             </TouchableOpacity>
           ) : null}
@@ -1195,15 +1185,15 @@ const styles = StyleSheet.create({
     fontWeight: typography.fontWeight.semibold,
     color: colors.backgroundDark,
   },
-  archiveActionButton: {
-    backgroundColor: colors.surfaceHighlight,
+  deleteActionButton: {
+    backgroundColor: colors.error,
     borderWidth: 1,
-    borderColor: colors.borderDark,
+    borderColor: colors.error,
   },
-  archiveActionText: {
+  deleteActionText: {
     fontSize: typography.fontSize.base,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.textSecondary,
+    fontWeight: typography.fontWeight.semibold,
+    color: colors.backgroundDark,
   },
   secondaryAction: {
     backgroundColor: 'transparent',
@@ -1214,7 +1204,13 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   clearThemeButton: {
+    borderWidth: 1,
     marginTop: spacing.md,
+  },
+  clearThemeText: {
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.medium,
+    color: colors.textSecondary,
   },
   bottomSpacer: {
     height: spacing.xxl,

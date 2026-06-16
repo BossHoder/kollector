@@ -201,21 +201,6 @@ describe('POST /api/assets/:id/retry', () => {
       expect(response.body).toHaveProperty('error');
     });
 
-    it('should return 409 for archived asset', async () => {
-      const archivedAsset = await Asset.create(buildRetryableAsset({
-        userId,
-        status: 'archived',
-      }));
-
-      const response = await request(app)
-        .post(`/api/assets/${archivedAsset._id}/retry`)
-        .set('Authorization', `Bearer ${accessToken}`)
-        .expect(409);
-
-      expect(response.body).toHaveProperty('error');
-    });
-  });
-
   describe('Not Found (404)', () => {
     it('should return 404 for non-existent asset', async () => {
       await request(app)

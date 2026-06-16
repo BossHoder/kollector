@@ -29,7 +29,6 @@ export interface StatusDisplayInfo {
  * | draft       | Draft      | gray      | edit          |
  * | processing  | Processing | primary   | auto_awesome  |
  * | active      | Ready      | emerald   | check_circle  |
- * | archived    | Archived   | gray      | archive       |
  * | failed      | Failed     | red       | error         |
  * | partial     | Partial    | warning   | warning       |
  */
@@ -49,11 +48,6 @@ export const STATUS_DISPLAY: Record<AssetStatus, StatusDisplayInfo> = {
     label: 'Ready',
     color: 'emerald',
     icon: 'check_circle',
-  },
-  archived: {
-    label: 'Archived',
-    color: 'gray',
-    icon: 'archive',
   },
   failed: {
     label: 'Failed',
