@@ -134,13 +134,13 @@ describe('AdminSubscriptionsPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    expect(await screen.findByRole('button', { name: 'Approve' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Duyệt' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Approve' }));
+    await user.click(screen.getByRole('button', { name: 'Duyệt' }));
 
     await waitFor(() => {
       expect(apiMocks.adminApproveUpgradeRequest).toHaveBeenCalledWith('req-1');
-      expect(screen.getByText(/No requests in this state\./i)).toBeInTheDocument();
+      expect(screen.getByText(/Không có yêu cầu ở trạng thái này\./i)).toBeInTheDocument();
     });
   });
 
@@ -148,13 +148,13 @@ describe('AdminSubscriptionsPage', () => {
     const user = userEvent.setup();
     renderPage();
 
-    expect(await screen.findByRole('button', { name: 'Reject' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Từ chối' })).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Reject' }));
+    await user.click(screen.getByRole('button', { name: 'Từ chối' }));
     expect(apiMocks.adminRejectUpgradeRequest).not.toHaveBeenCalled();
 
-    await user.type(screen.getByPlaceholderText(/Explain why this transfer/i), 'Reference mismatch');
-    await user.click(screen.getByRole('button', { name: 'Reject' }));
+    await user.type(screen.getByPlaceholderText(/Nhập lý do/i), 'Reference mismatch');
+    await user.click(screen.getByRole('button', { name: 'Từ chối' }));
 
     await waitFor(() => {
       expect(apiMocks.adminRejectUpgradeRequest).toHaveBeenCalledWith('req-1', {
