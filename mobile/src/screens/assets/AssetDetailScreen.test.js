@@ -353,11 +353,8 @@ describe('Delete Action', () => {
       fireEvent.press(screen.getByTestId('delete-button'));
 
       await waitFor(() => {
-        expect(mockToast.success).toHaveBeenCalled();
-      });
-
-      await waitFor(() => {
-expect(screen.getByText('Tài sản đã xoá')).toBeTruthy();
+        expect(mockToast.success).toHaveBeenCalledWith('Tài sản đã xoá');
+        expect(mockGoBack).toHaveBeenCalled();
       });
     });
   });

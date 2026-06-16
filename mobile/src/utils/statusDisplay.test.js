@@ -41,6 +41,8 @@ describe('statusDisplay', () => {
     it('should map "partial" to "Một phần" label', () => {
       expect(STATUS_DISPLAY.partial.label).toBe('Một phần');
     });
+  });
+
 
   describe('Color assignments', () => {
     it('should assign success/emerald color to "active" (Ready)', () => {
@@ -62,6 +64,8 @@ describe('statusDisplay', () => {
     it('should assign gray color to "draft"', () => {
       expect(STATUS_DISPLAY.draft.color).toBe('#9ca3af');
     });
+  });
+
 
   describe('Animation flags', () => {
     it('should mark "processing" as animated', () => {
@@ -104,7 +108,7 @@ describe('statusDisplay', () => {
       expect(statuses).toContain('draft');
       expect(statuses).toContain('processing');
       expect(statuses).toContain('active');
-expect(statuses).toContain('partial');
+      expect(statuses).toContain('partial');
       expect(statuses).toHaveLength(5);
     });
   });
