@@ -70,7 +70,7 @@ export default function AssetMaintenanceRubMask({
     ) {
       successTriggeredRef.current = true;
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      toast.success('Maintenance completed. Syncing in background.');
+      toast.success('Bảo dưỡng thành công.');
       onMaintain?.({
         cleanedPercentage,
         durationMs,

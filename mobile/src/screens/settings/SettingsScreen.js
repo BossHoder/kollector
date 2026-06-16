@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -9,8 +10,9 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSocket } from '../../contexts/SocketContext';
 import { useToast } from '../../contexts/ToastContext';
-import { updateDefaultAssetTheme } from '../../api/authApi';
+import { getMe, updateDefaultAssetTheme } from '../../api/authApi';
 import {
   createUpgradeRequest,
   getSubscriptionStatus,
@@ -31,6 +33,7 @@ import {
   VIP_UPGRADE_CURRENCY,
 } from '../../config/vipUpgrade';
 import { copyToClipboard } from '../../services/clipboard';
+import { useRealtimeFallback } from '../../hooks/useRealtimeFallback';
 import {
   clearVipUpgradeSession,
   getOrCreateVipUpgradeSession,
@@ -73,12 +76,58 @@ function ThemeChip({
   );
 }
 
+const RANK_THRESHOLDS = [
+  { rank: 'Bronze', minXp: 0, nextRank: 'Silver', nextXp: 500 },
+  { rank: 'Silver', minXp: 500, nextRank: 'Gold', nextXp: 2000 },
+  { rank: 'Gold', minXp: 2000, nextRank: 'Platinum', nextXp: 5000 },
+  { rank: 'Platinum', minXp: 5000, nextRank: 'Diamond', nextXp: 10000 },
+  { rank: 'Diamond', minXp: 10000, nextRank: null, nextXp: null },
+];
+
+const BADGE_LABELS = {
+  FIRST_CLEAN: 'Lần bảo dưỡng đầu',
+  '7_DAY_STREAK': 'Chuỗi 7 ngày',
+  PRISTINE_COLLECTION: 'Bộ sưu tập tinh tươm',
+};
+
+function getRankProgress(totalXp = 0, rank = 'Bronze') {
+  const xp = Math.max(0, Number(totalXp) || 0);
+  const current = RANK_THRESHOLDS.find((entry) => entry.rank === rank)
+    || [...RANK_THRESHOLDS].reverse().find((entry) => xp >= entry.minXp)
+    || RANK_THRESHOLDS[0];
+
+  if (!current.nextXp) {
+    return {
+      xp,
+      currentRank: current.rank,
+      nextRank: null,
+      xpIntoRank: xp - current.minXp,
+      xpNeeded: 0,
+      progressRatio: 1,
+    };
+  }
+
+  const xpIntoRank = Math.max(0, xp - current.minXp);
+  const xpNeeded = current.nextXp - current.minXp;
+
+  return {
+    xp,
+    currentRank: current.rank,
+    nextRank: current.nextRank,
+    xpIntoRank,
+    xpNeeded,
+    progressRatio: Math.min(1, xpIntoRank / xpNeeded),
+  };
+}
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { user, logout, updateUser } = useAuth();
+  const { isConnected } = useSocket();
   const toast = useToast();
   const [themeLoading, setThemeLoading] = useState(false);
   const [subscriptionLoading, setSubscriptionLoading] = useState(true);
+  const [settingsRefreshing, setSettingsRefreshing] = useState(false);
   const [subscriptionData, setSubscriptionData] = useState(null);
   const [upgradeRequests, setUpgradeRequests] = useState([]);
   const [vipUpgradeModalVisible, setVipUpgradeModalVisible] = useState(false);
@@ -97,6 +146,10 @@ export default function SettingsScreen() {
   const defaultTheme = getAssetThemePresetById(defaultThemeId);
   const lockedPresetIds = subscriptionData?.entitlements?.theme?.lockedPresetIds || [];
   const latestRequest = upgradeRequests[0] || null;
+  const gamification = user?.gamification || {};
+  const badges = Array.isArray(gamification.badges) ? gamification.badges : [];
+  const rankProgress = getRankProgress(gamification.totalXp, gamification.rank);
+  const rankProgressWidth = `${Math.round(rankProgress.progressRatio * 100)}%`;
   const transferReferenceExpiresInMs = Math.max(
     0,
     (transferReferenceExpiresAt || 0) - referenceClock
@@ -114,7 +167,20 @@ export default function SettingsScreen() {
     return `Đang dùng giao diện: ${resolvedTheme?.name || 'Kho Lưu Trữ Than Chì'}`;
   }, [defaultTheme, resolvedTheme]);
 
-  const loadSubscriptionState = useCallback(async () => {
+  const loadSettingsState = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setSettingsRefreshing(true);
+    }
+
+    try {
+      const profile = await getMe();
+      await updateUser(profile);
+    } catch (error) {
+      if (!silent) {
+        toast.error(error?.message || 'Không thể tải dữ liệu tài khoản');
+      }
+    }
+
     try {
       setSubscriptionLoading(true);
       const statusResponse = await getSubscriptionStatus();
@@ -130,12 +196,22 @@ export default function SettingsScreen() {
       setUpgradeRequests(requestsResponse?.data || []);
     } catch (error) {
       toast.error(error?.message || 'Không thể tải danh sách yêu cầu nâng gói');
+    } finally {
+      if (!silent) {
+        setSettingsRefreshing(false);
+      }
     }
-  }, [toast]);
+  }, [toast, updateUser]);
 
   useEffect(() => {
-    void loadSubscriptionState();
-  }, [loadSubscriptionState]);
+    void loadSettingsState({ silent: true });
+  }, [loadSettingsState]);
+
+  useRealtimeFallback({
+    isConnected,
+    onPoll: () => loadSettingsState({ silent: true }),
+    onReconnect: () => loadSettingsState({ silent: true }),
+  });
 
   useEffect(() => {
     if (!vipUpgradeModalVisible) {
@@ -295,13 +371,13 @@ export default function SettingsScreen() {
       setTransferReferenceExpiresAt(null);
       setTransferReferenceLastRefreshedAt(null);
       toast.success('Chuyển khoản đã được ghi nhận, vui lòng chờ duyệt.');
-      await loadSubscriptionState();
+      await loadSettingsState({ silent: true });
     } catch (error) {
       toast.error(error?.message || 'Không thể gửi yêu cầu nâng gói');
     } finally {
       setRequestSubmitting(false);
     }
-  }, [loadSubscriptionState, toast, transferReference]);
+  }, [loadSettingsState, toast, transferReference]);
 
   const latestRequestTypeLabel = latestRequest?.type === 'renewal' ? 'Gia hạn VIP' : 'Nâng gói VIP';
   const latestRequestStatusLabel = {
@@ -317,13 +393,52 @@ export default function SettingsScreen() {
         <Text style={styles.title}>Cài đặt</Text>
       </View>
       <ScrollView
+        testID="settings-scroll"
         style={styles.content}
         contentContainerStyle={[
           styles.contentContainer,
           { paddingBottom: spacing.lg + insets.bottom },
         ]}
         showsVerticalScrollIndicator={false}
+        refreshControl={(
+          <RefreshControl
+            refreshing={settingsRefreshing}
+            onRefresh={() => loadSettingsState()}
+            tintColor={colors.primary}
+          />
+        )}
       >
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Tiến độ sưu tầm</Text>
+          <View style={[styles.row, styles.columnRow]}>
+            <View style={styles.rankHeader}>
+              <View>
+                <Text style={styles.label}>Rank {rankProgress.currentRank}</Text>
+                <Text style={styles.value}>{rankProgress.xp} XP</Text>
+              </View>
+              <Text style={styles.streakValue}>{Number(gamification.maintenanceStreak || 0)} ngày</Text>
+            </View>
+            <View style={styles.progressTrack} testID="rank-progress-track">
+              <View style={[styles.progressFill, { width: rankProgressWidth }]} testID="rank-progress-fill" />
+            </View>
+            <Text style={styles.value} testID="rank-progress-text">
+              {rankProgress.nextRank
+                ? `${rankProgress.xpIntoRank}/${rankProgress.xpNeeded} XP để lên ${rankProgress.nextRank}`
+                : 'Đã đạt rank cao nhất'}
+            </Text>
+            <Text style={styles.value}>Streak bảo dưỡng: {Number(gamification.maintenanceStreak || 0)} ngày</Text>
+            <View style={styles.badgeList} testID="badge-list">
+              {badges.length > 0 ? badges.map((badge) => (
+                <View key={badge} style={styles.badgeChip}>
+                  <Text style={styles.badgeText}>{BADGE_LABELS[badge] || badge}</Text>
+                </View>
+              )) : (
+                <Text style={styles.value}>Chưa có huy hiệu</Text>
+              )}
+            </View>
+          </View>
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Gói đăng ký</Text>
           <View style={[styles.row, styles.columnRow]}>
@@ -484,6 +599,50 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     alignItems: 'flex-start',
     gap: spacing.xs,
+  },
+  rankHeader: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  streakValue: {
+    color: colors.primary,
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.bold,
+  },
+  progressTrack: {
+    width: '100%',
+    height: 8,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.borderDark,
+    overflow: 'hidden',
+    marginTop: spacing.sm,
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primary,
+  },
+  badgeList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  badgeChip: {
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryMuted,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  badgeText: {
+    color: colors.textPrimary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.medium,
   },
   label: {
     fontSize: typography.fontSize.base,

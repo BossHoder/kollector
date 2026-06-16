@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import SettingsScreen from './SettingsScreen';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -12,8 +12,16 @@ jest.mock('../../contexts/AuthContext', () => ({
   useAuth: jest.fn(),
 }));
 
+jest.mock('../../contexts/SocketContext', () => ({
+  useSocket: jest.fn(() => ({ isConnected: true })),
+}));
+
 jest.mock('../../contexts/ToastContext', () => ({
   useToast: jest.fn(),
+}));
+
+jest.mock('../../hooks/useRealtimeFallback', () => ({
+  useRealtimeFallback: jest.fn(),
 }));
 
 jest.mock('../../api/authApi');
@@ -63,6 +71,12 @@ describe('SettingsScreen', () => {
             },
           },
         },
+        gamification: {
+          totalXp: 620,
+          rank: 'Silver',
+          maintenanceStreak: 3,
+          badges: ['FIRST_CLEAN'],
+        },
       },
       logout: mockLogout,
       updateUser: mockUpdateUser,
@@ -78,6 +92,23 @@ describe('SettingsScreen', () => {
             defaultThemeId: 'vault-graphite',
           },
         },
+      },
+    });
+    authApi.getMe.mockResolvedValue({
+      id: 'user-1',
+      email: 'test@example.com',
+      settings: {
+        preferences: {
+          assetTheme: {
+            defaultThemeId: null,
+          },
+        },
+      },
+      gamification: {
+        totalXp: 620,
+        rank: 'Silver',
+        maintenanceStreak: 3,
+        badges: ['FIRST_CLEAN'],
       },
     });
 
@@ -174,6 +205,32 @@ describe('SettingsScreen', () => {
     expect(getByText('test@example.com')).toBeTruthy();
   });
 
+  it('shows rank progress, badges, and maintenance streak', async () => {
+    const { getByText, getByTestId } = await renderScreen();
+
+    expect(getByText('Rank Silver')).toBeTruthy();
+    expect(getByText('620 XP')).toBeTruthy();
+    expect(getByTestId('rank-progress-text').props.children).toBe('120/1500 XP để lên Gold');
+    expect(getByText('Streak bảo dưỡng: 3 ngày')).toBeTruthy();
+    expect(getByText('Lần bảo dưỡng đầu')).toBeTruthy();
+  });
+
+  it('refreshes account and subscription state from pull refresh', async () => {
+    const { getByTestId } = await renderScreen();
+    const scrollView = getByTestId('settings-scroll');
+
+    await act(async () => {
+      await scrollView.props.refreshControl.props.onRefresh();
+    });
+
+    await waitFor(() => {
+      expect(authApi.getMe).toHaveBeenCalledTimes(2);
+      expect(subscriptionApi.getSubscriptionStatus).toHaveBeenCalledTimes(2);
+      expect(subscriptionApi.listUpgradeRequests).toHaveBeenCalledTimes(2);
+      expect(mockUpdateUser).toHaveBeenCalled();
+    });
+  });
+
   it('updates the default asset theme when a preset is pressed', async () => {
     const { getByTestId } = await renderScreen();
 
@@ -213,7 +270,7 @@ describe('SettingsScreen', () => {
 
     await openVipModal({ getByTestId });
 
-    expect(getByText('Nap tien qua chuyen khoan')).toBeTruthy();
+    expect(getByText('Nạp tiền qua chuyển khoản')).toBeTruthy();
     expect(getByTestId('vip-upgrade-account-name-value').props.children).toBe('TRUONG THE ANH');
     expect(getByTestId('vip-upgrade-reference-value').props.children).toBe('VIP-1700000000000');
 
@@ -221,7 +278,7 @@ describe('SettingsScreen', () => {
 
     await waitFor(() => {
       expect(clipboard.copyToClipboard).toHaveBeenCalled();
-      expect(mockToast.success).toHaveBeenCalledWith('Đã sao chép noi dung chuyen khoan');
+      expect(mockToast.success).toHaveBeenCalledWith('Đã sao chép nội dung chuyển khoản');
     });
   });
 
