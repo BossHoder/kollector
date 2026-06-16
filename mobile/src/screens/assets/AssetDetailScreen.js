@@ -21,6 +21,7 @@ import React, {
 } from 'react';
 import {
   ActivityIndicator,
+  Image,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -744,7 +745,32 @@ export default function AssetDetailScreen() {
               ) : null}
             </View>
           ) : (
-            <ProcessingOverlay visible message="Đang phân tích ảnh..." testID="processing-overlay" />
+            <View
+              style={[
+                styles.processingImageFrame,
+                { backgroundColor: themePalette.surfaceElevated },
+              ]}
+            >
+              {originalImageUrl ? (
+                <Image
+                  source={{ uri: originalImageUrl }}
+                  style={styles.processingImage}
+                  resizeMode="contain"
+                  accessibilityLabel="Ảnh gốc đang phân tích"
+                  testID="processing-image"
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.processingImagePlaceholder,
+                    { backgroundColor: themePalette.placeholderBackground },
+                  ]}
+                >
+                  <Text style={[styles.processingImagePlaceholderText, { color: themePalette.textMuted }]}>Không có ảnh</Text>
+                </View>
+              )}
+              <ProcessingOverlay visible message="Đang phân tích ảnh..." testID="processing-overlay" />
+            </View>
           )}
         </View>
 
@@ -1027,6 +1053,27 @@ const styles = StyleSheet.create({
   imageSection: {
     marginBottom: spacing.lg,
     position: 'relative',
+  },
+  processingImageFrame: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: borderRadius.lg,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  processingImage: {
+    width: '100%',
+    height: '100%',
+  },
+  processingImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  processingImagePlaceholderText: {
+    fontSize: typography.body.fontSize,
+    color: colors.textSecondary,
   },
   card: {
     backgroundColor: colors.surfaceDark,

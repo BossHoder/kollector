@@ -203,6 +203,14 @@ describe('AssetDetailScreen', () => {
       });
     });
 
+    it('should show original image behind processing overlay', async () => {
+      render(<AssetDetailScreen />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('processing-image')).toBeTruthy();
+      });
+    });
+
     it('should show processing message', async () => {
       render(<AssetDetailScreen />);
 
