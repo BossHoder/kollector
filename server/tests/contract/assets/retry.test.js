@@ -200,6 +200,7 @@ describe('POST /api/assets/:id/retry', () => {
 
       expect(response.body).toHaveProperty('error');
     });
+  });
 
   describe('Not Found (404)', () => {
     it('should return 404 for non-existent asset', async () => {
