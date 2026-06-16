@@ -9,7 +9,7 @@
     "/api/assets": {
       "get": {
         "summary": "List assets",
-        "description": "Status filter should accept all Asset model statuses: draft, processing, partial, active, archived, failed.",
+        "description": "Status filter should accept all Asset model statuses: draft, processing, partial, active, failed.",
         "tags": ["assets"],
         "parameters": [
           {
@@ -18,7 +18,7 @@
             "required": false,
             "schema": {
               "type": "string",
-              "enum": ["draft", "processing", "partial", "active", "archived", "failed"]
+              "enum": ["draft", "processing", "partial", "active", "failed"]
             }
           }
         ],

@@ -25,7 +25,7 @@
       },
       "Status": {
         "type": "string",
-        "enum": ["draft", "processing", "partial", "active", "archived", "failed"]
+        "enum": ["draft", "processing", "partial", "active", "failed"]
       },
       "AssetFileMetadata": {
         "type": "object",
@@ -201,7 +201,7 @@
                 "properties": {
                   "status": {
                     "type": "string",
-                    "enum": ["draft", "processing", "partial", "active", "archived", "failed"]
+                    "enum": ["draft", "processing", "partial", "active", "failed"]
                   },
                   "category": { "$ref": "#/components/schemas/Category" }
                 }
