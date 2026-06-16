@@ -32,7 +32,7 @@ describe('Maintenance EXP audit integration', () => {
       tier: 'vip',
       status: 'active',
       paymentChannel: 'manual_bank',
-      expiresAt: new Date('2026-06-01T00:00:00.000Z'),
+      expiresAt: new Date('2027-06-01T00:00:00.000Z'),
     });
   });
 

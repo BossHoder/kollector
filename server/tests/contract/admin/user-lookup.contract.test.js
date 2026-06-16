@@ -38,7 +38,7 @@ describe('Admin user lookup contract', () => {
           tier: 'vip',
           status: 'active',
           activatedAt: new Date('2026-05-01T00:00:00.000Z'),
-          expiresAt: new Date('2026-06-01T00:00:00.000Z'),
+          expiresAt: new Date('2027-06-01T00:00:00.000Z'),
           graceEndsAt: null,
         },
       },
